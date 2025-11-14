@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>%%ORGANISATION_NAME%% AppSuite</title>
+<title>%%ORGANISATION_NAME%% App</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="%%ORGANISATION_NAME%% App">
@@ -53,7 +53,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 <header class="flex justify-between items-center mb-4 relative z-10 flex-shrink-0">
     <div class="flex items-center">
         <img src="https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png" alt="Logo" class="h-8 w-8 mr-3 rounded" onerror="this.style.display='none'"> 
-        <h1 class="text-xl font-bold text-blue-400">%%ORGANISATION_NAME%% AppSuite</h1>
+        <h1 class="text-xl font-bold text-blue-400">%%ORGANISATION_NAME%% App</h1>
     </div>
 <div class="flex items-center space-x-1">
 <button type="button" id="infoBtn" class="p-3 rounded-full hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
@@ -126,7 +126,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 <div class="border-t border-gray-700 pt-4 mt-4">
      <label class="block text-sm font-medium text-gray-400">Troubleshooting</label>
      <button type="button" id="clearCacheBtn" class="mt-2 w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg">Clear Cached Forms & Data</button>
-     <p class="text-xs text-gray-500 mt-1">If your custom report forms are not updating, click this button to clear the app's cache and re-sync all forms.</p>
+     <p class="text-xs text-gray-500 mt-1">If your report forms are not updating, click this button to clear the app's cache and re-sync all forms.</p>
 </div>
 <!-- === END NEW === -->
 
@@ -143,6 +143,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         <div class="space-y-4">
             <div><label for="locationName" class="block text-sm font-medium text-gray-400">Location Name</label><input type="text" id="locationName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
             <div><label for="locationAddress" class="block text-sm font-medium text-gray-400">Location Address</label><input type="text" id="locationAddress" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"><button type="button" id="useCurrentLocationBtn" class="mt-2 text-sm text-blue-400 hover:text-blue-300">Use Current Location</button></div>
+            
             <!-- === MODIFIED: Template Name === -->
             <div class="border-t border-gray-700 pt-4">
                  <label for="companyName" class="block text-sm font-medium text-gray-400">Company Name (for Reporting)</label>
@@ -234,7 +235,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
               <h3 class="font-semibold text-lg text-blue-400">7. Filing Your Report & Departing</h3>
              <ol class="list-decimal list-inside space-y-1">
                  <li>When you hold the **"DEPART & FILE REPORT"** button, a "Visit Report" form will appear.</li>
-                 <li>It will show either the standard checklist or a custom one for that company. Custom forms may include section headers (like "# Section 1") and new text boxes (like "% Custom Note").</li>
+                 <li>It will show either the standard checklist or a custom one for that company. Custom forms may include section headers (like "# Section 1"), number fields (like "$ KMs"), and text boxes (like "% Custom Note").</li>
                  <li>Tick the relevant boxes and add your visit notes in all text fields.</li>
                  <li>Click **"Submit Report & Depart"**. This sends your report and ends your safety timer.</li>
                  <li><strong>Offline? No Problem.</strong> If you have no internet, the app will save your report and upload it automatically the next time you open the app with a connection.</li>
@@ -1080,6 +1081,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     /**
      * Helper to build the checklist HTML from an array of objects.
      */
+    // --- UPDATED buildReportForm (OTG v1.5 - with '$') ---
     function buildReportForm(items) {
          reportFormChecklists.innerHTML = items.map((item, index) => {
             if (!item || typeof item.text === 'undefined') {
@@ -1091,11 +1093,17 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 return `<h3 class="text-lg font-semibold text-blue-300 mt-4 mb-2">${item.text}</h3>`;
             
             } else if (item.type === 'textarea') {
-                 // Render a textarea
                 return `
                 <div class="mt-4">
                     <label for="wsa-note-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
                     <textarea id="wsa-note-${index}" data-header="${item.text}" class="wsa-custom-note mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
+                </div>
+                `;
+            } else if (item.type === 'number') { // --- NEW ---
+                return `
+                <div class="mt-4">
+                    <label for="wsa-num-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
+                    <input type="number" id="wsa-num-${index}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="numeric" pattern="[0-9]*">
                 </div>
                 `;
             } else { // Default to checkbox (item.type === 'checkbox')
@@ -1112,11 +1120,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     /**
      * Gathers report data and calls depart() or iamSafe()
      */
+    // --- UPDATED submitReport (OTG v1.5 - with '$') ---
     function submitReport() {
         if (!state.activeVisit) return; 
         const location = state.locations.find(l => l.id === state.activeVisit.locationId);
         
-        // --- UPDATED: Gather all checklist data (true/false) ---
+        // 1. Gather checklist data
         const checklistData = {};
         const checkboxes = reportFormChecklists.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(cb => {
@@ -1134,14 +1143,24 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             customNotesData[header] = ta.value; 
         });
 
-        // 4. Combine payload
+        // 4. Gather numeric entries --- NEW ---
+        const numericEntriesData = {};
+        const customNumberFields = reportFormChecklists.querySelectorAll('.wsa-custom-number');
+        customNumberFields.forEach(nf => {
+            const header = nf.dataset.header;
+            numericEntriesData[header] = nf.value;
+        });
+        // --- END NEW ---
+
+        // 5. Combine payload
         const reportDataPayload = {
             checklist: checklistData,
             notes: notes,
-            custom_notes: customNotesData // Add the new object
+            custom_notes: customNotesData,
+            numeric_entries: numericEntriesData // --- NEW ---
         };
 
-        // 5. Call depart
+        // 6. Call depart
         const finalData = {
             "Company Name": location.companyName || "",
             "Visit Report Data": JSON.stringify(reportDataPayload)
