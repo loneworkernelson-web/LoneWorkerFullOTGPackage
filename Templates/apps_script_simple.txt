@@ -1,5 +1,6 @@
 // ##### --------------------------------------------------- #####
 // ##### On-the-Go AppSuite - SIMPLE Backend Script (Safety Only) #####
+// ##### v2.0
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -241,11 +242,55 @@ function checkOverdueWorkers() {
   }
 }
 
-// --- EMAIL HELPER FUNCTION ---
+// --- NEW: FREE SMS FUNCTION (via TextBelt) ---
+/**
+ * Sends an SMS using the TextBelt free tier.
+ * 1 free SMS per phone number per day.
+ * @param {string} phoneNumber - The full international phone number (e.g., +6421123456).
+ * @param {string} message - The text message (max 160 chars).
+ */
+function sendSmsViaGateway(phoneNumber, message) {
+  if (!phoneNumber) {
+    Logger.log("SMS failed: No phone number provided.");
+    return;
+  }
+  
+  const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
+  
+  const payload = {
+    phone: cleanPhone,
+    message: message.substr(0, 160), // Enforce SMS max length
+    key: "textbelt" // Use the public free tier key
+  };
+
+  try {
+    const response = UrlFetchApp.fetch("https://textbelt.com/text", {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    
+    const result = JSON.parse(response.getContentText());
+    if (result.success) {
+      Logger.log("Successfully sent free SMS to: " + cleanPhone);
+    } else {
+      Logger.log("Free SMS failed (quota likely used, or invalid number): " + result.error);
+    }
+  } catch (e) {
+    Logger.log("SMS Error: " + e.toString());
+  }
+}
+
+
+// --- EMAIL HELPER FUNCTION (Now with SMS) ---
 function sendAlertEmail(workerData, alertType) {
-  var recipient = alertType === 'ESCALATION_SENT' ? workerData['Escalation Contact Email'] : workerData['Emergency Contact Email'];
+  var isEscalation = alertType === 'ESCALATION_SENT';
+  var recipient = isEscalation ? workerData['Escalation Contact Email'] : workerData['Emergency Contact Email'];
+  var phoneRecipient = isEscalation ? workerData['Escalation Contact Number'] : workerData['Emergency Contact Number'];
   var subject = '';
   var body = '';
+  var smsMessage = '';
 
   var locationName = workerData['Location Name'] || 'Not specified';
   var locationAddress = workerData['Location Address'] || 'Not specified';
@@ -267,18 +312,22 @@ function sendAlertEmail(workerData, alertType) {
     case 'EMERGENCY - PANIC BUTTON':
       subject = 'URGENT PANIC ALERT for ' + workerName;
       body = '<p><strong>A PANIC ALERT has been triggered by ' + workerName + '.</strong></p> <p>This is a high-priority alert indicating an emergency situation.</p>';
+      smsMessage = `PANIC ALERT: ${workerName} at ${locationName}. Location: ${locationLink}`;
       break;
     case 'DURESS_CODE_ACTIVATED':
       subject = 'URGENT DURESS ALERT for ' + workerName;
       body = '<p><strong>A SILENT DURESS ALARM has been triggered by ' + workerName + '.</strong></p> <p>The worker has entered their Duress PIN, suggesting they may be under threat and unable to call for help directly.</p>';
+      smsMessage = `DURESS ALERT: ${workerName} at ${locationName}. Location: ${locationLink}`;
       break;
     case 'MISSED_CHECKIN':
       subject = 'MISSED CHECK-IN ALERT for ' + workerName;
       body = '<p><strong>' + workerName + ' has missed a scheduled "Are you OK?" check-in.</strong></p>';
+      smsMessage = `MISSED CHECK-IN: ${workerName} at ${locationName}. Location: ${locationLink}`;
       break;
     case 'ESCALATION_SENT':
       subject = 'ESCALATION ALERT: ' + workerName + ' is 60+ mins Overdue';
       body = '<p>This is an escalation alert. ' + workerName + ' is now more than 60 minutes overdue and has not responded to previous alerts.</p>';
+      smsMessage = `ESCALATION: ${workerName} is 60+ mins overdue at ${locationName}. Location: ${locationLink}`;
       break;
     case 'EMAIL_1_SENT':
     case 'EMAIL_2_SENT':
@@ -288,14 +337,17 @@ function sendAlertEmail(workerData, alertType) {
       if (alertType === 'EMAIL_3_SENT') minutesOverdue = 45;
       subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
       body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
+      smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Location: ${locationLink}`;
       break;
     case 'ALERT SENT': 
          subject = 'Overdue Alert: ' + workerName + ' is overdue';
          body = '<p>' + workerName + ' became overdue and triggered an initial alert state.</p>';
+         smsMessage = `OVERDUE: ${workerName} is overdue at ${locationName}. Location: ${locationLink}`;
          break;
     default: 
       subject = 'OTG AppSuite Alert (' + alertType + ') for ' + workerName;
       body = '<p>An automated alert (' + alertType.replace(/_/g,' ') + ') has been triggered for ' + workerName + '.</p>';
+      // No SMS for non-critical alerts
       break;
   }
 
@@ -323,5 +375,10 @@ function sendAlertEmail(workerData, alertType) {
     }
   } else {
     Logger.log('Cannot send email: No recipient found for alert type ' + alertType + ' for worker ' + workerName);
+  }
+  
+  // --- NEW: Send SMS in parallel ---
+  if (smsMessage && phoneRecipient) {
+    sendSmsViaGateway(phoneRecipient, smsMessage);
   }
 }
