@@ -1,0 +1,1301 @@
+// ##### --------------------------------------------------- #####
+// ##### On-the-Go AppSuite - ADVANCED Backend (Safety + Reporting) #####
+// ##### --------------------------------------------------- #####
+
+// --- CONFIGURATION ---
+var SECRET_KEY = "%%SECRET_KEY%%"; // For Monitor App
+var GEMINI_API_KEY = "%%GEMINI_API_KEY%%"; // For AI Report Correction
+var SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+var VISITS_SHEET_NAME = "Visits";
+var CHECKLISTS_SHEET_NAME = "Checklists";
+var REPORT_TAB_PREFIX = "Report - "; 
+
+// --- PDF REPORTING CONFIGURATION ---
+var DEFAULT_REPORT_TEMPLATE_ID = "YOUR_DEFAULT_TEMPLATE_ID_HERE"; 
+var PDF_OUTPUT_FOLDER_ID = "YOUR_OUTPUT_FOLDER_ID_HERE";
+
+// --- LONGITUDINAL REPORTING CONFIGURATION ---
+var LONGITUDINAL_ID_HEADER = "Longitudinal Report Sheet ID";
+
+
+// --- WEB APP ENDPOINTS ---
+function doGet(e) {
+  // 1. Monitor App Request (JSONP)
+  if (e.parameter.callback) {
+    var token = e.parameter.token;
+    if (token !== SECRET_KEY) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: "error", message: "Access Denied" }))
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
+    var data = sheet.getDataRange().getValues();
+    var headers = data.shift();
+    var json = data.map(function(row) {
+      var obj = {};
+      headers.forEach(function(header, i) {
+        if (row[i] instanceof Date) {
+          obj[header] = row[i].toISOString(); 
+        } else {
+          obj[header] = row[i];
+        }
+      });
+      return obj;
+    });
+
+    var callback = e.parameter.callback;
+    var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
+    return ContentService
+      .createTextOutput(jsonpResponse)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  // 2. Worker App Request (JSON)
+  if (e.parameter.action === 'getForms' && e.parameter.companyName) {
+    var companyName = e.parameter.companyName;
+    var questions = []; // This will now be an array of objects
+    try {
+      var checklistSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
+      var data = checklistSheet.getDataRange().getValues();
+      var headers = data.shift(); // Get headers (Company Name, Question 1, ...)
+      
+      for (var i = 0; i < data.length; i++) {
+        if (data[i][0] === companyName) { // Find matching company in Col A
+          // Loop through question columns (from Col B onwards)
+          for (var j = 1; j < headers.length; j++) {
+            var questionText = data[i][j];
+            if (questionText) { 
+              var textStr = String(questionText);
+              if (textStr.startsWith("# ")) {
+                questions.push({ "type": "header", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("#")) {
+                 questions.push({ "type": "header", "text": textStr.substring(1).trim() });
+              } else if (textStr.startsWith("% ")) {
+                 questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("%")) {
+                 questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
+              } else {
+                questions.push({ "type": "checkbox", "text": textStr });
+              }
+            } else {
+              break; 
+            }
+          }
+          break; 
+        }
+      }
+      Logger.log("Found " + questions.length + " items (questions/headers) for " + companyName);
+    } catch (err) {
+      Logger.log("Error in getForms: " + err.toString());
+    }
+    
+    return ContentService
+      .createTextOutput(JSON.stringify(questions))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Default invalid request
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+/**
+ * Handles POST requests from the Worker App or Monitor App.
+ */
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000); 
+
+  try {
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
+    var data = e.parameter;
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var arrivalTime = data["Arrival Time"];
+    var workerName = data["Worker Name"];
+    
+    var batteryLevelColIdx = headers.indexOf("Battery Level") + 1; 
+    var phoneHeaders = ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"];
+
+    // Force phone numbers to text by prepending a single quote
+    for (var key in data) {
+      if (phoneHeaders.indexOf(key) > -1 && data[key]) {
+        var phone = String(data[key]); // --- FIX: Ensure it's a string
+        if ((phone.charAt(0) === '0' || phone.charAt(0) === '+') && phone.charAt(0) !== "'") {
+          data[key] = "'" + phone;
+        }
+      }
+    }
+
+    // Find existing row or create a new one
+    var dataRange = sheet.getDataRange().getValues();
+    var rowIndex = -1;
+    for (var i = 1; i < dataRange.length; i++) {
+      var rowArrivalTimeISO = "";
+      try {
+          if (dataRange[i][headers.indexOf("Arrival Time")] instanceof Date) {
+               rowArrivalTimeISO = dataRange[i][headers.indexOf("Arrival Time")].toISOString();
+          } else if (dataRange[i][headers.indexOf("Arrival Time")]) {
+               rowArrivalTimeISO = new Date(dataRange[i][headers.indexOf("Arrival Time")]).toISOString();
+          }
+      } catch (dateErr) {
+           Logger.log("Error parsing date in row " + (i+1) + ": " + dataRange[i][headers.indexOf("Arrival Time")]);
+      }
+
+      if (dataRange[i][headers.indexOf("Worker Name")] === workerName && rowArrivalTimeISO === arrivalTime) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (rowIndex !== -1) {
+      // Update existing row
+      headers.forEach(function(header) {
+        if (data[header] !== undefined) {
+          var colIndex = headers.indexOf(header) + 1;
+          if (colIndex > 0) {
+            sheet.getRange(rowIndex, colIndex).setValue(data[header]);
+
+             // Parse and save numeric battery level
+             if (header === "Notes" && data[header] && batteryLevelColIdx > 0) {
+                var batteryMatch = data[header].match(/Battery: (\d+)%/);
+                if (batteryMatch && batteryMatch[1]) {
+                     var level = parseInt(batteryMatch[1], 10);
+                     if (!isNaN(level)) {
+                          sheet.getRange(rowIndex, batteryLevelColIdx).setValue(level);
+                     }
+                }
+             }
+          }
+        }
+      });
+    } else {
+      // Append new row
+      var newRow = headers.map(function(header) {
+        return data[header] || "";
+      });
+      // Parse and set initial battery level for new row
+      if (data["Notes"] && batteryLevelColIdx > 0) {
+           var batteryMatch = data["Notes"].match(/Battery: (\d+)%/);
+           if (batteryMatch && batteryMatch[1]) {
+                var level = parseInt(batteryMatch[1], 10);
+                if (!isNaN(level)) {
+                     newRow[batteryLevelColIdx - 1] = level; 
+                }
+           }
+      }
+      sheet.appendRow(newRow);
+    }
+
+    // Immediate alert triggers
+    if (['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN'].indexOf(data['Alarm Status']) > -1) {
+      var workerDataForEmail = {};
+       if (rowIndex !== -1) {
+           var updatedRowValues = sheet.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
+            headers.forEach(function(header, j) { 
+                 if (phoneHeaders.indexOf(header) > -1 && typeof updatedRowValues[j] === 'string' && updatedRowValues[j].charAt(0) === "'") {
+                     workerDataForEmail[header] = updatedRowValues[j].substring(1);
+                 } else {
+                     workerDataForEmail[header] = updatedRowValues[j];
+                 }
+            });
+       } else {
+           workerDataForEmail = { ...data }; // Clone data
+            phoneHeaders.forEach(function(header) {
+                 if (workerDataForEmail[header] && typeof workerDataForEmail[header] === 'string' && workerDataForEmail[header].charAt(0) === "'") {
+                      workerDataForEmail[header] = workerDataForEmail[header].substring(1);
+                 }
+            });
+       }
+      sendAlertEmail(workerDataForEmail, data['Alarm Status']);
+    }
+
+  } catch (err) {
+    Logger.log('Error in doPost: ' + err.toString() + ' | Data: ' + JSON.stringify(e.parameter));
+  } finally {
+    lock.releaseLock();
+  }
+
+  return ContentService.createTextOutput("Success");
+}
+
+// --- AUTOMATED TRIGGER FUNCTION ---
+function checkOverdueWorkers() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
+    var dataRange = sheet.getDataRange();
+    var data = dataRange.getValues();
+    var headers = data[0];
+    var now = new Date();
+    var phoneHeaders = ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"]; 
+
+    var resolvedStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'MONITOR_CLEARED_ALERT'];
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var worker = {};
+      headers.forEach(function(header, j) {
+        if (phoneHeaders.indexOf(header) > -1 && typeof row[j] === 'string' && row[j].charAt(0) === "'") {
+            worker[header] = row[j].substring(1);
+        } else {
+            worker[header] = row[j];
+        }
+      });
+
+      var status = worker['Alarm Status'];
+      
+      if (resolvedStatuses.indexOf(status) !== -1 || !worker['Anticipated Departure Time']) continue; 
+
+      var anticipatedDeparture = null;
+      try {
+            anticipatedDeparture = new Date(worker['Anticipated Departure Time']);
+            if (isNaN(anticipatedDeparture.getTime())) {
+                 Logger.log("Skipping row " + (i+1) + ": Invalid Anticipated Departure Time format - " + worker['Anticipated Departure Time']);
+                 continue; 
+            }
+      } catch (dateErr) {
+            Logger.log("Skipping row " + (i+1) + ": Error parsing Anticipated Departure Time - " + worker['Anticipated Departure Time']);
+            continue; 
+      }
+
+
+      if (now > anticipatedDeparture) {
+        var overdueMinutes = (now.getTime() - anticipatedDeparture.getTime()) / 60000;
+        var alertToSend = null;
+
+        if (overdueMinutes >= 60 && status !== 'ESCALATION_SENT') {
+          alertToSend = 'ESCALATION_SENT';
+        } else if (overdueMinutes >= 45 && status !== 'EMAIL_3_SENT' && status !== 'ESCALATION_SENT') {
+          alertToSend = 'EMAIL_3_SENT';
+        } else if (overdueMinutes >= 30 && status !== 'EMAIL_2_SENT' && status !== 'EMAIL_3_SENT' && status !== 'ESCALATION_SENT') {
+          alertToSend = 'EMAIL_2_SENT';
+        } else if (overdueMinutes >= 15 && ['ON SITE', 'ALERT SENT'].includes(status) ) { 
+          alertToSend = 'EMAIL_1_SENT';
+        }
+
+        if (alertToSend) {
+          sheet.getRange(i + 1, headers.indexOf('Alarm Status') + 1).setValue(alertToSend);
+          worker['Alarm Status'] = alertToSend; 
+          sendAlertEmail(worker, alertToSend);
+        }
+      }
+    }
+  } catch (err) {
+    Logger.log('Error in checkOverdueWorkers: ' + err.toString());
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// --- EMAIL HELPER FUNCTION ---
+function sendAlertEmail(workerData, alertType) {
+  var recipient = alertType === 'ESCALATION_SENT' ? workerData['Escalation Contact Email'] : workerData['Emergency Contact Email'];
+  var subject = '';
+  var body = '';
+
+  var locationName = workerData['Location Name'] || 'Not specified';
+  var locationAddress = workerData['Location Address'] || 'Not specified';
+  var workerName = workerData['Worker Name'] || 'Unknown Worker';
+  var workerPhone = workerData['Worker Phone Number'] || 'Not specified';
+  var anticipatedDepartureStr = 'Not specified';
+   try {
+       if (workerData['Anticipated Departure Time']) {
+           anticipatedDepartureStr = new Date(workerData['Anticipated Departure Time']).toLocaleString();
+       }
+   } catch(e){ Logger.log("Could not format Anticipated Departure Time for email: " + workerData['Anticipated Departure Time']); }
+
+  var locationLink = 'http://maps.google.com/?q=' + encodeURIComponent(locationAddress);
+  if (workerData['Last Known GPS']) {
+    locationLink = 'http://maps.google.com/?q=' + workerData['Last Known GPS'];
+  }
+
+  switch(alertType) {
+    case 'EMERGENCY - PANIC BUTTON':
+      subject = 'URGENT PANIC ALERT for ' + workerName;
+      body = '<p><strong>A PANIC ALERT has been triggered by ' + workerName + '.</strong></p> <p>This is a high-priority alert indicating an emergency situation.</p>';
+      break;
+    case 'DURESS_CODE_ACTIVATED':
+      subject = 'URGENT DURESS ALERT for ' + workerName;
+      body = '<p><strong>A SILENT DURESS ALARM has been triggered by ' + workerName + '.</strong></p> <p>The worker has entered their Duress PIN, suggesting they may be under threat and unable to call for help directly.</p>';
+      break;
+    case 'MISSED_CHECKIN':
+      subject = 'MISSED CHECK-IN ALERT for ' + workerName;
+      body = '<p><strong>' + workerName + ' has missed a scheduled "Are you OK?" check-in.</strong></p>';
+      break;
+    case 'ESCALATION_SENT':
+      subject = 'ESCALATION ALERT: ' + workerName + ' is 60+ mins Overdue';
+      body = '<p>This is an escalation alert. ' + workerName + ' is now more than 60 minutes overdue and has not responded to previous alerts.</p>';
+      break;
+    case 'EMAIL_1_SENT':
+    case 'EMAIL_2_SENT':
+    case 'EMAIL_3_SENT':
+      var minutesOverdue = 15;
+      if (alertType === 'EMAIL_2_SENT') minutesOverdue = 30;
+      if (alertType === 'EMAIL_3_SENT') minutesOverdue = 45;
+      subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
+      body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
+      break;
+    case 'ALERT SENT': 
+         subject = 'Overdue Alert: ' + workerName + ' is overdue';
+         body = '<p>' + workerName + ' became overdue and triggered an initial alert state.</p>';
+         break;
+    default: 
+      subject = 'OTG AppSuite Alert (' + alertType + ') for ' + workerName;
+      body = '<p>An automated alert (' + alertType.replace(/_/g,' ') + ') has been triggered for ' + workerName + '.</p>';
+      break;
+  }
+
+  var fullBody = '<html><body style="font-family: sans-serif; line-height: 1.6;">' + body + 
+                   '<hr style="margin: 20px 0;"><h3>Visit Details:</h3><ul>' + 
+                   '<li><strong>Worker:</strong> ' + workerName + '</li>' + 
+                   '<li><strong>Phone:</strong> ' + workerPhone + '</li>' +
+                   '<li><strong>Location:</strong> ' + locationName + '</li>' +
+                   '<li><strong>Address:</strong> ' + locationAddress + '</li>' +
+                   '<li><strong>Anticipated Departure:</strong> ' + anticipatedDepartureStr + '</li>' +
+                   '</ul><p style="font-size: 1.2em; font-weight: bold;"><a href="' + locationLink + '">View Location on Map</a></p>' +
+                   '<p style="font-size: 0.8em; color: #888;">This is an automated message from the %%ORGANISATION_NAME%% AppSuite System.</p></body></html>';
+
+  if (recipient) {
+    try {
+      MailApp.sendEmail({
+        to: recipient,
+        subject: subject,
+        htmlBody: fullBody,
+        name: "%%ORGANISATION_NAME%% Alert"
+      });
+      Logger.log('Email sent to ' + recipient + ' for alert type ' + alertType + ' for worker ' + workerName);
+    } catch (e) {
+      Logger.log('Failed to send email to ' + recipient + ' for worker ' + workerName + ': ' + e.toString());
+    }
+  } else {
+    Logger.log('Cannot send email: No recipient found for alert type ' + alertType + ' for worker ' + workerName);
+  }
+}
+
+// --- === REPORTING FUNCTIONS (REFACTORED v2.7) === ---
+
+/**
+ * Gathers all data and aggregates it by company and site.
+ * This is the core logic used by all report generators.
+ */
+function _aggregateDataForMonth(monthStr, ss) {
+  const visitsSheet = ss.getSheetByName(VISITS_SHEET_NAME);
+  const checklistSheet = ss.getSheetByName(CHECKLISTS_SHEET_NAME);
+
+  // --- Sanitize the month string ---
+  if (monthStr instanceof Date) {
+      var tz = ss.getSpreadsheetTimeZone();
+      monthStr = Utilities.formatDate(monthStr, tz, "yyyy-MM");
+  } else {
+      monthStr = String(monthStr).substring(0, 7); 
+  }
+  if (!/^\d{4}-\d{2}$/.test(monthStr)) {
+      throw new Error("Please enter the month in YYYY-MM format (e.g., 2025-10).");
+  }
+  
+  const parts = monthStr.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; 
+
+  const startDate = new Date(Date.UTC(year, month, 1)); 
+  const endDate = new Date(Date.UTC(year, month + 1, 1)); 
+  
+  // 2. Cache ALL Checklists, Template IDs, and Longitudinal IDs from sheet
+  const allChecklists = {}; 
+  const templateIdMap = {};
+  const longitudinalIdMap = {};
+  
+  const checklistData = checklistSheet.getDataRange().getValues();
+  const checklistHeaders = checklistData.shift();
+  const templateIdCol = checklistHeaders.indexOf("Report Template ID"); 
+  const longitudinalIdCol = checklistHeaders.indexOf(LONGITUDINAL_ID_HEADER);
+
+  checklistData.forEach(function(row) {
+      const companyName = row[0];
+      if (companyName) {
+          const questions = [];
+          for (let i = 1; i < checklistHeaders.length; i++) {
+              if (i === templateIdCol || i === longitudinalIdCol) continue; // Skip ID columns
+              if (row[i]) {
+                  const q = String(row[i]);
+                  if (!q.startsWith("#") && !q.startsWith("%")) {
+                     questions.push(q);
+                  }
+              } else {
+                  break; 
+              }
+          }
+          allChecklists[companyName] = questions; // Store all, including (Standard)
+          
+          if (templateIdCol !== -1 && row[templateIdCol]) {
+              templateIdMap[companyName] = row[templateIdCol];
+          }
+          if (longitudinalIdCol !== -1 && row[longitudinalIdCol]) {
+              longitudinalIdMap[companyName] = row[longitudinalIdCol];
+          }
+      }
+  });
+  
+  // 3. Define Standard Checklist FALLBACK (if (Standard) is missing from sheet)
+  const STANDARD_CHECKLIST_FALLBACK = [
+        "Safety check completed",
+        "Client goals reviewed",
+        "Next appointment scheduled",
+        "Visit notes recorded"
+  ];
+
+  // 4. Get all visit data
+  const dataRange = visitsSheet.getDataRange();
+  const allData = dataRange.getValues();
+  const visitsHeaders = allData.shift(); 
+
+  const companyCol = visitsHeaders.indexOf("Company Name");
+  const locationCol = visitsHeaders.indexOf("Location Name"); 
+  const arrivalCol = visitsHeaders.indexOf("Arrival Time"); 
+  const departureCol = visitsHeaders.indexOf("Actual Departure Time");
+  const reportCol = visitsHeaders.indexOf("Visit Report Data");
+  const workerCol = visitsHeaders.indexOf("Worker Name");
+
+  if (companyCol === -1 || locationCol === -1 || arrivalCol === -1 || departureCol === -1 || reportCol === -1 || workerCol === -1) {
+      throw new Error("Error: Could not find required columns ('Company Name', 'Location Name', 'Arrival Time', 'Actual Departure Time', 'Visit Report Data', 'Worker Name') in 'Visits' sheet.");
+  }
+
+  // 5. Process the data
+  const masterReport = {}; 
+  const combinedReport = {}; 
+
+  for (let i = 0; i < allData.length; i++) {
+    const row = allData[i];
+    
+    const companyName = row[companyCol];
+    const locationName = row[locationCol]; 
+    if (!companyName || !locationName) continue; 
+
+    const reportKey = companyName + " - " + locationName;
+
+    var departureTime = null;
+    try {
+      if(row[departureCol]){
+         departureTime = new Date(row[departureCol]); 
+         if (isNaN(departureTime.getTime())) departureTime = null;
+      }
+    } catch(e) {} 
+
+    if (departureTime && departureTime >= startDate && departureTime < endDate) {
+      
+      let questionList = allChecklists[companyName]; // Try custom form first
+      if (!questionList || questionList.length === 0) {
+         questionList = allChecklists["(Standard)"]; // Try (Standard) form from sheet
+      }
+      if (!questionList || questionList.length === 0) {
+        questionList = STANDARD_CHECKLIST_FALLBACK; // Use hardcoded fallback
+      }
+      
+      // Initialize the SITE-LEVEL report object
+      if (!masterReport[reportKey]) {
+        const initialTally = {};
+        questionList.forEach(q => initialTally[q] = 0);
+        masterReport[reportKey] = {
+          companyName: companyName, 
+          locationName: locationName, 
+          totalVisits: 0,
+          totalDurationMs: 0,
+          questionList: questionList, 
+          questionTally: initialTally, 
+          allCustomNoteHeaders: new Set(), 
+          notes: []
+        };
+      }
+      
+      // Initialize the COMBINED report object
+      if (!combinedReport[companyName]) {
+        const initialTally = {};
+        questionList.forEach(q => initialTally[q] = 0);
+        combinedReport[companyName] = {
+          companyName: companyName,
+          locationName: "All Sites", 
+          totalVisits: 0,
+          totalDurationMs: 0,
+          questionList: questionList, 
+          questionTally: initialTally, 
+          allCustomNoteHeaders: new Set(), 
+          notes: []
+        };
+      }
+      
+      const coData = masterReport[reportKey]; 
+      const combData = combinedReport[companyName];
+      
+      coData.totalVisits++;
+      combData.totalVisits++; 
+      
+      var arrivalTime = null;
+      var durationMs = 0; 
+      try {
+           if(row[arrivalCol]) {
+                arrivalTime = new Date(row[arrivalCol]);
+                if (isNaN(arrivalTime.getTime())) arrivalTime = null;
+           }
+      } catch(e) {}
+
+      if (arrivalTime) {
+           durationMs = departureTime.getTime() - arrivalTime.getTime();
+           if (durationMs > 0) {
+                coData.totalDurationMs += durationMs;
+                combData.totalDurationMs += durationMs; 
+           } else {
+               durationMs = 0;
+           }
+      }
+      
+      let mainNote = "";
+      let customNotes = {};
+      let durationMins = (durationMs / (1000 * 60));
+      
+      const reportJson = row[reportCol];
+      if (reportJson) {
+        try {
+          const report = JSON.parse(reportJson);
+          
+          if (report.checklist) {
+            for (const question in report.checklist) {
+              if (coData.questionTally.hasOwnProperty(question) && report.checklist[question] === true) { 
+                coData.questionTally[question]++; 
+                combData.questionTally[question]++; 
+              }
+            }
+          }
+          
+          mainNote = report.notes || "";
+          
+          if (report.custom_notes) {
+            customNotes = report.custom_notes;
+            for (const header in customNotes) {
+                coData.allCustomNoteHeaders.add(header); 
+                combData.allCustomNoteHeaders.add(header); 
+            }
+          }
+
+        } catch (e) {
+          Logger.log(`Could not parse report data in row ${i + 2}: ${reportJson}`);
+          mainNote = "--- Error Parsing Report Data ---";
+        }
+      } else {
+         mainNote = "--- No Report Data Submitted ---";
+      }
+      
+      const noteEntry = {
+            date: departureTime, 
+            worker: row[workerCol], 
+            mainNote: mainNote, 
+            customNotes: customNotes,
+            durationMins: durationMins
+      };
+      coData.notes.push(noteEntry);
+      combData.notes.push(noteEntry); 
+    }
+  }
+  
+  return { 
+    masterReport: masterReport, 
+    combinedReport: combinedReport, 
+    templateIdMap: templateIdMap, 
+    longitudinalIdMap: longitudinalIdMap,
+    monthStr: monthStr
+  };
+}
+
+
+/**
+ * Helper function to run AI correction on an array of notes.
+ */
+function runAICorrection(notesArray, companyName) {
+  let aiCorrectionFailed = false;
+  
+  if (GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE" && notesArray.length > 0) {
+    Logger.log("Starting AI note correction for " + companyName);
+    try {
+      const rawNotes = [];
+      notesArray.forEach(entry => {
+        rawNotes.push(entry.mainNote); // Add the main note
+        if (entry.customNotes) {
+          Object.keys(entry.customNotes).forEach(key => {
+            rawNotes.push(entry.customNotes[key]); // Add each custom note
+          });
+        }
+      });
+
+      const nonEmptyNotes = rawNotes.filter(n => n && n.trim() !== "");
+      if (nonEmptyNotes.length === 0) {
+        Logger.log("No notes to correct for " + companyName);
+        return { correctedNotesData: notesArray, aiCorrectionFailed: false };
+      }
+
+      const systemPrompt = "You are a helpful proofreading assistant. You will be given a JSON array of visit notes. Correct any spelling and grammar mistakes in each note to professional New Zealand English. Do not add new information or change the meaning. Respond with a JSON array of the same length, containing the corrected notes. If a note is empty or fine, return it as-is.";
+      
+      const schema = {
+        "type": "ARRAY",
+        "items": { "type": "STRING" }
+      };
+      
+      const payload = {
+        contents: [{ parts: [{ text: JSON.stringify(nonEmptyNotes) }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema
+        }
+      };
+      
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+      
+      const options = {
+        method: 'POST',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true 
+      };
+      
+      const response = UrlFetchApp.fetch(apiUrl, options);
+      const responseCode = response.getResponseCode();
+      
+      if (responseCode === 200) {
+        const result = JSON.parse(response.getContentText());
+        const correctedNotes = JSON.parse(result.candidates[0].content.parts[0].text);
+        
+        if (correctedNotes.length === nonEmptyNotes.length) {
+          let correctedIndex = 0;
+          notesArray.forEach(entry => {
+            if (entry.mainNote && entry.mainNote.trim() !== "") {
+              entry.mainNote = correctedNotes[correctedIndex++];
+            }
+            if (entry.customNotes) {
+              Object.keys(entry.customNotes).forEach(key => {
+                if (entry.customNotes[key] && entry.customNotes[key].trim() !== "") {
+                  entry.customNotes[key] = correctedNotes[correctedIndex++];
+                }
+              });
+            }
+          });
+          Logger.log("Successfully corrected notes for " + companyName);
+        } else {
+          Logger.log("AI returned different number of notes. Skipping correction for " + companyName);
+          aiCorrectionFailed = true; 
+        }
+      } else {
+          Logger.log("AI API Error for " + companyName + ": " + response.getContentText());
+          aiCorrectionFailed = true; 
+      }
+    } catch(err) {
+      Logger.log("Error during AI note correction for " + companyName + ": " + err.toString());
+      aiCorrectionFailed = true; 
+    }
+  }
+  return { correctedNotesData: notesArray, aiCorrectionFailed: aiCorrectionFailed };
+}
+
+/**
+ * Helper function to write aggregated data to a report sheet.
+ */
+function writeReportToTab(reportSheet, coData, reportTitle, monthStr, aiCorrectionFailed, allCustomNoteHeaders) {
+  let outputRow = 1; 
+
+  reportSheet.getRange(outputRow, 1).setValue(reportTitle).setFontWeight("bold").setBackground("#4a5568").setFontColor("#ffffff");
+  reportSheet.getRange(outputRow, 1, 1, 4 + allCustomNoteHeaders.length).merge(); // Merge across all columns
+  outputRow++;
+  
+  // Write Stats
+  reportSheet.getRange(outputRow, 1).setValue("Report Month:").setFontWeight("bold");
+  reportSheet.getRange(outputRow, 2).setValue(monthStr);
+  outputRow++;
+  reportSheet.getRange(outputRow, 1).setValue("Total Visits:").setFontWeight("bold");
+  reportSheet.getRange(outputRow, 2).setValue(coData.totalVisits);
+  outputRow++;
+  
+  reportSheet.getRange(outputRow, 1).setValue("Total Hours On-Site (Calculated):").setFontWeight("bold");
+  const totalHours = coData.totalDurationMs / (1000 * 60 * 60); 
+  reportSheet.getRange(outputRow, 2).setValue(totalHours.toFixed(2));
+  outputRow += 2; 
+
+  // Write Checklist Totals
+  reportSheet.getRange(outputRow, 1).setValue("Checklist Totals").setFontWeight("bold");
+  reportSheet.getRange(outputRow, 2).setValue("Times Ticked").setFontWeight("bold");
+  outputRow++;
+  
+  if (coData.questionList.length > 0) {
+      for (const question of coData.questionList) {
+          reportSheet.getRange(outputRow, 1).setValue(question);
+          reportSheet.getRange(outputRow, 2).setValue(coData.questionTally[question]);
+          outputRow++;
+      }
+  } else {
+       reportSheet.getRange(outputRow, 1).setValue("No checklist data recorded.").setFontStyle("italic");
+       outputRow++;
+  }
+  
+  outputRow++; 
+  
+  if (aiCorrectionFailed) {
+    reportSheet.getRange(outputRow, 1, 1, 4 + allCustomNoteHeaders.length).setValue("Note: AI spelling/grammar check failed. The notes below are uncorrected.")
+      .setFontColor("#ff0000") // Red
+      .setFontWeight("bold")
+      .setFontStyle("italic")
+      .setHorizontalAlignment("center")
+      .merge();
+    outputRow++;
+  }
+
+  // --- MODIFIED: Write All Notes (in dynamic columns) ---
+  let col = 1;
+  reportSheet.getRange(outputRow, col++).setValue("Date").setFontWeight("bold");
+  reportSheet.getRange(outputRow, col++).setValue("Worker").setFontWeight("bold");
+  reportSheet.getRange(outputRow, col++).setValue("Duration (Mins)").setFontWeight("bold");
+  reportSheet.getRange(outputRow, col++).setValue("Note (Standard)").setFontWeight("bold");
+  // Add custom note headers
+  allCustomNoteHeaders.forEach(header => {
+      reportSheet.getRange(outputRow, col++).setValue(header).setFontWeight("bold");
+  });
+  outputRow++;
+  
+  let monthTotalMinutes = 0; 
+  
+  if (coData.notes.length > 0) {
+      coData.notes.sort((a,b) => a.date.getTime() - b.date.getTime()); // Sort notes by date
+      
+      coData.notes.forEach(noteEntry => {
+          let noteCol = 1;
+          reportSheet.getRange(outputRow, noteCol++).setValue(noteEntry.date).setNumberFormat("yyyy-mm-dd"); 
+          reportSheet.getRange(outputRow, noteCol++).setValue(noteEntry.worker);
+          reportSheet.getRange(outputRow, noteCol++).setValue(noteEntry.durationMins.toFixed(0));
+          reportSheet.getRange(outputRow, noteCol++).setValue(noteEntry.mainNote).setWrap(true);
+
+          // Add custom notes in the correct columns
+          allCustomNoteHeaders.forEach(header => {
+              reportSheet.getRange(outputRow, noteCol++).setValue(noteEntry.customNotes[header] || "").setWrap(true);
+          });
+
+          monthTotalMinutes += noteEntry.durationMins;
+          outputRow++;
+      });
+  } else {
+       reportSheet.getRange(outputRow, 1, 1, 4 + allCustomNoteHeaders.length).setValue("No notes recorded for this period.").setFontStyle("italic").merge();
+       outputRow++;
+  }
+  
+  // Add Total row for this company
+  reportSheet.getRange(outputRow, 2).setValue("Total Hours (from visits):").setFontWeight("bold");
+  reportSheet.getRange(outputRow, 3).setValue(monthTotalMinutes / 60).setNumberFormat("0.00").setFontWeight("bold");
+  
+  // Auto-resize columns on the new sheet
+  reportSheet.autoResizeColumn(1);
+  reportSheet.autoResizeColumn(2);
+  reportSheet.autoResizeColumn(4);
+  reportSheet.setColumnWidth(3, 300); // Set fixed width for main note
+  
+  // Resize custom note columns
+  for (let i = 0; i < allCustomNoteHeaders.length; i++) {
+    reportSheet.setColumnWidth(5 + i, 250);
+  }
+}
+
+
+/**
+ * Generates a master report for ALL companies for a specified month.
+ * Creates a new, separate tab for each COMPANY-SITE combination.
+ */
+function generateMasterMonthlyReport() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const controlSheet = ss.getSheetByName("Master Report");
+  
+  if (!controlSheet) {
+    SpreadsheetApp.getUi().alert("Error: 'Master Report' sheet not found.");
+    return;
+  }
+  
+  let monthStr = controlSheet.getRange("B1").getValue(); 
+  if (!monthStr) {
+    SpreadsheetApp.getUi().alert("Please enter a Month (YYYY-MM) in cell B1.");
+    return;
+  }
+  
+  try {
+    // 1. Aggregate all data
+    const aggregatedData = _aggregateDataForMonth(monthStr, ss);
+    if (!aggregatedData) return; // Error was already handled
+    
+    const { masterReport, combinedReport } = aggregatedData;
+    monthStr = aggregatedData.monthStr; // Get the sanitized month string
+
+    // 2. Clear old report tabs
+    const allSheets = ss.getSheets();
+    for (let i = 0; i < allSheets.length; i++) {
+      const sheetName = allSheets[i].getName();
+      if (sheetName.startsWith(REPORT_TAB_PREFIX)) {
+        ss.deleteSheet(allSheets[i]);
+      }
+    }
+    SpreadsheetApp.flush(); 
+
+    // 3. Write Site-Specific Reports
+    const allReportKeys = Object.keys(masterReport).sort(); 
+    for (const reportKey of allReportKeys) {
+      const coData = masterReport[reportKey];
+      const newSheetName = REPORT_TAB_PREFIX + reportKey.replace(/[\/\\?*\[\]]/g, '-').substring(0, 80); 
+      let newSheet = ss.insertSheet(newSheetName);
+      
+      const aiResult = runAICorrection(coData.notes, reportKey);
+      coData.notes = aiResult.correctedNotesData;
+      const sortedCustomHeaders = Array.from(coData.allCustomNoteHeaders).sort();
+      
+      writeReportToTab(newSheet, coData, reportKey, monthStr, aiResult.aiCorrectionFailed, sortedCustomHeaders);
+    }
+    
+    // 4. Write Combined Company Reports
+    const allCombinedCompanyNames = Object.keys(combinedReport).sort();
+    for (const companyName of allCombinedCompanyNames) {
+      const coData = combinedReport[companyName];
+      const sitesForThisCompany = allReportKeys.filter(key => key.startsWith(companyName + " - ")).length;
+      
+      if (sitesForThisCompany > 1) { 
+        const newSheetName = REPORT_TAB_PREFIX + companyName.replace(/[\/\\?*\[\]]/g, '-') + " (Combined)";
+        let newSheet = ss.insertSheet(newSheetName);
+        
+        const aiResult = runAICorrection(coData.notes, companyName + " (Combined)");
+        coData.notes = aiResult.correctedNotesData;
+        const sortedCustomHeaders = Array.from(coData.allCustomNoteHeaders).sort();
+        
+        writeReportToTab(newSheet, coData, companyName + " (Combined)", monthStr, aiResult.aiCorrectionFailed, sortedCustomHeaders);
+      }
+    }
+    
+    SpreadsheetApp.getUi().alert("Master Report Generated! New tabs have been created for each company site and combined totals.");
+
+  } catch (e) {
+    Logger.log(e);
+    SpreadsheetApp.getUi().alert("An error occurred: " + e.message);
+  }
+}
+
+
+/**
+ * Creates a Google Doc for each company report and saves them as PDFs in a
+ * specified Google Drive folder.
+ */
+function generateAllPdfReports() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const controlSheet = ss.getSheetByName("Master Report");
+  
+  if (PDF_OUTPUT_FOLDER_ID === "YOUR_OUTPUT_FOLDER_ID_HERE" || DEFAULT_REPORT_TEMPLATE_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE") {
+    SpreadsheetApp.getUi().alert("Error: PDF_OUTPUT_FOLDER_ID or DEFAULT_REPORT_TEMPLATE_ID not set at the top of the script.");
+    return;
+  }
+  
+  let outputFolder;
+  try {
+    outputFolder = DriveApp.getFolderById(PDF_OUTPUT_FOLDER_ID);
+  } catch(e) {
+    SpreadsheetApp.getUi().alert("Error: Could not find PDF Output Folder. Check ID in script (line 16).");
+    return;
+  }
+  
+  if (!controlSheet) {
+    SpreadsheetApp.getUi().alert("Error: 'Master Report' sheet not found.");
+    return;
+  }
+  
+  let monthStr = controlSheet.getRange("B1").getValue(); 
+  if (!monthStr) {
+    SpreadsheetApp.getUi().alert("Please enter a Month (YYYY-MM) in cell B1.");
+    return;
+  }
+  
+  try {
+    // 1. Aggregate all data
+    const aggregatedData = _aggregateDataForMonth(monthStr, ss);
+    if (!aggregatedData) return; // Error was handled
+    
+    const { combinedReport, templateIdMap } = aggregatedData;
+    monthStr = aggregatedData.monthStr; // Get the sanitized month string
+
+    // 2. Write the consolidated report to NEW GOOGLE DOCS/PDFS
+    SpreadsheetApp.flush(); 
+    
+    const allCombinedCompanyNames = Object.keys(combinedReport).sort();
+    
+    for (const companyName of allCombinedCompanyNames) {
+      const coData = combinedReport[companyName]; // Get the combined data
+      
+      // Find the correct template ID
+      let templateId = templateIdMap[companyName];
+      if (!templateId) {
+          templateId = templateIdMap["(Standard)"];
+      }
+      if (!templateId) {
+          templateId = DEFAULT_REPORT_TEMPLATE_ID; // Final fallback
+      }
+      
+      // Run AI Correction
+      const aiResult = runAICorrection(coData.notes, companyName + " (Combined)");
+      coData.notes = aiResult.correctedNotesData;
+      
+      // Create the new document
+      const newDocFile = DriveApp.getFileById(templateId).makeCopy(outputFolder);
+      const newDoc = DocumentApp.openById(newDocFile.getId());
+      const body = newDoc.getBody();
+      
+      // Replace simple tags
+      const totalHours = (coData.totalDurationMs / (1000 * 60 * 60)).toFixed(2);
+      body.replaceText("{{CompanyName}}", coData.companyName);
+      body.replaceText("{{ReportMonth}}", monthStr);
+      body.replaceText("{{TotalVisits}}", coData.totalVisits);
+      body.replaceText("{{TotalHours}}", totalHours);
+      
+      // Add AI failure warning if present
+      if(aiResult.aiCorrectionFailed) {
+         body.insertParagraph(0, "Note: AI spelling/grammar check failed. The notes below are uncorrected.")
+              .setForegroundColor("#FF0000").setBold(true).setItalic(true);
+      }
+
+      // Build and insert tables
+      buildTableInDoc(body, "{{ChecklistTable}}", [["Checklist Item", "Times Ticked"]], coData.questionList.map(q => [q, coData.questionTally[q] || 0]));
+      
+      const sortedCustomHeaders = Array.from(coData.allCustomNoteHeaders).sort();
+      const noteTableHeaders = ["Date", "Worker", "Duration (Mins)", "Note (Standard)"].concat(sortedCustomHeaders);
+      
+      const noteTableData = coData.notes.sort((a,b) => a.date.getTime() - b.date.getTime()).map(noteEntry => {
+          const row = [
+              noteEntry.date.toLocaleDateString(), 
+              noteEntry.worker, 
+              noteEntry.durationMins.toFixed(0),
+              noteEntry.mainNote
+          ];
+          sortedCustomHeaders.forEach(header => {
+              row.push(noteEntry.customNotes[header] || "");
+          });
+          return row;
+      });
+      
+      buildTableInDoc(body, "{{NotesTable}}", [noteTableHeaders], noteTableData);
+      
+      // Save and close
+      newDoc.saveAndClose();
+      
+      // Create PDF
+      const pdfBlob = newDoc.getAs(MimeType.PDF);
+      const pdfFile = outputFolder.createFile(pdfBlob);
+      pdfFile.setName(`Report - ${coData.companyName} - ${monthStr}.pdf`);
+      
+      // Optional: Delete the temporary Google Doc
+      DriveApp.getFileById(newDoc.getId()).setTrashed(true);
+    }
+    
+    SpreadsheetApp.getUi().alert("PDF Reports Generated! Check your Google Drive folder: " + outputFolder.getName());
+
+  } catch (e) {
+    Logger.log(e);
+    SpreadsheetApp.getUi().alert("An error occurred: " + e.message);
+  }
+}
+
+/**
+ * Helper function to find a tag and replace it with a formatted table in a Google Doc.
+ */
+function buildTableInDoc(body, tag, headers, data) {
+    const searchResult = body.findText(tag);
+    if (!searchResult) {
+        Logger.log("Could not find tag: " + tag);
+        return; // Tag not in template, skip
+    }
+    
+    const el = searchResult.getElement();
+    const elParent = el.getParent(); // This is the Paragraph
+    
+    // --- === BUG FIX: Check if parent is BODY or other element === ---
+    let bodySection;
+    let index;
+
+    if (elParent.getType() === DocumentApp.ElementType.BODY_SECTION) {
+        // This shouldn't happen, but as a fallback
+        bodySection = elParent;
+        index = bodySection.getChildIndex(el); // This is likely wrong, but el is text
+        el.asText().setText(""); // Clear the text
+    } else {
+        // This is the expected path
+        bodySection = elParent.getParent(); // This is the Body
+        index = bodySection.getChildIndex(elParent); // Index of the paragraph
+        
+        // Remove the paragraph with the tag
+        elParent.removeFromParent();
+    }
+    // --- === END BUG FIX === ---
+
+    // Define table styles
+    const headerStyle = {};
+    headerStyle[DocumentApp.Attribute.BOLD] = true;
+    headerStyle[DocumentApp.Attribute.BACKGROUND_COLOR] = '#4a5568';
+    headerStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#ffffff';
+    
+    const cellStyle = {};
+    cellStyle[DocumentApp.Attribute.BORDER_WIDTH] = 1;
+    cellStyle[DocumentApp.Attribute.BORDER_COLOR] = '#cccccc';
+    cellStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#000000'; // --- FIX: Set text to black ---
+
+    // Add headers
+    let table = bodySection.insertTable(index, headers); // Insert table at the paragraph's old index
+    let headerRow = table.getRow(0);
+    for(let i=0; i < headerRow.getNumCells(); i++) {
+        headerRow.getCell(i).setAttributes(headerStyle).setAttributes(cellStyle);
+    }
+
+    // Add data rows
+    data.forEach(function(rowData) {
+        let row = table.appendTableRow();
+        rowData.forEach(function(cellData) {
+            row.appendTableCell(cellData).setAttributes(cellStyle);
+        });
+    });
+    
+    // Apply cell styles to the rest of the table
+    for(let i=1; i < table.getNumRows(); i++) {
+        for(let j=0; j < table.getRow(i).getNumCells(); j++) {
+            table.getRow(i).getCell(j).setAttributes(cellStyle);
+        }
+    }
+}
+
+// --- === NEW: LONGITUDINAL REPORTING FUNCTIONS === ---
+
+/**
+ * Utility function to be run ONCE per company to create their data sheet.
+ * Assign this to a menu item or button, or run from the editor.
+ */
+function createLongitudinalWorkbook() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ui = SpreadsheetApp.getUi();
+  
+  // 1. Get Company Name
+  const response = ui.prompt("Create Longitudinal Report", "Enter the exact Company Name (must match `Checklists` sheet):", ui.ButtonSet.OK_CANCEL);
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+  const companyName = response.getResponseText().trim();
+  if (!companyName) return;
+  
+  const checklistSheet = ss.getSheetByName(CHECKLISTS_SHEET_NAME);
+  if (!checklistSheet) {
+    ui.alert("Error: 'Checklists' sheet not found.");
+    return;
+  }
+  
+  // 2. Find this company's question list
+  const checklistData = checklistSheet.getDataRange().getValues();
+  const checklistHeaders = checklistData.shift();
+  const longitudinalIdColIdx = checklistHeaders.indexOf(LONGITUDINAL_ID_HEADER);
+  const templateIdColIdx = checklistHeaders.indexOf("Report Template ID");
+  
+  if (longitudinalIdColIdx === -1) {
+    ui.alert("Error: Could not find header '" + LONGITUDINAL_ID_HEADER + "' in 'Checklists' sheet. Please add it and try again.");
+    return;
+  }
+  
+  let questionList = null;
+  let companyRowIdx = -1;
+  
+  for (let i = 0; i < checklistData.length; i++) {
+    if (checklistData[i][0] === companyName) {
+      companyRowIdx = i + 2; // +1 for 0-index, +1 for header
+      const questions = [];
+      for (let j = 1; j < checklistHeaders.length; j++) {
+        if (j === longitudinalIdColIdx || j === templateIdColIdx) continue;
+        if (checklistData[i][j]) {
+          const q = String(checklistData[i][j]);
+          if (!q.startsWith("#") && !q.startsWith("%")) {
+            questions.push(q);
+          }
+        } else {
+          break;
+        }
+      }
+      questionList = questions;
+      break;
+    }
+  }
+
+  if (companyRowIdx === -1) {
+    ui.alert("Error: Could not find company '" + companyName + "' in Checklists sheet.");
+    return;
+ui.alert("Error: Could not find company '" + companyName + "' in Checklists sheet.");
+    return;
+  }
+
+  // 3. Create the new Spreadsheet
+  const newSheet = SpreadsheetApp.create(`Longitudinal Report - ${companyName}`);
+  const newSheetId = newSheet.getId();
+  const dataTab = newSheet.getSheets()[0];
+  dataTab.setName("Data");
+  
+  // 4. Create Headers in the new sheet
+  const newHeaders = ["Month", "Total Visits", "Total Hours"].concat(questionList);
+  dataTab.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]).setFontWeight("bold");
+  dataTab.setFrozenRows(1);
+  
+  // 5. Link the new Sheet ID back to the Checklists sheet
+  checklistSheet.getRange(companyRowIdx, longitudinalIdColIdx + 1).setValue(newSheetId);
+  
+  ui.alert(`Success! New workbook created for ${companyName}. The ID has been linked. You can now build charts in that new sheet.`);
+}
+
+/**
+ * Appends the latest month's data to each company's longitudinal report.
+ * Assign this to a button on the "Master Report" sheet.
+ */
+function runAllLongitudinalReports() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const controlSheet = ss.getSheetByName("Master Report");
+  
+  if (!controlSheet) {
+    SpreadsheetApp.getUi().alert("Error: 'Master Report' sheet not found.");
+    return;
+  }
+  
+  let monthStr = controlSheet.getRange("B1").getValue(); 
+  if (!monthStr) {
+    SpreadsheetApp.getUi().alert("Please enter a Month (YYYY-MM) in cell B1.");
+    return;
+  }
+  
+  try {
+    // 1. Aggregate all data
+    const aggregatedData = _aggregateDataForMonth(monthStr, ss);
+    if (!aggregatedData) return; // Error was already handled
+    
+    const { combinedReport, longitudinalIdMap } = aggregatedData;
+    monthStr = aggregatedData.monthStr; // Get the sanitized month string
+
+    // 2. Loop through all companies that have a longitudinal sheet ID
+    const allCompanyNames = Object.keys(longitudinalIdMap);
+    if (allCompanyNames.length === 0) {
+      throw new Error("No companies have a '" + LONGITUDINAL_ID_HEADER + "' set in the 'Checklists' sheet.");
+    }
+    
+    SpreadsheetApp.flush(); 
+    let successCount = 0;
+    
+    for (const companyName of allCompanyNames) {
+      const longitudinalSheetId = longitudinalIdMap[companyName];
+      if (!longitudinalSheetId) {
+         Logger.log(`Skipping ${companyName}: No Longitudinal Report Sheet ID found.`);
+         continue;
+      }
+      
+      const coData = combinedReport[companyName];
+      
+      if (!coData) {
+         Logger.log(`No data found for ${companyName} for ${monthStr}. Skipping.`);
+         continue;
+      }
+      
+      try {
+        const reportWb = SpreadsheetApp.openById(longitudinalSheetId);
+        const reportSheet = reportWb.getSheets()[0];
+        const headers = reportSheet.getRange(1, 1, 1, reportSheet.getLastColumn()).getValues()[0];
+        
+        // Build the new row
+        const newRow = [];
+        newRow.push(monthStr); // Column 1: Month
+        newRow.push(coData.totalVisits); // Column 2: Total Visits
+        newRow.push((coData.totalDurationMs / (1000 * 60 * 60)).toFixed(2)); // Column 3: Total Hours
+        
+        // Match checklist data to headers
+        for (let i = 3; i < headers.length; i++) {
+          const question = headers[i];
+          const tally = coData.questionTally[question] || 0;
+          newRow.push(tally);
+        }
+        
+        // Append the new row
+        reportSheet.appendRow(newRow);
+        successCount++;
+        Logger.log(`Successfully appended data for ${companyName}.`);
+        
+      } catch (e) {
+        Logger.log(`Error processing longitudinal report for ${companyName}: ${e.message}`);
+      }
+    }
+    
+    SpreadsheetApp.getUi().alert(`Longitudinal Data Append Complete! Successfully updated ${successCount} of ${allCompanyNames.length} company workbooks.`);
+
+  } catch (e) {
+    Logger.log(e);
+    SpreadsheetApp.getUi().alert("An error occurred: " + e.message);
+  }
+}
+
+/**
+ * Helper function to find a tag and replace it with a formatted table in a Google Doc.
+ */
+function buildTableInDoc(body, tag, headers, data) {
+    const searchResult = body.findText(tag);
+    if (!searchResult) {
+        Logger.log("Could not find tag: " + tag);
+        return; // Tag not in template, skip
+    }
+    
+    const el = searchResult.getElement();
+    const elParent = el.getParent(); // This is the Paragraph
+    
+    // --- === BUG FIX: Check if parent is BODY or other element === ---
+    let bodySection;
+    let index;
+
+    if (elParent.getType() === DocumentApp.ElementType.BODY_SECTION) {
+        // This shouldn't happen, but as a fallback
+        bodySection = elParent;
+        index = bodySection.getChildIndex(el); // This is likely wrong, but el is text
+        el.asText().setText(""); // Clear the text
+    } else {
+        // This is the expected path
+        bodySection = elParent.getParent(); // This is the Body
+        index = bodySection.getChildIndex(elParent); // Index of the paragraph
+        
+        // Remove the paragraph with the tag
+        elParent.removeFromParent();
+    }
+    // --- === END BUG FIX === ---
+
+    // Define table styles
+    const headerStyle = {};
+    headerStyle[DocumentApp.Attribute.BOLD] = true;
+    headerStyle[DocumentApp.Attribute.BACKGROUND_COLOR] = '#4a5568';
+    headerStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#ffffff';
+    
+    const cellStyle = {};
+    cellStyle[DocumentApp.Attribute.BORDER_WIDTH] = 1;
+    cellStyle[DocumentApp.Attribute.BORDER_COLOR] = '#cccccc';
+    cellStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#000000'; // --- FIX: Set text to black ---
+
+    // Add headers
+    let table = bodySection.insertTable(index, headers); // Insert table at the paragraph's old index
+    let headerRow = table.getRow(0);
+    for(let i=0; i < headerRow.getNumCells(); i++) {
+        headerRow.getCell(i).setAttributes(headerStyle).setAttributes(cellStyle);
+    }
+
+    // Add data rows
+    data.forEach(function(rowData) {
+        let row = table.appendTableRow();
+        rowData.forEach(function(cellData) {
+            row.appendTableCell(cellData).setAttributes(cellStyle);
+        });
+    });
+    
+    // Apply cell styles to the rest of the table
+    for(let i=1; i < table.getNumRows(); i++) {
+        for(let j=0; j < table.getRow(i).getNumCells(); j++) {
+            table.getRow(i).getCell(j).setAttributes(cellStyle);
+        }
+    }
+}
