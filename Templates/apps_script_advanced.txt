@@ -1,5 +1,6 @@
 // ##### --------------------------------------------------- #####
-// ##### On-the-Go AppSuite - ADVANCED Backend (Safety + Reporting) #####
+// ##### On-the-Go AppSuite - ADVANCED Backend Script (Reporting) #####
+// ##### v2.7 (with TextBelt SMS)
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -292,11 +293,55 @@ function checkOverdueWorkers() {
   }
 }
 
-// --- EMAIL HELPER FUNCTION ---
+// --- NEW: FREE SMS FUNCTION (via TextBelt) ---
+/**
+ * Sends an SMS using the TextBelt free tier.
+ * 1 free SMS per phone number per day.
+ * @param {string} phoneNumber - The full international phone number (e.g., +6421123456).
+ * @param {string} message - The text message (max 160 chars).
+ */
+function sendSmsViaGateway(phoneNumber, message) {
+  if (!phoneNumber) {
+    Logger.log("SMS failed: No phone number provided.");
+    return;
+  }
+  
+  const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
+  
+  const payload = {
+    phone: cleanPhone,
+    message: message.substr(0, 160), // Enforce SMS max length
+    key: "textbelt" // Use the public free tier key
+  };
+
+  try {
+    const response = UrlFetchApp.fetch("https://textbelt.com/text", {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    
+    const result = JSON.parse(response.getContentText());
+    if (result.success) {
+      Logger.log("Successfully sent free SMS to: " + cleanPhone);
+    } else {
+      Logger.log("Free SMS failed (quota likely used, or invalid number): " + result.error);
+    }
+  } catch (e) {
+    Logger.log("SMS Error: " + e.toString());
+  }
+}
+
+
+// --- EMAIL HELPER FUNCTION (Now with SMS) ---
 function sendAlertEmail(workerData, alertType) {
-  var recipient = alertType === 'ESCALATION_SENT' ? workerData['Escalation Contact Email'] : workerData['Emergency Contact Email'];
+  var isEscalation = alertType === 'ESCALATION_SENT';
+  var recipient = isEscalation ? workerData['Escalation Contact Email'] : workerData['Emergency Contact Email'];
+  var phoneRecipient = isEscalation ? workerData['Escalation Contact Number'] : workerData['Emergency Contact Number'];
   var subject = '';
   var body = '';
+  var smsMessage = '';
 
   var locationName = workerData['Location Name'] || 'Not specified';
   var locationAddress = workerData['Location Address'] || 'Not specified';
@@ -318,18 +363,22 @@ function sendAlertEmail(workerData, alertType) {
     case 'EMERGENCY - PANIC BUTTON':
       subject = 'URGENT PANIC ALERT for ' + workerName;
       body = '<p><strong>A PANIC ALERT has been triggered by ' + workerName + '.</strong></p> <p>This is a high-priority alert indicating an emergency situation.</p>';
+      smsMessage = `PANIC ALERT: ${workerName} at ${locationName}. Location: ${locationLink}`;
       break;
     case 'DURESS_CODE_ACTIVATED':
       subject = 'URGENT DURESS ALERT for ' + workerName;
       body = '<p><strong>A SILENT DURESS ALARM has been triggered by ' + workerName + '.</strong></p> <p>The worker has entered their Duress PIN, suggesting they may be under threat and unable to call for help directly.</p>';
+      smsMessage = `DURESS ALERT: ${workerName} at ${locationName}. Location: ${locationLink}`;
       break;
     case 'MISSED_CHECKIN':
       subject = 'MISSED CHECK-IN ALERT for ' + workerName;
       body = '<p><strong>' + workerName + ' has missed a scheduled "Are you OK?" check-in.</strong></p>';
+      smsMessage = `MISSED CHECK-IN: ${workerName} at ${locationName}. Location: ${locationLink}`;
       break;
     case 'ESCALATION_SENT':
       subject = 'ESCALATION ALERT: ' + workerName + ' is 60+ mins Overdue';
       body = '<p>This is an escalation alert. ' + workerName + ' is now more than 60 minutes overdue and has not responded to previous alerts.</p>';
+      smsMessage = `ESCALATION: ${workerName} is 60+ mins overdue at ${locationName}. Location: ${locationLink}`;
       break;
     case 'EMAIL_1_SENT':
     case 'EMAIL_2_SENT':
@@ -339,14 +388,17 @@ function sendAlertEmail(workerData, alertType) {
       if (alertType === 'EMAIL_3_SENT') minutesOverdue = 45;
       subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
       body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
+      smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Location: ${locationLink}`;
       break;
     case 'ALERT SENT': 
          subject = 'Overdue Alert: ' + workerName + ' is overdue';
          body = '<p>' + workerName + ' became overdue and triggered an initial alert state.</p>';
+         smsMessage = `OVERDUE: ${workerName} is overdue at ${locationName}. Location: ${locationLink}`;
          break;
     default: 
       subject = 'OTG AppSuite Alert (' + alertType + ') for ' + workerName;
       body = '<p>An automated alert (' + alertType.replace(/_/g,' ') + ') has been triggered for ' + workerName + '.</p>';
+      // No SMS for non-critical alerts
       break;
   }
 
@@ -374,6 +426,11 @@ function sendAlertEmail(workerData, alertType) {
     }
   } else {
     Logger.log('Cannot send email: No recipient found for alert type ' + alertType + ' for worker ' + workerName);
+  }
+  
+  // --- NEW: Send SMS in parallel ---
+  if (smsMessage && phoneRecipient) {
+    sendSmsViaGateway(phoneRecipient, smsMessage);
   }
 }
 
@@ -994,308 +1051,4 @@ function generateAllPdfReports() {
       DriveApp.getFileById(newDoc.getId()).setTrashed(true);
     }
     
-    SpreadsheetApp.getUi().alert("PDF Reports Generated! Check your Google Drive folder: " + outputFolder.getName());
-
-  } catch (e) {
-    Logger.log(e);
-    SpreadsheetApp.getUi().alert("An error occurred: " + e.message);
-  }
-}
-
-/**
- * Helper function to find a tag and replace it with a formatted table in a Google Doc.
- */
-function buildTableInDoc(body, tag, headers, data) {
-    const searchResult = body.findText(tag);
-    if (!searchResult) {
-        Logger.log("Could not find tag: " + tag);
-        return; // Tag not in template, skip
-    }
-    
-    const el = searchResult.getElement();
-    const elParent = el.getParent(); // This is the Paragraph
-    
-    // --- === BUG FIX: Check if parent is BODY or other element === ---
-    let bodySection;
-    let index;
-
-    if (elParent.getType() === DocumentApp.ElementType.BODY_SECTION) {
-        // This shouldn't happen, but as a fallback
-        bodySection = elParent;
-        index = bodySection.getChildIndex(el); // This is likely wrong, but el is text
-        el.asText().setText(""); // Clear the text
-    } else {
-        // This is the expected path
-        bodySection = elParent.getParent(); // This is the Body
-        index = bodySection.getChildIndex(elParent); // Index of the paragraph
-        
-        // Remove the paragraph with the tag
-        elParent.removeFromParent();
-    }
-    // --- === END BUG FIX === ---
-
-    // Define table styles
-    const headerStyle = {};
-    headerStyle[DocumentApp.Attribute.BOLD] = true;
-    headerStyle[DocumentApp.Attribute.BACKGROUND_COLOR] = '#4a5568';
-    headerStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#ffffff';
-    
-    const cellStyle = {};
-    cellStyle[DocumentApp.Attribute.BORDER_WIDTH] = 1;
-    cellStyle[DocumentApp.Attribute.BORDER_COLOR] = '#cccccc';
-    cellStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#000000'; // --- FIX: Set text to black ---
-
-    // Add headers
-    let table = bodySection.insertTable(index, headers); // Insert table at the paragraph's old index
-    let headerRow = table.getRow(0);
-    for(let i=0; i < headerRow.getNumCells(); i++) {
-        headerRow.getCell(i).setAttributes(headerStyle).setAttributes(cellStyle);
-    }
-
-    // Add data rows
-    data.forEach(function(rowData) {
-        let row = table.appendTableRow();
-        rowData.forEach(function(cellData) {
-            row.appendTableCell(cellData).setAttributes(cellStyle);
-        });
-    });
-    
-    // Apply cell styles to the rest of the table
-    for(let i=1; i < table.getNumRows(); i++) {
-        for(let j=0; j < table.getRow(i).getNumCells(); j++) {
-            table.getRow(i).getCell(j).setAttributes(cellStyle);
-        }
-    }
-}
-
-// --- === NEW: LONGITUDINAL REPORTING FUNCTIONS === ---
-
-/**
- * Utility function to be run ONCE per company to create their data sheet.
- * Assign this to a menu item or button, or run from the editor.
- */
-function createLongitudinalWorkbook() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const ui = SpreadsheetApp.getUi();
-  
-  // 1. Get Company Name
-  const response = ui.prompt("Create Longitudinal Report", "Enter the exact Company Name (must match `Checklists` sheet):", ui.ButtonSet.OK_CANCEL);
-  if (response.getSelectedButton() !== ui.Button.OK) return;
-  const companyName = response.getResponseText().trim();
-  if (!companyName) return;
-  
-  const checklistSheet = ss.getSheetByName(CHECKLISTS_SHEET_NAME);
-  if (!checklistSheet) {
-    ui.alert("Error: 'Checklists' sheet not found.");
-    return;
-  }
-  
-  // 2. Find this company's question list
-  const checklistData = checklistSheet.getDataRange().getValues();
-  const checklistHeaders = checklistData.shift();
-  const longitudinalIdColIdx = checklistHeaders.indexOf(LONGITUDINAL_ID_HEADER);
-  const templateIdColIdx = checklistHeaders.indexOf("Report Template ID");
-  
-  if (longitudinalIdColIdx === -1) {
-    ui.alert("Error: Could not find header '" + LONGITUDINAL_ID_HEADER + "' in 'Checklists' sheet. Please add it and try again.");
-    return;
-  }
-  
-  let questionList = null;
-  let companyRowIdx = -1;
-  
-  for (let i = 0; i < checklistData.length; i++) {
-    if (checklistData[i][0] === companyName) {
-      companyRowIdx = i + 2; // +1 for 0-index, +1 for header
-      const questions = [];
-      for (let j = 1; j < checklistHeaders.length; j++) {
-        if (j === longitudinalIdColIdx || j === templateIdColIdx) continue;
-        if (checklistData[i][j]) {
-          const q = String(checklistData[i][j]);
-          if (!q.startsWith("#") && !q.startsWith("%")) {
-            questions.push(q);
-          }
-        } else {
-          break;
-        }
-      }
-      questionList = questions;
-      break;
-    }
-  }
-
-  if (companyRowIdx === -1) {
-    ui.alert("Error: Could not find company '" + companyName + "' in Checklists sheet.");
-    return;
-ui.alert("Error: Could not find company '" + companyName + "' in Checklists sheet.");
-    return;
-  }
-
-  // 3. Create the new Spreadsheet
-  const newSheet = SpreadsheetApp.create(`Longitudinal Report - ${companyName}`);
-  const newSheetId = newSheet.getId();
-  const dataTab = newSheet.getSheets()[0];
-  dataTab.setName("Data");
-  
-  // 4. Create Headers in the new sheet
-  const newHeaders = ["Month", "Total Visits", "Total Hours"].concat(questionList);
-  dataTab.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]).setFontWeight("bold");
-  dataTab.setFrozenRows(1);
-  
-  // 5. Link the new Sheet ID back to the Checklists sheet
-  checklistSheet.getRange(companyRowIdx, longitudinalIdColIdx + 1).setValue(newSheetId);
-  
-  ui.alert(`Success! New workbook created for ${companyName}. The ID has been linked. You can now build charts in that new sheet.`);
-}
-
-/**
- * Appends the latest month's data to each company's longitudinal report.
- * Assign this to a button on the "Master Report" sheet.
- */
-function runAllLongitudinalReports() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const controlSheet = ss.getSheetByName("Master Report");
-  
-  if (!controlSheet) {
-    SpreadsheetApp.getUi().alert("Error: 'Master Report' sheet not found.");
-    return;
-  }
-  
-  let monthStr = controlSheet.getRange("B1").getValue(); 
-  if (!monthStr) {
-    SpreadsheetApp.getUi().alert("Please enter a Month (YYYY-MM) in cell B1.");
-    return;
-  }
-  
-  try {
-    // 1. Aggregate all data
-    const aggregatedData = _aggregateDataForMonth(monthStr, ss);
-    if (!aggregatedData) return; // Error was already handled
-    
-    const { combinedReport, longitudinalIdMap } = aggregatedData;
-    monthStr = aggregatedData.monthStr; // Get the sanitized month string
-
-    // 2. Loop through all companies that have a longitudinal sheet ID
-    const allCompanyNames = Object.keys(longitudinalIdMap);
-    if (allCompanyNames.length === 0) {
-      throw new Error("No companies have a '" + LONGITUDINAL_ID_HEADER + "' set in the 'Checklists' sheet.");
-    }
-    
-    SpreadsheetApp.flush(); 
-    let successCount = 0;
-    
-    for (const companyName of allCompanyNames) {
-      const longitudinalSheetId = longitudinalIdMap[companyName];
-      if (!longitudinalSheetId) {
-         Logger.log(`Skipping ${companyName}: No Longitudinal Report Sheet ID found.`);
-         continue;
-      }
-      
-      const coData = combinedReport[companyName];
-      
-      if (!coData) {
-         Logger.log(`No data found for ${companyName} for ${monthStr}. Skipping.`);
-         continue;
-      }
-      
-      try {
-        const reportWb = SpreadsheetApp.openById(longitudinalSheetId);
-        const reportSheet = reportWb.getSheets()[0];
-        const headers = reportSheet.getRange(1, 1, 1, reportSheet.getLastColumn()).getValues()[0];
-        
-        // Build the new row
-        const newRow = [];
-        newRow.push(monthStr); // Column 1: Month
-        newRow.push(coData.totalVisits); // Column 2: Total Visits
-        newRow.push((coData.totalDurationMs / (1000 * 60 * 60)).toFixed(2)); // Column 3: Total Hours
-        
-        // Match checklist data to headers
-        for (let i = 3; i < headers.length; i++) {
-          const question = headers[i];
-          const tally = coData.questionTally[question] || 0;
-          newRow.push(tally);
-        }
-        
-        // Append the new row
-        reportSheet.appendRow(newRow);
-        successCount++;
-        Logger.log(`Successfully appended data for ${companyName}.`);
-        
-      } catch (e) {
-        Logger.log(`Error processing longitudinal report for ${companyName}: ${e.message}`);
-      }
-    }
-    
-    SpreadsheetApp.getUi().alert(`Longitudinal Data Append Complete! Successfully updated ${successCount} of ${allCompanyNames.length} company workbooks.`);
-
-  } catch (e) {
-    Logger.log(e);
-    SpreadsheetApp.getUi().alert("An error occurred: " + e.message);
-  }
-}
-
-/**
- * Helper function to find a tag and replace it with a formatted table in a Google Doc.
- */
-function buildTableInDoc(body, tag, headers, data) {
-    const searchResult = body.findText(tag);
-    if (!searchResult) {
-        Logger.log("Could not find tag: " + tag);
-        return; // Tag not in template, skip
-    }
-    
-    const el = searchResult.getElement();
-    const elParent = el.getParent(); // This is the Paragraph
-    
-    // --- === BUG FIX: Check if parent is BODY or other element === ---
-    let bodySection;
-    let index;
-
-    if (elParent.getType() === DocumentApp.ElementType.BODY_SECTION) {
-        // This shouldn't happen, but as a fallback
-        bodySection = elParent;
-        index = bodySection.getChildIndex(el); // This is likely wrong, but el is text
-        el.asText().setText(""); // Clear the text
-    } else {
-        // This is the expected path
-        bodySection = elParent.getParent(); // This is the Body
-        index = bodySection.getChildIndex(elParent); // Index of the paragraph
-        
-        // Remove the paragraph with the tag
-        elParent.removeFromParent();
-    }
-    // --- === END BUG FIX === ---
-
-    // Define table styles
-    const headerStyle = {};
-    headerStyle[DocumentApp.Attribute.BOLD] = true;
-    headerStyle[DocumentApp.Attribute.BACKGROUND_COLOR] = '#4a5568';
-    headerStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#ffffff';
-    
-    const cellStyle = {};
-    cellStyle[DocumentApp.Attribute.BORDER_WIDTH] = 1;
-    cellStyle[DocumentApp.Attribute.BORDER_COLOR] = '#cccccc';
-    cellStyle[DocumentApp.Attribute.FOREGROUND_COLOR] = '#000000'; // --- FIX: Set text to black ---
-
-    // Add headers
-    let table = bodySection.insertTable(index, headers); // Insert table at the paragraph's old index
-    let headerRow = table.getRow(0);
-    for(let i=0; i < headerRow.getNumCells(); i++) {
-        headerRow.getCell(i).setAttributes(headerStyle).setAttributes(cellStyle);
-    }
-
-    // Add data rows
-    data.forEach(function(rowData) {
-        let row = table.appendTableRow();
-        rowData.forEach(function(cellData) {
-            row.appendTableCell(cellData).setAttributes(cellStyle);
-        });
-    });
-    
-    // Apply cell styles to the rest of the table
-    for(let i=1; i < table.getNumRows(); i++) {
-        for(let j=0; j < table.getRow(i).getNumCells(); j++) {
-            table.getRow(i).getCell(j).setAttributes(cellStyle);
-        }
-    }
-}
+    SpreadsheetApp.getUi().alert("PDF Reports Generated! Check your Google Drive folder: "_
