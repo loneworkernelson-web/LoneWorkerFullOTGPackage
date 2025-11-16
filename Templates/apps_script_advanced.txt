@@ -1,6 +1,6 @@
 // ##### --------------------------------------------------- #####
 // ##### On-the-Go AppSuite - ADVANCED Backend Script (Reporting) #####
-// ##### v2.8 (with Numerical Entry '$' support)
+// ##### v2.9 (with Quick Stat fix)
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -241,7 +241,9 @@ function checkOverdueWorkers() {
     var now = new Date();
     var phoneHeaders = ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"]; 
 
-    var resolvedStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'MONITOR_CLEARED_ALERT'];
+    // --- === MODIFIED: Added 'DATA_ENTRY_ONLY' === ---
+    var resolvedStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'MONITOR_CLEARED_ALERT', 'DATA_ENTRY_ONLY'];
+    // --- === END MODIFIED === ---
 
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
@@ -673,10 +675,8 @@ function _aggregateDataForMonth(monthStr, ss) {
             for (const key in numericEntries) {
               const val = parseFloat(numericEntries[key]);
               if (!isNaN(val)) {
-                if (!coData.numericTally[key]) coData.numericTally[key] = 0;
-                if (!combData.numericTally[key]) combData.numericTally[key] = 0;
-                coData.numericTally[key] += val;
-                combData.numericTally[key] += val;
+                if (coData.numericTally[key] !== undefined) coData.numericTally[key] += val;
+                if (combData.numericTally[key] !== undefined) combData.numericTally[key] += val;
               }
             }
           }
@@ -719,7 +719,7 @@ function _aggregateDataForMonth(monthStr, ss) {
 function runAICorrection(notesArray, companyName) {
   let aiCorrectionFailed = false;
   
-  if (GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE" && notesArray.length > 0) {
+  if (GEMINI_API_KEY && GEMINI_API_KEY !== "%%GEMINI_API_KEY%%" && notesArray.length > 0) {
     Logger.log("Starting AI note correction for " + companyName);
     try {
       const rawNotes = [];
@@ -808,7 +808,7 @@ function writeReportToTab(reportSheet, coData, reportTitle, monthStr, aiCorrecti
   let outputRow = 1; 
 
   reportSheet.getRange(outputRow, 1).setValue(reportTitle).setFontWeight("bold").setBackground("#4a5568").setFontColor("#ffffff");
-  reportSheet.getRange(outputRow, 1, 1, 4 + allCustomNoteHeaders.length).merge(); // Merge across all columns
+  reportSheet.getRange(outputRow, 1, 1, 4 + allCustomNoteHeaders.length + coData.numericList.length).merge(); // Merge across all columns
   outputRow++;
   
   // Write Stats
@@ -861,7 +861,7 @@ function writeReportToTab(reportSheet, coData, reportTitle, monthStr, aiCorrecti
   outputRow++; 
   
   if (aiCorrectionFailed) {
-    reportSheet.getRange(outputRow, 1, 1, 4 + allCustomNoteHeaders.length).setValue("Note: AI spelling/grammar check failed. The notes below are uncorrected.")
+    reportSheet.getRange(outputRow, 1, 1, 4 + allCustomNoteHeaders.length + coData.numericList.length).setValue("Note: AI spelling/grammar check failed. The notes below are uncorrected.")
       .setFontColor("#ff0000") // Red
       .setFontWeight("bold")
       .setFontStyle("italic")
@@ -923,8 +923,8 @@ function writeReportToTab(reportSheet, coData, reportTitle, monthStr, aiCorrecti
   // Auto-resize columns on the new sheet
   reportSheet.autoResizeColumn(1);
   reportSheet.autoResizeColumn(2);
-  reportSheet.autoResizeColumn(4);
-  reportSheet.setColumnWidth(3, 300); // Set fixed width for main note
+  reportSheet.autoResizeColumn(3); // Duration
+  reportSheet.setColumnWidth(4, 300); // Set fixed width for main note
   
   // Resize custom note columns
   for (let i = 0; i < allCustomNoteHeaders.length; i++) {
@@ -1319,7 +1319,7 @@ function runAllLongitudinalReports() {
   try {
     // 1. Aggregate all data
     const aggregatedData = _aggregateDataForMonth(monthStr, ss);
-    if (!aggregatedData) return; // Error was already handled
+    if (!aggregatedData) return; // Error was handled
     
     const { combinedReport, longitudinalIdMap } = aggregatedData;
     monthStr = aggregatedData.monthStr; // Get the sanitized month string
