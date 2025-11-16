@@ -191,14 +191,20 @@
                 <div class="space-y-4">
                     <div>
                         <label for="scriptUrl" class="block text-sm font-medium text-gray-300">Web App URL</label>
-                        <input type="url" id="scriptUrl" oninput="validateUrl(this)" class="mt-1 block w-full bg-gray-600 border border-gray-500 rounded-md shadow-sm py-2 px-3 text-gray-400 focus:outline-none" readonly>
-                        <p class="text-xs text-gray-400 mt-1">This is auto-filled from Step 3.</p>
+                        <input type="url" id="scriptUrl" oninput="validateUrl(this)" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Paste the Web app URL from Step 3">
                     </div>
                     <div>
                         <label for="firstAlert" class="block text-sm font-medium text-gray-300">First Overdue Alert (Minutes)</label>
                         <input type="number" id="firstAlert" value="15" min="1" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <p class="text-xs text-gray-400 mt-1">Time a worker is overdue before the Worker App sends an 'ALERT SENT' status (and the backend sends <strong>`EMAIL_1_SENT`</strong>). 15 minutes is recommended.</p>
+                        <p class="text-xs text-gray-400 mt-1">Time a worker is overdue before the first alert. 15 minutes is recommended.</p>
                     </div>
+                    <!-- === NEW: Escalation Minutes === -->
+                    <div>
+                        <label for="escalationMinutes" class="block text-sm font-medium text-gray-300">Alert Escalation Time (Minutes)</label>
+                        <input type="number" id="escalationMinutes" value="5" min="1" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <p class="text-xs text-gray-400 mt-1">Time to wait before escalating a `PANIC` or `OVERDUE` alert to the secondary contact. 5 minutes is recommended.</p>
+                    </div>
+                    <!-- === END NEW === -->
                     <div class="flex items-center">
                         <input id="enableCheckin" type="checkbox" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
                         <label for="enableCheckin" class="ml-2 block text-sm font-medium text-gray-300">Enable "Are You OK?" Check-ins (Optional)</label>
@@ -236,7 +242,7 @@
                     Download Full Documentation (PDF)
                 </a>
                 <p class="text-xs text-gray-400 mt-4">
-                    (You, the Setup Tool administrator, need to create this PDF and ensure this link points to its correct location.)
+                    (This file must be present in the root of the repository that hosts this setup tool.)
                 </p>
             </div>
         </div>
@@ -247,7 +253,12 @@
     const templates = {};
     let templatesLoaded = false; 
     let config = {
-        secretKey: ""
+        secretKey: "",
+        organisationName: "",
+        isAdvanced: false,
+        geminiKey: "",
+        deployedUrl: "",
+        escalationMinutes: "5"
     };
     
     // Define header strings
@@ -259,9 +270,10 @@
     window.onload = async () => {
         const baseUrl = window.location.href; 
         const fetchTemplate = async (fileName) => {
-            const templateUrl = new URL(`templates/${fileName}`, baseUrl).href; 
+            // Use cache-busting query param to ensure fresh templates
+            const templateUrl = new URL(`templates/${fileName}?t=${Date.now()}`, baseUrl).href; 
             console.log(`Fetching: ${templateUrl}`); 
-            const response = await fetch(templateUrl);
+            const response = await fetch(templateUrl, { cache: "no-store" }); // Disable cache
             if (!response.ok) {
                 throw new Error(`Failed to load ${fileName} from ${templateUrl} - Status: ${response.status}`);
             }
@@ -270,7 +282,7 @@
         };
 
         try {
-            // --- UPDATED: Fetch all 5 templates ---
+            // --- UPDATED: Fetch all 7 templates ---
             const templateFiles = [
                 'apps_script_simple.txt',
                 'worker_app_simple.txt',
@@ -310,7 +322,7 @@
         } catch (error) {
             console.error("Template Loading Error:", error); 
             templatesLoaded = false; 
-            alert(`Error: Could not load template files. ${error.message}. Please ensure your 'templates' folder contains all required files (simple and advanced versions). Check the browser console (F12) for more details.`);
+            alert(`Error: Could not load template files. ${error.message}. Please ensure your 'templates' folder contains all 7 required files (simple and advanced versions). Check the browser console (F12) for more details.`);
             document.querySelectorAll('button').forEach(btn => btn.disabled = true);
             const statusEl = document.getElementById('zipStatus') || document.getElementById('testStatus');
             if (statusEl) statusEl.innerText = "Error: Templates failed to load. Cannot proceed.";
@@ -358,13 +370,8 @@
         currentStep = step;
 
         if (step === 4) {
-             // Auto-fill URL from Step 3
-             const scriptUrlInput = document.getElementById('scriptUrl');
-             const deployedUrl = document.getElementById('deployedUrl'); // This ID doesn't exist, logic flaw. Fixed by reading from config.
-             // We need to store the URL from step 3. Let's modify nextStep()
-             if (scriptUrlInput) scriptUrlInput.value = config.deployedUrl;
-             
-             // Auto-fill secret key from Step 3
+             // We can't auto-fill the URL because the user has to go deploy it.
+             // We just auto-fill the key.
              const secretKeyEl = document.getElementById('secretKey');
              if (secretKeyEl) secretKeyEl.value = config.secretKey;
         }
@@ -394,11 +401,6 @@
             config.organisationName = orgNameInput.value;
             config.isAdvanced = document.getElementById('enableReporting').checked;
             config.geminiKey = document.getElementById('geminiApiKeyStep3').value;
-            config.deployedUrl = "https://script.google.com/macros/s/YOUR_URL_HERE/exec"; // Placeholder, user copies this.
-            
-            // This is a logic jump, step 3 is now complex. User copies URL *after* deploying.
-            // We need to auto-fill the URL in Step 4 *after* they come back.
-            // This workflow is awkward. Let's assume they paste it in Step 4.
         }
         
         if (currentStep === 4) {
@@ -409,6 +411,8 @@
                  return;
              }
              config.deployedUrl = scriptUrlInput.value;
+             // --- NEW: Save new config value ---
+             config.escalationMinutes = document.getElementById('escalationMinutes').value;
         }
         
         const maxSteps = 6;
@@ -520,7 +524,7 @@
              return;
          }
         const urlInput = document.getElementById('scriptUrl');
-        const keyInput = document.getElementById('secretKey'); // This is the auto-filled one in Step 4
+        const keyInput = document.getElementById('secretKeyStep3'); // Read from Step 3
         const statusEl = document.getElementById('testStatus');
         
         if (!urlInput || !keyInput || !statusEl) {
@@ -584,12 +588,12 @@
                 cleanupJsonp();
                  statusEl.innerText = 'Error: Connection timed out. Check URL or script deployment.';
             }
-        }, 15000); 
+        }, 20000); 
         
         document.body.appendChild(script);
     }
 
-    // --- UPDATED: generateZip (now reads Gemini key from Step 3) ---
+    // --- UPDATED: generateZip ---
     async function generateZip() {
          if (!templatesLoaded) {
              alert('Templates are still loading or failed to load. Cannot generate zip file.');
@@ -616,14 +620,15 @@
             const zip = new JSZip();
             
             // --- Read config from stored 'config' object ---
-            const { secretKey, organisationName, isAdvanced, geminiKey, deployedUrl } = config;
+            // --- NEW: Added escalationMinutes ---
+            const { secretKey, organisationName, isAdvanced, geminiKey, deployedUrl, escalationMinutes } = config;
 
             const firstAlertInput = document.getElementById('firstAlert');
             const enableCheckinInput = document.getElementById('enableCheckin');
             const checkinIntervalInput = document.getElementById('checkinInterval');
             const logoUrlInput = document.getElementById('logoUrl');
 
-            if (!deployedUrl || !secretKey || !firstAlertInput || !enableCheckinInput || !checkinIntervalInput || !logoUrlInput) {
+            if (!deployedUrl || !secretKey || !firstAlertInput || !enableCheckinInput || !checkinIntervalInput || !logoUrlInput || !escalationMinutes) {
                  throw new Error("One or more configuration input elements are missing.");
             }
 
@@ -645,6 +650,8 @@
             workerApp = workerApp.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             workerApp = workerApp.replace(/%%GOOGLE_SHEET_URL%%/g, deployedUrl);
             workerApp = workerApp.replace(/%%ORGANISATION_NAME%%/g, organisationName);
+            // --- NEW: Inject escalation minutes ---
+            workerApp = workerApp.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
             
             const workerFolder = zip.folder('WorkerApp'); 
             if (!workerFolder) throw new Error("Could not create worker folder in zip");
@@ -653,7 +660,7 @@
 
             // --- 2. Process Manifest ---
             let manifest = templates['manifest.json'];
-            manifest = manifest.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
+            manifest = manifest.replace(/https://i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             manifest = manifest.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             workerFolder.file('manifest.json', manifest);
 
@@ -672,6 +679,8 @@
             let appsScript = templates[scriptTemplateName];
             appsScript = appsScript.replace(/%%SECRET_KEY%%/g, secretKey);
             appsScript = appsScript.replace(/%%ORGANISATION_NAME%%/g, organisationName);
+            // --- NEW: Inject escalation minutes ---
+            appsScript = appsScript.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
             if (isAdvanced) {
                 appsScript = appsScript.replace(/%%GEMINI_API_KEY%%/g, geminiKeyToInject);
             }
