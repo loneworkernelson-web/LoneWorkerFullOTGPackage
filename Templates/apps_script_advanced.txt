@@ -1,6 +1,6 @@
 // ##### --------------------------------------------------- #####
 // ##### On-the-Go AppSuite - ADVANCED Backend Script (Reporting) #####
-// ##### v2.9 (with Quick Stat fix)
+// ##### v2.10 (with Quick Stat fix + Numerical Entry '$' support)
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -10,6 +10,7 @@ var SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
 var VISITS_SHEET_NAME = "Visits";
 var CHECKLISTS_SHEET_NAME = "Checklists";
 var REPORT_TAB_PREFIX = "Report - "; 
+var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Time in minutes to wait before escalating
 
 // --- PDF REPORTING CONFIGURATION ---
 var DEFAULT_REPORT_TEMPLATE_ID = "YOUR_DEFAULT_TEMPLATE_ID_HERE"; 
@@ -198,6 +199,13 @@ function doPost(e) {
 
     // Immediate alert triggers
     if (['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN'].indexOf(data['Alarm Status']) > -1) {
+      // --- NEW: Write the alert timestamp ---
+      data["GPS Timestamp"] = new Date().toISOString();
+      if (rowIndex !== -1) {
+          sheet.getRange(rowIndex, headers.indexOf("GPS Timestamp") + 1).setValue(data["GPS Timestamp"]);
+      }
+      // --- END NEW ---
+
       var workerDataForEmail = {};
        if (rowIndex !== -1) {
            var updatedRowValues = sheet.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
@@ -216,7 +224,7 @@ function doPost(e) {
                  }
             });
        }
-      sendAlertEmail(workerDataForEmail, data['Alarm Status']);
+      sendAlertEmail(workerDataForEmail, data['Alarm Status'], false); // false = isNotEscalation
     }
 
   } catch (err) {
@@ -243,7 +251,8 @@ function checkOverdueWorkers() {
 
     // --- === MODIFIED: Added 'DATA_ENTRY_ONLY' === ---
     var resolvedStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'MONITOR_CLEARED_ALERT', 'DATA_ENTRY_ONLY'];
-    // --- === END MODIFIED === ---
+    var primaryAlertStatuses = ['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN', 'EMAIL_1_SENT', 'EMAIL_2_SENT', 'EMAIL_3_SENT', 'ALERT SENT'];
+
 
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
@@ -258,6 +267,7 @@ function checkOverdueWorkers() {
 
       var status = worker['Alarm Status'];
       
+      // 1. Skip resolved workers
       if (resolvedStatuses.indexOf(status) !== -1 || !worker['Anticipated Departure Time']) continue; 
 
       var anticipatedDeparture = null;
@@ -272,26 +282,45 @@ function checkOverdueWorkers() {
             continue; 
       }
 
+      var alertToSend = null;
+      var overdueMinutes = (now.getTime() - anticipatedDeparture.getTime()) / 60000;
+      var escalationTime = parseInt(ESCALATION_MINUTES) || 5; // Use config, default to 5
 
-      if (now > anticipatedDeparture) {
-        var overdueMinutes = (now.getTime() - anticipatedDeparture.getTime()) / 60000;
-        var alertToSend = null;
-
-        if (overdueMinutes >= 60 && status !== 'ESCALATION_SENT') {
-          alertToSend = 'ESCALATION_SENT';
-        } else if (overdueMinutes >= 45 && status !== 'EMAIL_3_SENT' && status !== 'ESCALATION_SENT') {
-          alertToSend = 'EMAIL_3_SENT';
-        } else if (overdueMinutes >= 30 && status !== 'EMAIL_2_SENT' && status !== 'EMAIL_3_SENT' && status !== 'ESCALATION_SENT') {
-          alertToSend = 'EMAIL_2_SENT';
-        } else if (overdueMinutes >= 15 && ['ON SITE', 'ALERT SENT'].includes(status) ) { 
+      // 2. Check for NEW Overdue alerts
+      if (status === 'ON SITE' && overdueMinutes > (parseInt(FIRST_ALERT_MINUTES) || 15)) {
           alertToSend = 'EMAIL_1_SENT';
-        }
+          // --- NEW: Set the alert timestamp for escalation ---
+          sheet.getRange(i + 1, headers.indexOf('GPS Timestamp') + 1).setValue(new Date().toISOString());
+      
+      // 3. Check for Escalation (for ALL alert types)
+      } else if (primaryAlertStatuses.includes(status)) {
+          var alertTimestampStr = worker['GPS Timestamp']; // This is now the "Alert Time"
+          if (!alertTimestampStr) continue; // Should not happen, but safety check
 
-        if (alertToSend) {
-          sheet.getRange(i + 1, headers.indexOf('Alarm Status') + 1).setValue(alertToSend);
-          worker['Alarm Status'] = alertToSend; 
-          sendAlertEmail(worker, alertToSend);
-        }
+          var alertAgeMinutes = (now.getTime() - new Date(alertTimestampStr).getTime()) / 60000;
+
+          // Handle Panic/Duress/Check-in Escalation
+          if (['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN'].includes(status) && alertAgeMinutes > escalationTime) {
+              alertToSend = 'ESCALATION_SENT';
+          
+          // Handle Overdue Escalation
+          } else if (status === 'EMAIL_1_SENT' && alertAgeMinutes > escalationTime) {
+              alertToSend = 'EMAIL_2_SENT';
+          } else if (status === 'EMAIL_2_SENT' && alertAgeMinutes > (escalationTime * 2)) {
+              alertToSend = 'EMAIL_3_SENT';
+          } else if (status === 'EMAIL_3_SENT' && alertAgeMinutes > (escalationTime * 3)) {
+              alertToSend = 'ESCALATION_SENT';
+          }
+      }
+
+      // 4. Send the new alert if one was triggered
+      if (alertToSend) {
+        sheet.getRange(i + 1, headers.indexOf('Alarm Status') + 1).setValue(alertToSend);
+        worker['Alarm Status'] = alertToSend; 
+        
+        // If we are escalating, send to the secondary contact
+        var isEscalation = (alertToSend === 'ESCALATION_SENT' || alertToSend === 'EMAIL_2_SENT' || alertToSend === 'EMAIL_3_SENT');
+        sendAlertEmail(worker, alertToSend, isEscalation);
       }
     }
   } catch (err) {
@@ -334,6 +363,12 @@ function sendSmsViaGateway(phoneNumber, message) {
     if (result.success) {
       Logger.log("Successfully sent free SMS to: " + cleanPhone);
     } else {
+      // --- NEW: Fallback Email to Admin ---
+      var adminEmail = Session.getEffectiveUser().getEmail();
+      var subject = "OTG AppSuite SMS Failure Notification";
+      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded during testing. The primary email alert was still sent.";
+      MailApp.sendEmail(adminEmail, subject, body);
+      // --- END NEW ---
       Logger.log("Free SMS failed (quota likely used, or invalid number): " + result.error);
     }
   } catch (e) {
@@ -343,8 +378,8 @@ function sendSmsViaGateway(phoneNumber, message) {
 
 
 // --- EMAIL HELPER FUNCTION (Now with SMS) ---
-function sendAlertEmail(workerData, alertType) {
-  var isEscalation = alertType === 'ESCALATION_SENT';
+// --- UPDATED: Now accepts an `isEscalation` boolean ---
+function sendAlertEmail(workerData, alertType, isEscalation) {
   var recipient = isEscalation ? workerData['Escalation Contact Email'] : workerData['Emergency Contact Email'];
   var phoneRecipient = isEscalation ? workerData['Escalation Contact Number'] : workerData['Emergency Contact Number'];
   var subject = '';
@@ -384,16 +419,16 @@ function sendAlertEmail(workerData, alertType) {
       smsMessage = `MISSED CHECK-IN: ${workerName} at ${locationName}. Location: ${locationLink}`;
       break;
     case 'ESCALATION_SENT':
-      subject = 'ESCALATION ALERT: ' + workerName + ' is 60+ mins Overdue';
-      body = '<p>This is an escalation alert. ' + workerName + ' is now more than 60 minutes overdue and has not responded to previous alerts.</p>';
-      smsMessage = `ESCALATION: ${workerName} is 60+ mins overdue at ${locationName}. Location: ${locationLink}`;
+      subject = 'ESCALATION ALERT: ' + workerName + ' is Overdue/Unresponsive';
+      body = '<p>This is an escalation alert. ' + workerName + ' is either 60+ minutes overdue or has not responded to a PANIC/DURESS/MISSED_CHECKIN alert for ' + ESCALATION_MINUTES + ' minutes.</p>';
+      smsMessage = `ESCALATION: ${workerName} at ${locationName} is unresponsive. Location: ${locationLink}`;
       break;
     case 'EMAIL_1_SENT':
     case 'EMAIL_2_SENT':
     case 'EMAIL_3_SENT':
-      var minutesOverdue = 15;
-      if (alertType === 'EMAIL_2_SENT') minutesOverdue = 30;
-      if (alertType === 'EMAIL_3_SENT') minutesOverdue = 45;
+      var minutesOverdue = parseInt(FIRST_ALERT_MINUTES) || 15;
+      if (alertType === 'EMAIL_2_SENT') minutesOverdue = (parseInt(ESCALATION_MINUTES) || 5) * 1;
+      if (alertType === 'EMAIL_3_SENT') minutesOverdue = (parseInt(ESCALATION_MINUTES) || 5) * 2;
       subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
       body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
       smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Location: ${locationLink}`;
@@ -1319,7 +1354,7 @@ function runAllLongitudinalReports() {
   try {
     // 1. Aggregate all data
     const aggregatedData = _aggregateDataForMonth(monthStr, ss);
-    if (!aggregatedData) return; // Error was handled
+    if (!aggregatedData) return; // Error was already handled
     
     const { combinedReport, longitudinalIdMap } = aggregatedData;
     monthStr = aggregatedData.monthStr; // Get the sanitized month string
