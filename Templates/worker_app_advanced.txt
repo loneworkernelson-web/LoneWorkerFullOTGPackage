@@ -99,7 +99,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 <div id="alertActiveContainer" class="hidden w-full mb-4">
 <div class="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-4">
 <h3 class="text-xl font-bold text-red-300">ALERT ACTIVE</h3>
-<p class="text-red-400">Automated emails have been sent to your contacts.</p>
+<p class="text-red-400">Automated alerts have been sent to your contacts.</p>
 </div>
 <button type="button" id="iamSafeBtn" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I AM SAFE</button>
 </div>
@@ -159,7 +159,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <input type="text" id="templateName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Leave blank for (Standard) form">
                  <p class="text-xs text-gray-500 mt-1">Enter the exact name of the form from the `Checklists` sheet (e.g., "Site Audit" or "Smith & Co.").</p>
             </div>
-             <!-- === END MODIFIED === -->
+            <!-- === NEW: No Report Required === -->
+             <div class="flex items-center">
+                <input id="noReportRequired" type="checkbox" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                <label for="noReportRequired" class="ml-2 block text-sm font-medium text-gray-300">No report required for this location</label>
+            </div>
+             <!-- === END NEW === -->
         </div>
         <div class="mt-6 flex justify-end space-x-3">
             <button type="button" id="deleteLocationBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden">Delete</button>
@@ -216,6 +221,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             <ul class="list-disc list-inside space-y-2">
                  <li><strong>Company Name:</strong> The name of the company at this location (e.g., "Smith & Co."). This is used for reporting.</li>
                  <li><strong>Template Name (Optional):</strong> Enter the name of the report form you want to use (e.g., "Site Audit"). If you leave this blank, the app will use the `(Standard)` form.</li>
+                 <li><strong>No Report Required:</strong> Check this box if this location is for safety only (like "Travelling") and should not ask for a report when you depart.</li>
             </ul>
 
             <h3 class="font-semibold text-lg text-blue-400">4. Using the App for a Visit</h3>
@@ -243,14 +249,14 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
              <h3 class="font-semibold text-lg text-blue-400">7. While On-Site</h3>
               <ul class="list-disc list-inside space-y-2">
                 <li><strong>Extend Time:</strong> Press and hold the <strong>"Extend 10 Mins"</strong> button for 1 second and enter your PIN.</li> 
-                <li><strong>Depart Safely:</strong> When you are finished, press and hold the <strong>"DEPART & FILE REPORT"</strong> button for 1.5 seconds. This will open your visit report form.</li>
+                <li><strong>Depart Safely:</strong> When you are finished, press and hold the <strong>"DEPART & FILE REPORT"</strong> button for 1.5 seconds. This will open your visit report form (unless "No Report Required" is checked for this location).</li>
                 <li><strong>Panic Alert (SOS):</strong> In an emergency, **triple-tap the red "SOS" button** to send an immediate alert.</li>
                  <li><strong>Check-ins (If Enabled):</strong> If your administrator has enabled check-ins, a prompt will appear periodically asking "Are you OK?". You have 2 minutes to tap the "I am OK" button. The alert sound will escalate if you don't respond.</li>
             </ul>
             
               <h3 class="font-semibold text-lg text-blue-400">8. Filing Your Report & Departing</h3>
              <ol class="list-decimal list-inside space-y-1">
-                 <li>When you hold the **"DEPART & FILE REPORT"** button, a "Visit Report" form will appear.</li>
+                 <li>When you hold the **"DEPART & FILE REPORT"** button, a "Visit Report" form will appear (unless disabled for that location).</li>
                  <li>It will show either the standard checklist or a custom one for that company. Custom forms may include section headers (like "# Section 1"), number fields (like "$ KMs"), and text boxes (like "% Custom Note").</li>
                  <li>Tick the relevant boxes, fill in any number fields, and add your visit notes in all text fields.</li>
                  <li>Click **"Submit Report"**. This sends your report and ends your safety timer.</li>
@@ -260,7 +266,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
               <h3 class="font-semibold text-lg text-blue-400">9. Alerts & Duress</h3>
               <ul class="list-disc list-inside space-y-2">
                 <li>If you go overdue or miss a check-in, the system will automatically email your emergency contact.</li>
-                <li><strong>To Cancel an Alert:</strong> Press and hold the <strong>"I AM SAFE"</strong> button for 1 second and enter your **normal PIN**. This will clear the alert and then open the Visit Report form.</li>
+                <li><strong>To Cancel an Alert:</strong> Press and hold the <strong>"I AM SAFE"</strong> button for 1 second and enter your **normal PIN**. This will clear the alert and then open the Visit Report form (if one is required).</li>
                 <li><strong>Silent (Duress) Alert:</strong> If you are being forced to cancel an alert, enter your **Duress PIN** instead. The app will look like it has been cancelled/extended, but it will silently send a high-priority alert to the monitor.</li>
             </ul>
 
@@ -322,6 +328,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     const PRE_ALERT_OFFSET = 2; 
     var CHECKIN_ENABLED = %%CHECKIN_ENABLED%%;
     var CHECKIN_INTERVAL = %%CHECKIN_INTERVAL%%; 
+    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Not used by worker, but good to have
     // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
@@ -399,7 +406,10 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     function hideModals() { 
         modals.backdrop.classList.add('hidden'); 
         modals.backdrop.classList.remove('flex'); 
-        if (reportModal) reportModal.dataset.isQuickStat = 'false'; // Clear flag
+        if (reportModal) {
+            reportModal.dataset.isQuickStat = 'false'; // Clear flag
+            reportModal.dataset.isFromAlert = 'false'; // Clear flag
+        }
     }
     function showAlert(title, message) { document.getElementById('alertModalTitle').textContent = title; document.getElementById('alertModalMessage').textContent = message; showModal('alert'); }
     
@@ -437,13 +447,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         }
         // --- END FIX ---
         
-        // --- MODIFIED: Ensure templateName exists ---
+        // --- MODIFIED: Ensure templateName & noReport exists ---
         state.locations = state.locations.map(loc => ({
             ...loc,
             companyName: loc.companyName || "",
-            // Use custom form is no longer used, but keep for migration
-            useCustomForm: loc.useCustomForm || false, 
-            templateName: loc.templateName || "" // Add new templateName
+            templateName: loc.templateName || "", // Add new templateName
+            noReport: loc.noReport || false // Add new noReport flag
         }));
 
         if (savedState && savedState.activeVisit) { 
@@ -458,8 +467,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 name: 'Travelling', 
                 address: 'GPS updates will be sent every 15 minutes.',
                 companyName: 'Internal', 
-                useCustomForm: false, // Legacy
-                templateName: "" // Uses (Standard) form
+                templateName: "", // Uses (Standard) form
+                noReport: true // --- NEW: Travelling never requires a report
             }); 
         } 
         
@@ -478,7 +487,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         state.locations.sort((a,b) => a.name.localeCompare(b.name)).forEach(loc => { 
             const isSelected = loc.id === state.selectedLocationId; 
             // --- MODIFIED: Show Template Name ---
-            const companyHtml = loc.companyName ? `<p class="text-sm text-blue-400">${loc.companyName}${loc.templateName ? ` (${loc.templateName})` : ''}</p>` : '';
+            let templateInfo = loc.templateName ? ` (${loc.templateName})` : '';
+            if (loc.noReport) templateInfo = " (No Report)";
+            const companyHtml = loc.companyName ? `<p class="text-sm text-blue-400">${loc.companyName}${templateInfo}</p>` : '';
             const locationEl = document.createElement('div'); 
             locationEl.className = `selectable-item p-3 rounded-lg cursor-pointer border-2 transition-transform duration-100 ${isSelected ? 'bg-blue-900/50 border-blue-500' : 'bg-gray-800 border-transparent hover:border-gray-600'}`; 
             locationEl.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-semibold">${loc.name}</p><p class="text-sm text-gray-400">${loc.address}</p>${companyHtml}</div><button type="button" class="edit-location-btn p-2 rounded-full hover:bg-gray-700" data-id="${loc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button></div>`; 
@@ -498,9 +509,16 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             arrivedBtn.textContent = state.visitDurationMinutes > 0 ? 'Start (Hold 1.5s)' : 'Set Duration';
             
             // --- NEW: Enable Quick Stat Button ---
-            quickStatBtn.disabled = false;
-            quickStatBtn.classList.remove('bg-teal-900', 'text-teal-700');
-            quickStatBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'text-white');
+            const location = state.locations.find(l => l.id === state.selectedLocationId);
+            if (location && (location.templateName || !location.noReport)) { // Enable if it has a template OR uses standard
+                quickStatBtn.disabled = false;
+                quickStatBtn.classList.remove('bg-teal-900', 'text-teal-700');
+                quickStatBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'text-white');
+            } else {
+                 quickStatBtn.disabled = true;
+                 quickStatBtn.classList.add('bg-teal-900', 'text-teal-700');
+                 quickStatBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
+            }
 
             if (state.visitDurationMinutes === 0) {
                  arrivedBtn.disabled = true;
@@ -556,7 +574,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             return Promise.resolve(); // Success
         }).catch(error => {
             console.error('Error sending data to Google Sheet:', error);
-            // --- UPDATED: Queue 'SAFE' and 'DATA_ENTRY' status as well ---
+            // --- UPDATED: Queue 'SAFE' and 'DATA_ENTRY_ONLY' status as well ---
             const queueableStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'DATA_ENTRY_ONLY'];
             if (!isRetry && queueableStatuses.includes(data["Alarm Status"])) {
                 console.log("Network failed. Queuing report.");
@@ -642,17 +660,17 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         }, true); 
     }
     
-    // --- UPDATED handleSafeLongPress (OTG v1.4) ---
+    // --- UPDATED handleSafeLongPress (OTG v1.8) ---
     function handleSafeLongPress() {
         withPinVerification((isDuress) => {
             if (isDuress) {
                 iamSafe(true); // Call iamSafe with duress flag, no report
             } else {
-                // --- MODIFIED: Check for "Travelling" before showing report ---
+                // --- MODIFIED: Check for "Travelling" or "No Report" before showing report ---
                 if (!state.activeVisit) return; // Safety check
                 const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-                if (location && location.name === 'Travelling') {
-                    console.log("Location is 'Travelling', skipping report on 'I Am Safe'.");
+                if (location && (location.name === 'Travelling' || location.noReport)) {
+                    console.log("Location is 'Travelling' or 'No Report', skipping report on 'I Am Safe'.");
                     iamSafe(false); // Call iamSafe (non-duress) with no report data
                 } else {
                     // Not duress, not travelling. Show the report modal.
@@ -753,7 +771,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             const seconds = Math.floor((remaining % 60000) / 1000);
             document.getElementById('countdownTimer').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             document.getElementById('countdownTimer').classList.remove('text-red-500');
-        } else {
+} else {
             const overdue = now.getTime() - state.activeVisit.anticipatedDepartureTime.getTime();
             const hours = Math.floor(overdue / 3600000);
             const minutes = Math.floor((overdue % 3600000) / 60000);
@@ -845,7 +863,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         saveState();
         navigate('main');
         renderLocations();
-        updateHomeScreenButtons(); // --- RENAMED ---
+        updateHomeScreenButtons();
         document.getElementById('alertActiveContainer').classList.add('hidden');
         document.getElementById('normalButtonsContainer').classList.remove('hidden');
         if(synth) synth.volume.value = 0; 
@@ -895,9 +913,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         const overdueMinutes = (now - departureTime) / 60000;
         if (overdueMinutes > 0) {
             // First alert trigger
-            if (overdueMinutes >= FIRST_ALERT_MINUTES && state.activeVisit.alertState < 2) {
+            if (overdueMinutes >= (parseInt(FIRST_ALERT_MINUTES) || 15) && state.activeVisit.alertState < 2) {
                 state.activeVisit.alertState = 2;
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'ALERT SENT' });
+                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'ALERT SENT', "GPS Timestamp": new Date().toISOString() }); // Set alert timestamp
                 document.getElementById('alertActiveContainer').classList.remove('hidden');
                 document.getElementById('normalButtonsContainer').classList.add('hidden');
                 tryGetGps("First overdue alert GPS");
@@ -1031,7 +1049,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 checkinCountdownInterval = null;
                 hideModals();
                  if (!state.activeVisit) return; 
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'MISSED_CHECKIN', "Notes": 'Worker missed a scheduled check-in.' });
+                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'MISSED_CHECKIN', "Notes": 'Worker missed a scheduled check-in.', "GPS Timestamp": new Date().toISOString() });
                 document.getElementById('alertActiveContainer').classList.remove('hidden');
                 document.getElementById('normalButtonsContainer').classList.add('hidden');
                 if(synth) synth.volume.value = 0; 
@@ -1056,30 +1074,22 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 
     // --- WSA: NEW FUNCTIONS ---
 
-    // --- UPDATED showReportModal (OTG v1.6) ---
+    /**
+     * Shows the report modal, building the form dynamically.
+     */
+    // --- UPDATED showReportModal (OTG v1.8) ---
     function showReportModal(isFromAlert = false) {
-        let location;
-        if (isFromAlert) {
-            if (!state.activeVisit) return;
-            location = state.locations.find(l => l.id === state.activeVisit.locationId);
-        } else {
-            // Can be called from Depart (activeVisit) or QuickStat (selectedLocationId)
-            const locationId = state.activeVisit ? state.activeVisit.locationId : state.selectedLocationId;
-            if (!locationId) {
-                showAlert("Error", "No location selected.");
-                return;
-            }
-            location = state.locations.find(l => l.id === locationId);
-        }
-        
+        if (!state.activeVisit) return;
+
+        const location = state.locations.find(l => l.id === state.activeVisit.locationId);
         if (!location) {
             showAlert("Error", "Could not find location data.");
             return;
         }
 
-        // --- NEW: Check for "Travelling" ---
-        if (location.name === 'Travelling') {
-            console.log("Location is 'Travelling', skipping report.");
+        // --- NEW: Check for "Travelling" or "No Report" ---
+        if (location.name === 'Travelling' || location.noReport) {
+            console.log("Location is 'Travelling' or 'No Report', skipping report.");
             if (isFromAlert) {
                 iamSafe(false); // Call iamSafe with no report
             } else {
@@ -1091,11 +1101,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 
         // Store if this modal was triggered from an "I AM SAFE" button
         reportModal.dataset.isFromAlert = isFromAlert;
-        reportModal.dataset.isQuickStat = 'false'; // Not a quick stat
+        reportModal.dataset.isQuickStat = 'false'; // --- NEW: Set QuickStat to false ---
 
         // Show the modal
         showModal('report');
-        reportModalTitle.textContent = `Visit Report for: ${location.name}`;
+reportModalTitle.textContent = `Visit Report for: ${location.name}`;
         reportFormContainer.classList.add('hidden');
         reportLoading.classList.add('hidden');
         reportNotes.value = ''; // Clear notes
@@ -1129,7 +1139,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         buildReportForm(checklistItems);
         // --- END MODIFIED ---
     }
-
+    
     // --- NEW: showQuickStatModal ---
     function showQuickStatModal() {
         if (!state.selectedLocationId) {
@@ -1143,8 +1153,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             return;
         }
 
-        if (location.name === 'Travelling') {
-            showAlert("Not Supported", "Cannot file a 'Quick Stat' for the 'Travelling' location.");
+        if (location.name === 'Travelling' || location.noReport) {
+            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location.");
             return;
         }
 
@@ -1184,7 +1194,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     /**
      * Helper to build the checklist HTML from an array of objects.
      */
-    // --- UPDATED buildReportForm (OTG v1.5 - with '$') ---
+    // --- UPDATED buildReportForm (OTG v1.8 - with '$') ---
     function buildReportForm(items) {
          reportFormChecklists.innerHTML = items.map((item, index) => {
             if (!item || typeof item.text === 'undefined') {
@@ -1202,13 +1212,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     <textarea id="wsa-note-${index}" data-header="${item.text}" class="wsa-custom-note mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
                 </div>
                 `;
-            } else if (item.type === 'number') { // --- NEW ---
+            // --- === NEW: Added 'number' type === ---
+            } else if (item.type === 'number') { 
                 return `
                 <div class="mt-4">
                     <label for="wsa-num-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
                     <input type="number" id="wsa-num-${index}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="numeric" pattern="[0-9]*">
                 </div>
                 `;
+            // --- === END NEW === ---
             } else { // Default to checkbox (item.type === 'checkbox')
                 return `<label for="check-${index}" class="flex items-center p-2 bg-gray-900 rounded-md cursor-pointer">
                     <input id="check-${index}" name="${item.text}" type="checkbox" class="h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
@@ -1223,8 +1235,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     /**
      * Gathers report data and calls depart() or iamSafe()
      */
-    // --- UPDATED submitReport (OTG v1.5 - with '$') ---
-    // --- MODIFIED: To handle branching ---
+    // --- UPDATED submitReport (OTG v1.8 - with '$' and 'QuickStat') ---
     function submitReport() {
         const isFromAlert = reportModal.dataset.isFromAlert === 'true';
         const isQuickStat = reportModal.dataset.isQuickStat === 'true';
@@ -1466,6 +1477,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 // --- MODIFIED: Clear new location fields ---
                 document.getElementById('companyName').value = '';
                 document.getElementById('templateName').value = '';
+                document.getElementById('noReportRequired').checked = false;
                 // --- End MODIFIED ---
                 document.getElementById('deleteLocationBtn').classList.add('hidden');
                 document.querySelector('#saveLocationBtn').dataset.id = '';
@@ -1484,6 +1496,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     // --- MODIFIED: Populate new location fields ---
                     document.getElementById('companyName').value = location.companyName || '';
                     document.getElementById('templateName').value = location.templateName || '';
+                    document.getElementById('noReportRequired').checked = location.noReport || false;
                     // --- End MODIFIED ---
                     
                     if (locId === 'loc_travelling_default') {
@@ -1514,14 +1527,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             // --- MODIFIED: Get new location fields ---
             const companyName = document.getElementById('companyName').value.trim();
             const templateName = document.getElementById('templateName').value.trim();
+            const noReport = document.getElementById('noReportRequired').checked;
             // --- End MODIFIED ---
 
             if (!name || !address) { showAlert("Missing Info", "Please provide both a name and an address for the location."); return; }
             if (id) {
                 const index = state.locations.findIndex(l => l.id === id);
-                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName }; // MODIFIED
+                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName, noReport }; // MODIFIED
             } else {
-                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName }); // MODIFIED
+                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName, noReport }); // MODIFIED
             }
             saveState();
             renderLocations();
@@ -1590,11 +1604,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         
         // --- NEW: clearCacheBtn listener ---
         clearCacheBtn.addEventListener('click', () => {
-            if (confirm("Are you sure you want to clear all cached report forms? The app will re-download them when you next go online.")) {
-                state.cachedForms = {};
-                saveState();
-                showAlert("Cache Cleared", "All cached forms have been cleared. They will be re-synced from the server.");
-                navigate('main');
+            if (confirm("Are you sure you want to clear all cached data? This will log you out and clear all locations and forms.")) {
+                localStorage.clear(); // Clear all
+                state = {}; // Reset state
+                showAlert("Cache Cleared", "All app data has been cleared. The app will now reload.");
+                setTimeout(() => location.reload(), 2000); // Reload to re-trigger loadState
             }
         });
 
