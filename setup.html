@@ -271,7 +271,8 @@
         const baseUrl = window.location.href; 
         const fetchTemplate = async (fileName) => {
             // Use cache-busting query param to ensure fresh templates
-            const templateUrl = new URL(`templates/${fileName}?t=${Date.now()}`, baseUrl).href; 
+            // --- === FIX: Changed 'templates' to 'Templates' === ---
+            const templateUrl = new URL(`Templates/${fileName}?t=${Date.now()}`, baseUrl).href; 
             console.log(`Fetching: ${templateUrl}`); 
             const response = await fetch(templateUrl, { cache: "no-store" }); // Disable cache
             if (!response.ok) {
