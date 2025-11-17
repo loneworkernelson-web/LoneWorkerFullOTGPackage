@@ -261,7 +261,7 @@
         geminiKey: "",
         deployedUrl: "",
         escalationMinutes: "5",
-        firstAlertMinutes: "15" // <-- NEW: Added to config object
+        firstAlertMinutes: "15"
     };
     
     // Define header strings
@@ -271,26 +271,107 @@
 
     // --- Template Fetching ---
     window.onload = async () => {
-<!-- ... (This function is correct and unchanged) ... -->
+        const baseUrl = window.location.href; 
+        const fetchTemplate = async (fileName) => {
+            // Use cache-busting query param to ensure fresh templates
+            // --- === FIX: Changed 'templates' to 'Templates' === ---
+            const templateUrl = new URL(`Templates/${fileName}?t=${Date.now()}`, baseUrl).href; 
+            console.log(`Fetching: ${templateUrl}`); 
+            const response = await fetch(templateUrl, { cache: "no-store" }); // Disable cache
+            if (!response.ok) {
+                throw new Error(`Failed to load ${fileName} from ${templateUrl} - Status: ${response.status}`);
+            }
+            const text = await response.text();
+            templates[fileName] = text;
+        };
+
+        try {
+            // --- UPDATED: Fetch all 7 templates ---
+            const templateFiles = [
+                'apps_script_simple.txt',
+                'worker_app_simple.txt',
+                'apps_script_advanced.txt',
+                'worker_app_advanced.txt',
+                'monitor_app_template.txt',
+                'manifest.json',
+                'sw.js'
+            ];
+            for (const file of templateFiles) {
+                await fetchTemplate(file);
+            }
+            
+            console.log('All code templates loaded successfully.');
+            templatesLoaded = true; 
+            
+            // Default preview to simple script
+            const scriptPreviewEl = document.getElementById('scriptPreview');
+            if (scriptPreviewEl && templates['apps_script_simple.txt']) {
+                scriptPreviewEl.textContent = templates['apps_script_simple.txt'];
+            }
+            
+            const enableCheckinEl = document.getElementById('enableCheckin');
+            const checkinIntervalDivEl = document.getElementById('checkinIntervalDiv');
+            if (enableCheckinEl && checkinIntervalDivEl) {
+                 enableCheckinEl.addEventListener('change', (event) => {
+                    if (event.target.checked) {
+                        checkinIntervalDivEl.classList.remove('hidden');
+                    } else {
+                         checkinIntervalDivEl.classList.add('hidden');
+                    }
+                 });
+            } else {
+                 console.warn("Checkin elements not found for event listener setup.");
+            }
+
+        } catch (error) {
+            console.error("Template Loading Error:", error); 
+            templatesLoaded = false; 
+            alert(`Error: Could not load template files. ${error.message}. Please ensure your 'Templates' folder (case-sensitive) contains all 7 required files. Check the browser console (F12) for more details.`);
+            document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+            const statusEl = document.getElementById('zipStatus') || document.getElementById('testStatus');
+            if (statusEl) statusEl.innerText = "Error: Templates failed to load. Cannot proceed.";
+        }
     };
     
     // --- NEW: Function to toggle advanced options ---
     function toggleReporting(isAdvanced) {
-<!-- ... (This function is correct and unchanged) ... -->
+        const advancedOptions = document.getElementById('advancedReportingOptions');
+        const checklistsInstruction = document.getElementById('checklistsInstruction');
+        const headersDisplayText = document.getElementById('headersDisplayText');
+        const scriptPreview = document.getElementById('scriptPreview');
+        
+        if (isAdvanced) {
+            advancedOptions.classList.remove('hidden');
+            checklistsInstruction.classList.remove('hidden');
+            currentHeaders = headersAdvanced;
+            headersDisplayText.textContent = headersAdvanced.replace(/\t/g, ',');
+            if(templates['apps_script_advanced.txt']) {
+                scriptPreview.textContent = templates['apps_script_advanced.txt'];
+            }
+        } else {
+            advancedOptions.classList.add('hidden');
+            checklistsInstruction.classList.add('hidden');
+            currentHeaders = headersSimple;
+            headersDisplayText.textContent = headersSimple.replace(/\t/g, ',');
+            if(templates['apps_script_simple.txt']) {
+                scriptPreview.textContent = templates['apps_script_simple.txt'];
+            }
+        }
     }
 
     // --- Navigation ---
     function showStep(step) {
-<!-- ... (This function is correct and unchanged) ... -->
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        const stepEl = document.getElementById(`step${step}`);
+        if (stepEl) stepEl.classList.add('active');
+        else console.error(`showStep: Could not find step element 'step${step}'`);
+        
+        document.querySelectorAll('.step-nav button').forEach(el => el.classList.remove('current'));
+        const navEl = document.getElementById(`nav${step}`);
+        if (navEl) navEl.classList.add('current');
+        else console.error(`showStep: Could not find nav element 'nav${step}'`);
         
         currentStep = step;
-
-        if (step === 4) {
-             // We can't auto-fill the URL because the user has to go deploy it.
-             // We just auto-fill the key.
-             const secretKeyEl = document.getElementById('secretKey');
-             //if (secretKeyEl) secretKeyEl.value = config.secretKey; // This was an error, field is in step 3
-        }
     }
 
     function nextStep() {
@@ -342,12 +423,37 @@
         }
         
         const maxSteps = 6;
-<!-- ... (This function is correct and unchanged) ... -->
+        if (currentStep < maxSteps) {
+            const nextNav = document.getElementById(`nav${currentStep + 1}`);
+            if (nextNav) {
+                nextNav.disabled = false;
+                nextNav.classList.remove('text-gray-400');
+            } else {
+                 console.error(`nextStep: Could not find next nav element 'nav${currentStep + 1}'`);
+            }
+            showStep(currentStep + 1);
+        }
     }
 
     // --- Utilities ---
     function copyHeaders(button) {
-<!-- ... (This function is correct and unchanged) ... -->
+         if (!navigator.clipboard) {
+            alert('Clipboard API not available.');
+             console.error('Clipboard API not available.');
+            return;
+        }
+        // currentHeaders is set by toggleReporting()
+        navigator.clipboard.writeText(currentHeaders).then(() => {
+            button.innerText = 'Copied!';
+            button.classList.add('copied');
+            setTimeout(() => {
+                button.innerText = 'Copy Headers'; 
+                button.classList.remove('copied');
+            }, 2000);
+        }).catch(err => {
+            alert('Failed to copy headers.');
+            console.error('Clipboard copy failed:', err);
+        });
     }
 
     // --- UPDATED: copyInjectedScript (now injects all keys and checks for advanced) ---
@@ -394,16 +500,113 @@
 
         // Inject Gemini Key (if advanced)
         if (isAdvanced) {
-<!-- ... (This function is correct and unchanged) ... -->
+            const geminiApiKey = geminiKeyInput ? geminiKeyInput.value : '';
+            const geminiKeyToInject = geminiApiKey || "YOUR_GEMINI_API_KEY_HERE";
+            injectedScript = injectedScript.replace(/%%GEMINI_API_KEY%%/g, geminiKeyToInject);
+        }
+
+        if (!navigator.clipboard) {
+            alert('Clipboard API not available.');
+            console.error('Clipboard API not available.');
+            return;
+        }
+        navigator.clipboard.writeText(injectedScript).then(() => {
+            button.innerText = 'Copied!';
+            button.classList.add('copied');
+            setTimeout(() => {
+                button.innerText = 'Copy Script';
+                button.classList.remove('copied');
+            }, 2000);
+        }).catch(err => {
+            alert('Failed to copy.');
+             console.error('Clipboard copy failed:', err);
+        });
     }
 
     function validateUrl(input) {
-<!-- ... (This function is correct and unchanged) ... -->
+         if (!input) return; 
+        const urlPattern = /^https:\/\/script\.google\.com\/macros\/s\/.*\/exec$/;
+        if (input.value && !urlPattern.test(input.value)) {
+            input.style.borderColor = '#ef4444'; 
+        } else {
+            input.style.borderColor = ''; 
+        }
     }
 
     // --- Core Logic ---
     function testAndProceed() {
-<!-- ... (This function is correct and unchanged) ... -->
+         if (!templatesLoaded) { 
+             alert('Templates are still loading or failed to load. Cannot test connection yet.');
+             return;
+         }
+        const urlInput = document.getElementById('scriptUrl');
+        const keyInput = document.getElementById('secretKeyStep3'); // Read from Step 3
+        const statusEl = document.getElementById('testStatus');
+        
+        if (!urlInput || !keyInput || !statusEl) {
+             console.error("testAndProceed: Missing required elements.");
+             return; 
+        }
+
+        const url = urlInput.value;
+        const key = keyInput.value; 
+
+        if (!url || !key) {
+            statusEl.innerText = 'Please fill in both the URL (from Step 3) and Secret Key (from Step 3).';
+            return;
+        }
+
+        validateUrl(urlInput);
+        if (urlInput.style.borderColor) {
+             statusEl.innerText = 'The URL format appears to be incorrect.';
+             return;
+        }
+
+        statusEl.innerText = 'Testing connection...';
+
+        const script = document.createElement('script');
+        const callbackName = 'jsonp_callback_' + Date.now();
+        let timer;
+
+        const cleanupJsonp = () => {
+             clearTimeout(timer);
+             delete window[callbackName];
+             if(document.body.contains(script)) {
+                 document.body.removeChild(script);
+             }
+        };
+        
+        window[callbackName] = function(data) {
+            cleanupJsonp();
+            
+            if (data.status === 'error' && data.message.includes('Access Denied')) {
+                statusEl.innerText = 'Error: Access Denied. Your Secret Key is incorrect.';
+            } else if (Array.isArray(data)) {
+                statusEl.innerText = 'Success! Connection verified.';
+                nextStep(); // Move to Step 5 (Download Apps)
+            } else {
+                statusEl.innerText = 'Error: Received unexpected data from the script.';
+                 console.error("JSONP Response Error:", data);
+            }
+        };
+        
+        script.src = url + '?callback=' + callbackName + '&token=' + encodeURIComponent(key);
+        
+        script.onerror = () => {
+            cleanupJsonp();
+            statusEl.innerText = 'Error: Could not connect. Check the Web App URL, network, and CORS settings.';
+             console.error( "Connection Failed: Could not fetch data." );
+        };
+
+        timer = setTimeout(() => {
+            if (window[callbackName]) { 
+                console.error("JSONP Request Timed Out");
+                cleanupJsonp();
+                 statusEl.innerText = 'Error: Connection timed out. Check URL or script deployment.';
+            }
+        }, 20000); 
+        
+        document.body.appendChild(script);
     }
 
     // --- UPDATED: generateZip ---
@@ -459,11 +662,35 @@
             let workerApp = templates[workerTemplateName];
             workerApp = workerApp.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlert);
             workerApp = workerApp.replace(/%%CHECKIN_ENABLED%%/g, checkin);
-<!-- ... (This function is correct and unchanged) ... -->
+            workerApp = workerApp.replace(/%%CHECKIN_INTERVAL%%/g, checkinInterval);
+            // --- === BUG FIX HERE: Escaped slashes in regex === ---
+            workerApp = workerApp.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
+            workerApp = workerApp.replace(/%%GOOGLE_SHEET_URL%%/g, deployedUrl);
+            workerApp = workerApp.replace(/%%ORGANISATION_NAME%%/g, organisationName);
+            // --- NEW: Inject escalation minutes ---
+            workerApp = workerApp.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
+            
+            const workerFolder = zip.folder('WorkerApp'); 
+            if (!workerFolder) throw new Error("Could not create worker folder in zip");
+            workerFolder.file('index.html', workerApp);
+            workerFolder.file('sw.js', templates['sw.js']); // sw.js is shared
+
+            // --- 2. Process Manifest ---
+            let manifest = templates['manifest.json'];
+            // --- === BUG FIX HERE: Escaped slashes in regex === ---
+            manifest = manifest.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
+            manifest = manifest.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             workerFolder.file('manifest.json', manifest);
 
             // --- 3. Process Monitor App ---
-<!-- ... (This function is correct and unchanged) ... -->
+            statusEl.innerText = 'Processing Monitor App...';
+            let monitorApp = templates['monitor_app_template.txt'];
+            monitorApp = monitorApp.replace(/%%LOGO_URL%%/g, logoUrl); 
+            monitorApp = monitorApp.replace(/%%ORGANISATION_NAME%%/g, organisationName);
+            
+            const monitorFolder = zip.folder('MonitorApp'); 
+             if (!monitorFolder) throw new Error("Could not create monitor folder in zip");
+            monitorFolder.file('index.html', monitorApp); 
 
             // --- 4. Process Apps Script ---
             statusEl.innerText = 'Processing Apps Script file...';
@@ -480,7 +707,27 @@
             zip.file('01-PASTE_THIS_INTO_APPS_SCRIPT.txt', appsScript);
              
             // --- 5. Generate and Download ---
-<!-- ... (This function is correct and unchanged) ... -->
+            statusEl.innerText = 'Generating .zip file...';
+            const content = await zip.generateAsync({ type: 'blob' });
+            
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            a.download = 'OTG_AppSuite_Package.zip'; 
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href); 
+
+            statusEl.innerText = 'App package download initiated!';
+            
+        } catch (error) {
+            console.error("Error during zip generation:", error);
+            statusEl.innerText = `Error generating zip file: ${error.message}. See console for details.`;
+           
+        } finally {
+             downloadBtn.disabled = false;
+             downloadBtn.classList.remove('bg-gray-500', 'cursor-not-allowed');
+             downloadBtn.classList.add('hover:bg-blue-700');
         }
     }
 </script>
