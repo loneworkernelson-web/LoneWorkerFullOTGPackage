@@ -647,6 +647,7 @@
             workerApp = workerApp.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlert);
             workerApp = workerApp.replace(/%%CHECKIN_ENABLED%%/g, checkin);
             workerApp = workerApp.replace(/%%CHECKIN_INTERVAL%%/g, checkinInterval);
+            // --- === BUG FIX HERE: Escaped slashes in regex === ---
             workerApp = workerApp.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             workerApp = workerApp.replace(/%%GOOGLE_SHEET_URL%%/g, deployedUrl);
             workerApp = workerApp.replace(/%%ORGANISATION_NAME%%/g, organisationName);
@@ -660,7 +661,8 @@
 
             // --- 2. Process Manifest ---
             let manifest = templates['manifest.json'];
-            manifest = manifest.replace(/https://i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
+            // --- === BUG FIX HERE: Escaped slashes in regex === ---
+            manifest = manifest.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             manifest = manifest.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             workerFolder.file('manifest.json', manifest);
 
