@@ -1,6 +1,6 @@
 // ##### --------------------------------------------------- #####
 // ##### On-the-Go AppSuite - ADVANCED Backend Script (Reporting) #####
-// ##### v2.11 (SMS URL Fix + Phone Number Fix)
+// ##### v2.11 (All Features: Quick Stats, $ Entries, SMS, PDFs)
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -23,118 +23,98 @@ var LONGITUDINAL_ID_HEADER = "Longitudinal Report Sheet ID";
 
 // --- WEB APP ENDPOINTS ---
 function doGet(e) {
-  var callback = e.parameter.callback;
-  
-  try {
-    // 1. Monitor App Request (JSONP)
-    if (callback) {
-      var token = e.parameter.token;
-      if (token !== SECRET_KEY) {
-        // --- FIX: Return Access Denied in correct JSONP format ---
-        var errorResponse = callback + '(' + JSON.stringify({ status: "error", message: "Access Denied" }) + ')';
-        return ContentService
-          .createTextOutput(errorResponse)
-          .setMimeType(ContentService.MimeType.JAVASCRIPT);
-      }
-      
-      var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
-      var data = sheet.getDataRange().getValues();
-      
-      // --- FIX: Handle empty sheet ---
-      if (data.length === 0 || data[0].length === 0) {
-        // Sheet is empty, return empty array
-        var emptyResponse = callback + '([])';
-        return ContentService
-          .createTextOutput(emptyResponse)
-          .setMimeType(ContentService.MimeType.JAVASCRIPT);
-      }
-      // --- END FIX ---
-      
-      var headers = data.shift();
-      var json = data.map(function(row) {
-        var obj = {};
-        headers.forEach(function(header, i) {
-          if (row[i] instanceof Date) {
-            obj[header] = row[i].toISOString(); 
-          } else {
-            obj[header] = row[i];
-          }
-        });
-        return obj;
-      });
-
-      var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
+  // 1. Monitor App Request (JSONP)
+  if (e.parameter.callback) {
+    var token = e.parameter.token;
+    if (token !== SECRET_KEY) {
       return ContentService
-        .createTextOutput(jsonpResponse)
+        .createTextOutput(JSON.stringify({ status: "error", message: "Access Denied" }))
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
-
-    // 2. Worker App Request (JSON)
-    if (e.parameter.action === 'getForms' && e.parameter.companyName) {
-      var companyName = e.parameter.companyName;
-      var questions = []; // This will now be an array of objects
-      try {
-        var checklistSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
-        var data = checklistSheet.getDataRange().getValues();
-        var headers = data.shift(); // Get headers (Company Name, Question 1, ...)
-        
-        for (var i = 0; i < data.length; i++) {
-          if (data[i][0] === companyName) { // Find matching company in Col A
-            // Loop through question columns (from Col B onwards)
-            for (var j = 1; j < headers.length; j++) {
-              var questionText = data[i][j];
-              if (questionText) { 
-                var textStr = String(questionText);
-                // --- === MODIFIED: Added '$' type === ---
-                if (textStr.startsWith("# ")) {
-                  questions.push({ "type": "header", "text": textStr.substring(2).trim() });
-                } else if (textStr.startsWith("#")) {
-                  questions.push({ "type": "header", "text": textStr.substring(1).trim() });
-                } else if (textStr.startsWith("% ")) {
-                  questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
-                } else if (textStr.startsWith("%")) {
-                  questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
-                } else if (textStr.startsWith("$ ")) { // NEW
-                  questions.push({ "type": "number", "text": textStr.substring(2).trim() });
-                } else if (textStr.startsWith("$")) { // NEW
-                  questions.push({ "type": "number", "text": textStr.substring(1).trim() });
-                } else {
-                  questions.push({ "type": "checkbox", "text": textStr });
-                }
-                // --- === END MODIFIED === ---
-              } else {
-                break; 
-              }
-            }
-            break; 
-          }
-        }
-        Logger.log("Found " + questions.length + " items (questions/headers) for " + companyName);
-      } catch (err) {
-        Logger.log("Error in getForms: " + err.toString());
-      }
-      
-      return ContentService
-        .createTextOutput(JSON.stringify(questions))
-        .setMimeType(ContentService.MimeType.JSON);
+    
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
+    var data = sheet.getDataRange().getValues();
+    
+    // Handle empty sheet
+    if (data.length === 0 || data[0].length === 0) {
+         var callback = e.parameter.callback;
+         return ContentService.createTextOutput(callback + '([])').setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
 
-    // Default invalid request
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
-      .setMimeType(ContentService.MimeType.JSON);
+    var headers = data.shift();
+    var json = data.map(function(row) {
+      var obj = {};
+      headers.forEach(function(header, i) {
+        if (row[i] instanceof Date) {
+          obj[header] = row[i].toISOString(); 
+        } else {
+          obj[header] = row[i];
+        }
+      });
+      return obj;
+    });
 
-  } catch (err) {
-    Logger.log("Critical doGet Error: " + err.message);
-    // --- FIX: Return a JSONP-formatted error ---
-    var errorResponse = callback 
-      ? callback + '(' + JSON.stringify({ status: "error", message: err.message }) + ')'
-      : JSON.stringify({ status: "error", message: err.message });
+    var callback = e.parameter.callback;
+    var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
+    return ContentService
+      .createTextOutput(jsonpResponse)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  // 2. Worker App Request (JSON)
+  if (e.parameter.action === 'getForms' && e.parameter.companyName) {
+    var companyName = e.parameter.companyName;
+    var questions = []; // This will now be an array of objects
+    try {
+      var checklistSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
+      var data = checklistSheet.getDataRange().getValues();
+      var headers = data.shift(); // Get headers (Company Name, Question 1, ...)
+      
+      for (var i = 0; i < data.length; i++) {
+        if (data[i][0] === companyName) { // Find matching company in Col A
+          // Loop through question columns (from Col B onwards)
+          for (var j = 1; j < headers.length; j++) {
+            var questionText = data[i][j];
+            if (questionText) { 
+              var textStr = String(questionText);
+              // --- === MODIFIED: Added '$' type === ---
+              if (textStr.startsWith("# ")) {
+                questions.push({ "type": "header", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("#")) {
+                 questions.push({ "type": "header", "text": textStr.substring(1).trim() });
+              } else if (textStr.startsWith("% ")) {
+                 questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("%")) {
+                 questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
+              } else if (textStr.startsWith("$ ")) { // NEW
+                 questions.push({ "type": "number", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("$")) { // NEW
+                 questions.push({ "type": "number", "text": textStr.substring(1).trim() });
+              } else {
+                questions.push({ "type": "checkbox", "text": textStr });
+              }
+              // --- === END MODIFIED === ---
+            } else {
+              break; 
+            }
+          }
+          break; 
+        }
+      }
+      Logger.log("Found " + questions.length + " items (questions/headers) for " + companyName);
+    } catch (err) {
+      Logger.log("Error in getForms: " + err.toString());
+    }
     
     return ContentService
-      .createTextOutput(errorResponse)
-      .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+      .createTextOutput(JSON.stringify(questions))
+      .setMimeType(ContentService.MimeType.JSON);
   }
+
+  // Default invalid request
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 
@@ -235,7 +215,9 @@ function doPost(e) {
     if (['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN'].indexOf(data['Alarm Status']) > -1) {
       // --- NEW: Write the alert timestamp ---
       data["GPS Timestamp"] = new Date().toISOString();
-      sheet.getRange(rowIndex, headers.indexOf("GPS Timestamp") + 1).setValue(data["GPS Timestamp"]);
+      if (rowIndex !== -1) {
+          sheet.getRange(rowIndex, headers.indexOf("GPS Timestamp") + 1).setValue(data["GPS Timestamp"]);
+      }
       // --- END NEW ---
 
       var workerDataForEmail = {};
@@ -400,10 +382,10 @@ function sendSmsViaGateway(phoneNumber, message) {
       // --- NEW: Fallback Email to Admin ---
       var adminEmail = Session.getEffectiveUser().getEmail();
       var subject = "OTG AppSuite SMS Failure Notification";
-      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded, the number was invalid, or TextBelt blocked a URL.";
+      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded during testing, or the phone number format is invalid. The primary email alert was still sent.";
       MailApp.sendEmail(adminEmail, subject, body);
       // --- END NEW ---
-      Logger.log("Free SMS failed (quota, invalid number, or URL): " + result.error);
+      Logger.log("Free SMS failed (quota likely used, or invalid number): " + result.error);
     }
   } catch (e) {
     Logger.log("SMS Error: " + e.toString());
@@ -436,44 +418,43 @@ function sendAlertEmail(workerData, alertType, isEscalation) {
     locationLink = 'http://maps.google.com/?q=' + workerData['Last Known GPS'];
   }
 
-  // --- MODIFIED: Removed URL from SMS Message ---
+  // --- MODIFIED: Removed URL from SMS messages ---
   switch(alertType) {
     case 'EMERGENCY - PANIC BUTTON':
       subject = 'URGENT PANIC ALERT for ' + workerName;
       body = '<p><strong>A PANIC ALERT has been triggered by ' + workerName + '.</strong></p> <p>This is a high-priority alert indicating an emergency situation.</p>';
-      smsMessage = `PANIC ALERT: ${workerName} at ${locationName}. Check Monitor App or Email for location.`;
+      smsMessage = `PANIC ALERT: ${workerName} at ${locationName}. Check email for map link.`;
       break;
     case 'DURESS_CODE_ACTIVATED':
       subject = 'URGENT DURESS ALERT for ' + workerName;
       body = '<p><strong>A SILENT DURESS ALARM has been triggered by ' + workerName + '.</strong></p> <p>The worker has entered their Duress PIN, suggesting they may be under threat and unable to call for help directly.</p>';
-      smsMessage = `DURESS ALERT: ${workerName} at ${locationName}. Check Monitor App or Email.`;
+      smsMessage = `DURESS ALERT: ${workerName} at ${locationName}. Check email for map link.`;
       break;
     case 'MISSED_CHECKIN':
       subject = 'MISSED CHECK-IN ALERT for ' + workerName;
       body = '<p><strong>' + workerName + ' has missed a scheduled "Are you OK?" check-in.</strong></p>';
-      smsMessage = `MISSED CHECK-IN: ${workerName} at ${locationName}. Check Monitor App or Email.`;
+      smsMessage = `MISSED CHECK-IN: ${workerName} at ${locationName}. Check email for map link.`;
       break;
     case 'ESCALATION_SENT':
       subject = 'ESCALATION ALERT: ' + workerName + ' is Overdue/Unresponsive';
       body = '<p>This is an escalation alert. ' + workerName + ' is either 60+ minutes overdue or has not responded to a PANIC/DURESS/MISSED_CHECKIN alert for ' + ESCALATION_MINUTES + ' minutes.</p>';
-      smsMessage = `ESCALATION: ${workerName} at ${locationName} is unresponsive. Check Monitor App or Email.`;
+      smsMessage = `ESCALATION: ${workerName} at ${locationName} is unresponsive. Check email for map link.`;
       break;
     case 'EMAIL_1_SENT':
     case 'EMAIL_2_SENT':
     case 'EMAIL_3_SENT':
-      var firstAlertTime = parseInt(FIRST_ALERT_MINUTES) || 15;
+      var minutesOverdue = parseInt(FIRST_ALERT_MINUTES) || 15;
       var escalationTime = parseInt(ESCALATION_MINUTES) || 5;
-      var minutesOverdue = firstAlertTime;
-      if (alertType === 'EMAIL_2_SENT') minutesOverdue = firstAlertTime + (escalationTime * 1);
-      if (alertType === 'EMAIL_3_SENT') minutesOverdue = firstAlertTime + (escalationTime * 2);
+      if (alertType === 'EMAIL_2_SENT') minutesOverdue = minutesOverdue + (escalationTime * 1);
+      if (alertType === 'EMAIL_3_SENT') minutesOverdue = minutesOverdue + (escalationTime * 2);
       subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
       body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
-      smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Check Monitor App or Email.`;
+      smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Check email for map link.`;
       break;
     case 'ALERT SENT': 
          subject = 'Overdue Alert: ' + workerName + ' is overdue';
          body = '<p>' + workerName + ' became overdue and triggered an initial alert state.</p>';
-         smsMessage = `OVERDUE: ${workerName} is overdue at ${locationName}. Check Monitor App or Email.`;
+         smsMessage = `OVERDUE: ${workerName} is overdue at ${locationName}. Check email for map link.`;
          break;
     default: 
       subject = 'OTG AppSuite Alert (' + alertType + ') for ' + workerName;
@@ -514,6 +495,7 @@ function sendAlertEmail(workerData, alertType, isEscalation) {
     sendSmsViaGateway(phoneRecipient, smsMessage);
   }
 }
+
 // --- === REPORTING FUNCTIONS (REFACTORED v2.8) === ---
 
 /**
@@ -1007,6 +989,8 @@ function writeReportToTab(reportSheet, coData, reportTitle, monthStr, aiCorrecti
     reportSheet.autoResizeColumn(5 + allCustomNoteHeaders.length + i);
   }
 }
+
+
 /**
  * Generates a master report for ALL companies for a specified month.
  * Creates a new, separate tab for each COMPANY-SITE combination.
@@ -1093,7 +1077,7 @@ function generateAllPdfReports() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const controlSheet = ss.getSheetByName("Master Report");
   
-  if (PDF_OUTPUT_FOLDER_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE" || DEFAULT_REPORT_TEMPLATE_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE") {
+  if (PDF_OUTPUT_FOLDER_ID === "YOUR_OUTPUT_FOLDER_ID_HERE" || DEFAULT_REPORT_TEMPLATE_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE") {
     SpreadsheetApp.getUi().alert("Error: PDF_OUTPUT_FOLDER_ID or DEFAULT_REPORT_TEMPLATE_ID not set at the top of the script.");
     return;
   }
