@@ -221,11 +221,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     const PRE_ALERT_OFFSET = 2; 
     var CHECKIN_ENABLED = %%CHECKIN_ENABLED%%;
     var CHECKIN_INTERVAL = %%CHECKIN_INTERVAL%%; 
+    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
     // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
     let lastBatteryReportTime = 0; 
     let mainScreenReminderTimer = null;
+
+    // --- NEW: Wake Lock variable ---
+    let wakeLock = null;
 
     async function initAudio() { if (synth || (Tone.context && Tone.context.state === 'running')) return; try { await Tone.start(); synth = new Tone.Synth().toDestination(); console.log("Audio context started"); } catch (e) { console.error("Could not start audio context:", e); } }
     async function playSoundAndVibrate(action) {
@@ -251,6 +255,29 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         };
         play();
     }
+
+    // --- NEW: Screen Wake Lock API functions ---
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Screen Wake Lock active');
+                wakeLock.addEventListener('release', () => {
+                    console.log('Screen Wake Lock released');
+                });
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+    }
+
+    async function releaseWakeLock() {
+        if (wakeLock !== null) {
+            await wakeLock.release();
+            wakeLock = null;
+        }
+    }
+    // --- END NEW ---
     
     function navigate(page) { 
         Object.values(pages).forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); }); 
@@ -463,7 +490,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                  sendToGoogleSheet({ 
                      "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
                      "Alarm Status": 'DURESS_CODE_ACTIVATED', 
-                     "Notes": 'Worker activated silent duress alarm during extend action.' 
+                     "Notes": 'Worker activated silent duress alarm during extend action.',
+                     "GPS Timestamp": new Date().toISOString() // Set alert time
                  });
                  console.log("Duress PIN entered for Extend. Sent DURESS_CODE_ACTIVATED.");
             } else {
@@ -501,6 +529,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     }
     async function executeStartVisit() {
         if (!navigator.onLine) { showAlert("No Network", "A network connection is required to start a visit."); return; }
+        // --- NEW: Request Wake Lock ---
+        requestWakeLock();
+
         lastBatteryReportTime = 0; 
         let initialBatteryNote = "";
         if (navigator.getBattery) {
@@ -527,7 +558,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             preWarningSent: false,
             lastGpsAttemptTime: null,
             lastTravelGpsTime: null,
-            nextCheckinTime: CHECKIN_ENABLED ? now.getTime() + (parseInt(CHECKIN_INTERVAL) * 60 * 1000) : null, 
+            nextCheckinTime: (String(CHECKIN_ENABLED) === 'true') ? now.getTime() + (parseInt(CHECKIN_INTERVAL) * 60 * 1000) : null, 
             batteryAlertSent: initialBatteryNote.includes("(LOW)") 
         };
         if (location.name === 'Travelling') {
@@ -611,6 +642,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             "Alarm Status": 'DEPARTED',
             "Notes": batteryNote // Add battery note on depart
         });
+        // --- NEW: Release Wake Lock ---
+        releaseWakeLock();
         endVisit();
     }
 
@@ -628,7 +661,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             sendToGoogleSheet({ 
                 "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
                 "Alarm Status": 'DURESS_CODE_ACTIVATED', 
-                "Notes": `Worker activated silent duress alarm via I AM SAFE button. ${batteryNote}`.trim()
+                "Notes": `Worker activated silent duress alarm via I AM SAFE button. ${batteryNote}`.trim(),
+                "GPS Timestamp": new Date().toISOString() // Set alert time
             }); 
         } else {
             playSoundAndVibrate('safe');
@@ -640,6 +674,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }); 
             showAlert("Confirmation", "Your status has been updated to SAFE.");
         }
+        // --- NEW: Release Wake Lock ---
+        releaseWakeLock();
         endVisit(); 
     }
     // --- END UPDATED depart/iamSafe ---
@@ -670,6 +706,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             (position) => {
                  if (!state.activeVisit) return; 
                 const { latitude, longitude } = position.coords;
+                // --- === BUG FIX: Use gpsData.longitude === ---
                 sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Last Known GPS": `${latitude},${longitude}`, "GPS Timestamp": new Date().toISOString(), "Notes": `${notePrefix}: Successfully retrieved GPS.` });
             },
             (error) => {
@@ -706,9 +743,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         const overdueMinutes = (now - departureTime) / 60000;
         if (overdueMinutes > 0) {
             // First alert trigger
-            if (overdueMinutes >= FIRST_ALERT_MINUTES && state.activeVisit.alertState < 2) {
+            if (overdueMinutes >= (parseInt(FIRST_ALERT_MINUTES) || 15) && state.activeVisit.alertState < 2) {
                 state.activeVisit.alertState = 2;
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'ALERT SENT' });
+                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'ALERT SENT', "GPS Timestamp": new Date().toISOString() }); // Set alert timestamp
                 document.getElementById('alertActiveContainer').classList.remove('hidden');
                 document.getElementById('normalButtonsContainer').classList.add('hidden');
                 tryGetGps("First overdue alert GPS");
@@ -719,7 +756,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }
         }
 
-        if (CHECKIN_ENABLED && state.activeVisit.nextCheckinTime && now >= state.activeVisit.nextCheckinTime) {
+        if (String(CHECKIN_ENABLED) === 'true' && state.activeVisit.nextCheckinTime && now >= state.activeVisit.nextCheckinTime) {
             triggerCheckin();
             state.activeVisit.nextCheckinTime = null; 
         }
@@ -765,7 +802,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         showAlert("PANIC ALERT SENT", "An immediate alert has been sent to your emergency contact.");
         const sendPanic = (gpsData) => {
              if (!state.activeVisit) return; 
-            const data = { "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'EMERGENCY - PANIC BUTTON', "Notes": 'Panic button activated by worker.' };
+            const data = { 
+                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
+                "Alarm Status": 'EMERGENCY - PANIC BUTTON', 
+                "Notes": 'Panic button activated by worker.',
+                "GPS Timestamp": new Date().toISOString() // --- === ADD THIS LINE === ---
+            };
             if (gpsData) {
                 // --- === BUG FIX: Was `longitude`, changed to `gpsData.longitude` === ---
                 data["Last Known GPS"] = `${gpsData.latitude},${gpsData.longitude}`;
@@ -842,7 +884,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 checkinCountdownInterval = null;
                 hideModals();
                  if (!state.activeVisit) return; 
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'MISSED_CHECKIN', "Notes": 'Worker missed a scheduled check-in.' });
+                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'MISSED_CHECKIN', "Notes": 'Worker missed a scheduled check-in.', "GPS Timestamp": new Date().toISOString() });
                 document.getElementById('alertActiveContainer').classList.remove('hidden');
                 document.getElementById('normalButtonsContainer').classList.add('hidden');
                 if(synth) synth.volume.value = 0; 
