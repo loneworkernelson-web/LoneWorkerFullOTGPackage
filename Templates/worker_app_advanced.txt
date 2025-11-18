@@ -151,13 +151,13 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             
             <!-- === MODIFIED: Template Name === -->
             <div class="border-t border-gray-700 pt-4">
-                 <label for="companyName" class="block text-sm font-medium text-gray-400">Company Name (for Reporting)</label>
+                 <label for="companyName" class="block text-sm font-medium text-gray-400">Report As: (Company Name)</label>
                  <input type="text" id="companyName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. Smith & Co.">
             </div>
             <div>
-                <label for="templateName" class="block text-sm font-medium text-gray-400">Template Name (Optional)</label>
+                <label for="templateName" class="block text-sm font-medium text-gray-400">Use Template: (Optional)</label>
                 <input type="text" id="templateName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Leave blank for (Standard) form">
-                 <p class="text-xs text-gray-500 mt-1">Enter the exact name of the form from the `Checklists` sheet (e.g., "Site Audit" or "Smith & Co.").</p>
+                 <p class="text-xs text-gray-500 mt-1">Enter the exact name of the form from the `Checklists` sheet (e.g., "Site Audit").</p>
             </div>
             <!-- === NEW: No Report Required === -->
              <div class="flex items-center">
@@ -219,8 +219,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             <h3 class="font-semibold text-lg text-blue-400">3. Setting Up Locations & Reports</h3>
             <p>When you **Add or Edit a Location**, you must also fill in the new fields:</p>
             <ul class="list-disc list-inside space-y-2">
-                 <li><strong>Company Name:</strong> The name of the company at this location (e.g., "Smith & Co."). This is used for reporting.</li>
-                 <li><strong>Template Name (Optional):</strong> Enter the name of the report form you want to use (e.g., "Site Audit"). If you leave this blank, the app will use the `(Standard)` form.</li>
+                 <li><strong>Report As: (Company Name):</strong> The name of the company at this location (e.g., "Smith & Co."). This is used for reporting.</li>
+                 <li><strong>Use Template: (Optional):</strong> Enter the name of the report form you want to use (e.g., "Site Audit"). If you leave this blank, the app will use the `(Standard)` form.</li>
                  <li><strong>No Report Required:</strong> Check this box if this location is for safety only (like "Travelling") and should not ask for a report when you depart.</li>
             </ul>
 
@@ -234,7 +234,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             <!-- === NEW: Quick Stat Info === -->
             <h3 class="font-semibold text-lg text-blue-400">5. Filing a "Quick Stat" (Data Entry)</h3>
              <ol class="list-decimal list-inside space-y-1">
-                <li>Select a **Location** from the main screen.</li>
+                <li>Select a **Location** from the main screen (one that does not have "No Report Required" checked).</li>
                 <li>Tap the **"Quick Stat"** button (you do not need to set a duration).</li>
                 <li>The report form for that location will appear immediately.</li>
                 <li>Fill out the form and click **"Submit Report"**.</li>
@@ -259,13 +259,13 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                  <li>When you hold the **"DEPART & FILE REPORT"** button, a "Visit Report" form will appear (unless disabled for that location).</li>
                  <li>It will show either the standard checklist or a custom one for that company. Custom forms may include section headers (like "# Section 1"), number fields (like "$ KMs"), and text boxes (like "% Custom Note").</li>
                  <li>Tick the relevant boxes, fill in any number fields, and add your visit notes in all text fields.</li>
-                 <li>Click **"Submit Report"**. This sends your report and ends your safety timer.</li>
+                 <li>Click **"Submit Report"**. This sends your report and ends your safety timer (if one was active).</li>
                  <li><strong>Offline? No Problem.</strong> If you have no internet, the app will save your report and upload it automatically the next time you open the app with a connection.</li>
             </ol>
 
               <h3 class="font-semibold text-lg text-blue-400">9. Alerts & Duress</h3>
               <ul class="list-disc list-inside space-y-2">
-                <li>If you go overdue or miss a check-in, the system will automatically email your emergency contact.</li>
+                <li>If you go overdue or miss a check-in, the system will automatically email and send an SMS to your emergency contact.</li>
                 <li><strong>To Cancel an Alert:</strong> Press and hold the <strong>"I AM SAFE"</strong> button for 1 second and enter your **normal PIN**. This will clear the alert and then open the Visit Report form (if one is required).</li>
                 <li><strong>Silent (Duress) Alert:</strong> If you are being forced to cancel an alert, enter your **Duress PIN** instead. The app will look like it has been cancelled/extended, but it will silently send a high-priority alert to the monitor.</li>
             </ul>
@@ -295,6 +295,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         <div id="checkinCountdown" class="text-6xl font-bold text-yellow-400 mb-6">2:00</div>
         <button type="button" id="checkinOkBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I am OK</button>
     </div>
+    <!-- === NEW: Confirm Modal === -->
+    <div id="confirmModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn text-center">
+        <h2 id="confirmModalTitle" class="text-xl font-bold mb-2 text-yellow-400">Confirmation Required</h2>
+        <p id="confirmModalMessage" class="text-gray-300 mb-6"></p>
+        <div class="flex justify-center space-x-4">
+            <button type="button" id="confirmModalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg w-24">Cancel</button>
+            <button type="button" id="confirmModalOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-24">Confirm</button>
+        </div>
+    </div>
 </div>
 <script>
     let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
@@ -302,6 +311,10 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     let quickStatBtn;
     // --- WSA: Added new modal elements ---
     let reportModal, reportModalTitle, reportFormContainer, reportFormChecklists, reportNotes, reportLoading, cancelReportBtn, submitReportBtn, uploadQueueBanner;
+    // --- NEW: Confirm Modal elements ---
+    let confirmModal, confirmModalTitle, confirmModalMessage, confirmModalCancelBtn, confirmModalOkBtn;
+    let confirmCallback = () => {};
+
     // --- WSA: Added new state properties ---
     let state = { 
         settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
@@ -328,7 +341,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     const PRE_ALERT_OFFSET = 2; 
     var CHECKIN_ENABLED = %%CHECKIN_ENABLED%%;
     var CHECKIN_INTERVAL = %%CHECKIN_INTERVAL%%; 
-    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Not used by worker, but good to have
+    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
     // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
@@ -410,9 +423,20 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             reportModal.dataset.isQuickStat = 'false'; // Clear flag
             reportModal.dataset.isFromAlert = 'false'; // Clear flag
         }
+        if (confirmModal) {
+            confirmCallback = () => {}; // Clear callback
+        }
     }
     function showAlert(title, message) { document.getElementById('alertModalTitle').textContent = title; document.getElementById('alertModalMessage').textContent = message; showModal('alert'); }
     
+    // --- NEW: Custom Confirm Modal ---
+    function showConfirm(title, message, onConfirm) {
+        confirmModalTitle.textContent = title;
+        confirmModalMessage.textContent = message;
+        confirmCallback = onConfirm; // Set the callback
+        showModal('confirm');
+    }
+
     // --- UPDATED loadState (WSA v1.1 FIX) ---
     function loadState() { 
         const savedState = JSON.parse(localStorage.getItem('loneWorkerState')); 
@@ -510,7 +534,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             
             // --- NEW: Enable Quick Stat Button ---
             const location = state.locations.find(l => l.id === state.selectedLocationId);
-            if (location && (location.templateName || !location.noReport)) { // Enable if it has a template OR uses standard
+            if (location && !location.noReport) { // Enable if it's not "No Report"
                 quickStatBtn.disabled = false;
                 quickStatBtn.classList.remove('bg-teal-900', 'text-teal-700');
                 quickStatBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'text-white');
@@ -645,7 +669,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                  sendToGoogleSheet({ 
                      "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
                      "Alarm Status": 'DURESS_CODE_ACTIVATED', 
-                     "Notes": 'Worker activated silent duress alarm during extend action.' 
+                     "Notes": 'Worker activated silent duress alarm during extend action.',
+                     "GPS Timestamp": new Date().toISOString() // Set alert time
                  });
                  console.log("Duress PIN entered for Extend. Sent DURESS_CODE_ACTIVATED.");
             } else {
@@ -727,7 +752,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             preWarningSent: false,
             lastGpsAttemptTime: null,
             lastTravelGpsTime: null,
-            nextCheckinTime: CHECKIN_ENABLED ? now.getTime() + (parseInt(CHECKIN_INTERVAL) * 60 * 1000) : null, 
+            nextCheckinTime: (String(CHECKIN_ENABLED) === 'true') ? now.getTime() + (parseInt(CHECKIN_INTERVAL) * 60 * 1000) : null, 
             batteryAlertSent: initialBatteryNote.includes("(LOW)") 
         };
         if (location.name === 'Travelling') {
@@ -927,7 +952,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }
         }
 
-        if (CHECKIN_ENABLED && state.activeVisit.nextCheckinTime && now >= state.activeVisit.nextCheckinTime) {
+        if (String(CHECKIN_ENABLED) === 'true' && state.activeVisit.nextCheckinTime && now >= state.activeVisit.nextCheckinTime) {
             triggerCheckin();
             state.activeVisit.nextCheckinTime = null; 
         }
@@ -986,7 +1011,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 data.Notes += ' GPS successfully retrieved.';
             } else {
                 data.Notes += ' Failed to retrieve GPS on panic.';
-           }
+            }
             sendToGoogleSheet(data);
             document.getElementById('alertActiveContainer').classList.remove('hidden');
             document.getElementById('normalButtonsContainer').classList.add('hidden');
@@ -1111,7 +1136,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 
         // Show the modal
         showModal('report');
-reportModalTitle.textContent = `Visit Report for: ${location.name}`;
+        reportModalTitle.textContent = `Visit Report for: ${location.name}`;
         reportFormContainer.classList.add('hidden');
         reportLoading.classList.add('hidden');
         reportNotes.value = ''; // Clear notes
@@ -1160,7 +1185,7 @@ reportModalTitle.textContent = `Visit Report for: ${location.name}`;
         }
 
         if (location.name === 'Travelling' || location.noReport) {
-            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location.");
+            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'.");
             return;
         }
 
@@ -1459,6 +1484,14 @@ reportModalTitle.textContent = `Visit Report for: ${location.name}`;
         closeInfoModalBtn.addEventListener('click', hideModals);
         alertModalOkBtn.addEventListener('click', hideModals);
         checkinOkBtn.addEventListener('click', handleCheckinOK);
+        // --- NEW: Confirm Modal Listeners ---
+        confirmModalCancelBtn.addEventListener('click', hideModals);
+        confirmModalOkBtn.addEventListener('click', () => {
+            if (typeof confirmCallback === 'function') {
+                confirmCallback();
+            }
+            hideModals();
+        });
         // --- WSA: Add listeners for report modal ---
         cancelReportBtn.addEventListener('click', hideModals);
         submitReportBtn.addEventListener('click', submitReport); // This now branches
@@ -1545,6 +1578,7 @@ reportModalTitle.textContent = `Visit Report for: ${location.name}`;
             }
             saveState();
             renderLocations();
+            updateHomeScreenButtons();
             hideModals();
 
             // --- MODIFIED: If new/edited location uses custom form, fetch it now ---
@@ -1608,14 +1642,14 @@ reportModalTitle.textContent = `Visit Report for: ${location.name}`;
             }
         });
         
-        // --- NEW: clearCacheBtn listener ---
+        // --- MODIFIED: clearCacheBtn listener ---
         clearCacheBtn.addEventListener('click', () => {
-            if (confirm("Are you sure you want to clear all cached data? This will log you out and clear all locations and forms.")) {
+            showConfirm("Clear All Data?", "Are you sure? This will log you out and clear all saved locations and pending reports. This cannot be undone.", () => {
                 localStorage.clear(); // Clear all
                 state = {}; // Reset state
                 showAlert("Cache Cleared", "All app data has been cleared. The app will now reload.");
                 setTimeout(() => location.reload(), 2000); // Reload to re-trigger loadState
-            }
+            });
         });
 
         const applyLongPress = (element, callback, duration = 1500) => {
@@ -1709,7 +1743,8 @@ reportModalTitle.textContent = `Visit Report for: ${location.name}`;
             pin: document.getElementById('pinModal'), 
             alert: document.getElementById('alertModal'), 
             checkin: document.getElementById('checkinModal'),
-            report: document.getElementById('reportModal') 
+            report: document.getElementById('reportModal'),
+            confirm: document.getElementById('confirmModal') // --- NEW ---
         };
         locationList = document.getElementById('locationList');
         arrivedBtn = document.getElementById('arrivedBtn');
@@ -1733,7 +1768,7 @@ reportModalTitle.textContent = `Visit Report for: ${location.name}`;
         alertModalOkBtn = document.getElementById('alertModalOkBtn');
         checkinOkBtn = document.getElementById('checkinOkBtn');
         startReminderBanner = document.getElementById('startReminderBanner');
-        clearCacheBtn = document.getElementById('clearCacheBtn'); // --- NEW ---
+        clearCacheBtn = document.getElementById('clearCacheBtn'); 
         // --- WSA: Find new elements ---
         reportModal = document.getElementById('reportModal');
         reportModalTitle = document.getElementById('reportModalTitle');
@@ -1744,6 +1779,12 @@ reportModalTitle.textContent = `Visit Report for: ${location.name}`;
         cancelReportBtn = document.getElementById('cancelReportBtn');
         submitReportBtn = document.getElementById('submitReportBtn');
         uploadQueueBanner = document.getElementById('uploadQueueBanner');
+        // --- NEW: Find Confirm Modal elements ---
+        confirmModal = document.getElementById('confirmModal');
+        confirmModalTitle = document.getElementById('confirmModalTitle');
+        confirmModalMessage = document.getElementById('confirmModalMessage');
+        confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
+        confirmModalOkBtn = document.getElementById('confirmModalOkBtn');
         
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
