@@ -98,9 +98,9 @@
                         <ul class="list-disc list-inside ml-6 mt-2 p-2 bg-gray-700 rounded-md space-y-1">
                             <li>Click the <strong>`+`</strong> icon at the bottom of the sheet to add a new tab.</li>
                             <li>Rename this new tab to **`Checklists`** (must be exact).</li>
-                            <li>In this new <strong>`Checklists`</strong> sheet, click cell **A1** and type <strong>`Company Name`</strong>.</li>
+                            <li>In this new <strong>`Checklists`</strong> sheet, click cell **A1** and type <strong>`Template Name`</strong>.</li>
                             <li>In cell **B1**, type <strong>`Question 1`</strong>. In **C1**, type <strong>`Question 2`</strong>, and so on.</li>
-                            <li>**Important:** To create the default "Standard" checklist, add a row where the `Company Name` (cell A2) is typed *exactly* as **`(Standard)`** - including the parentheses.</li>
+                            <li>**Important:** To create the default "Standard" checklist, add a row where the `Template Name` (cell A2) is typed *exactly* as **`(Standard)`** - including the parentheses.</li>
                         </ul>
                     </li>
                 </ol>
@@ -118,13 +118,11 @@
                 
                 <!-- NEW: Configuration fields moved to Step 3 -->
                 <div class="space-y-4 mb-6 ml-6">
-                    <!-- === FIELD ADDED BACK === -->
                     <div>
                         <label for="organisationName" class="block text-sm font-medium text-gray-300">Organisation Name</label>
                         <input type="text" id="organisationName" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., ACME Corp">
                         <p class="text-xs text-gray-400 mt-1">This will be used for app titles and branding.</p>
                     </div>
-                    <!-- === END FIELD === -->
                     <div> 
                         <label for="secretKeyStep3" class="block text-sm font-medium text-gray-300">Secret Key</label>
                         <input type="password" id="secretKeyStep3" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Enter a strong, private password">
@@ -142,6 +140,17 @@
                         <label for="escalationMinutes" class="block text-sm font-medium text-gray-300">Alert Escalation Time (Minutes)</label>
                         <input type="number" id="escalationMinutes" value="5" min="1" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                         <p class="text-xs text-gray-400 mt-1">Time to wait before escalating a `PANIC` or `OVERDUE` alert to the secondary contact. 5 minutes is recommended.</p>
+                    </div>
+                    <!-- === END MOVED === -->
+                    <!-- === MOVED: Check-in Fields === -->
+                    <div class="flex items-center">
+                        <input id="enableCheckin" type="checkbox" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                        <label for="enableCheckin" class="ml-2 block text-sm font-medium text-gray-300">Enable "Are You OK?" Check-ins (Optional)</label>
+                    </div>
+                     <div id="checkinIntervalDiv" class="hidden ml-6"> 
+                        <label for="checkinInterval" class="block text-sm font-medium text-gray-300">Check-in Interval (Minutes)</label>
+                        <input type="number" id="checkinInterval" value="30" min="5" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <p class="text-xs text-gray-400 mt-1">If check-ins are enabled, how often should the worker be prompted? (e.g., 30)</p>
                     </div>
                     <!-- === END MOVED === -->
                     <div class="flex items-center">
@@ -209,15 +218,7 @@
                         <label for="scriptUrl" class="block text-sm font-medium text-gray-300">Web App URL</label>
                         <input type="url" id="scriptUrl" oninput="validateUrl(this)" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Paste the Web app URL from Step 3">
                     </div>
-                    <div class="flex items-center">
-                        <input id="enableCheckin" type="checkbox" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                        <label for="enableCheckin" class="ml-2 block text-sm font-medium text-gray-300">Enable "Are You OK?" Check-ins (Optional)</label>
-                    </div>
-                     <div id="checkinIntervalDiv" class="hidden ml-6"> 
-                        <label for="checkinInterval" class="block text-sm font-medium text-gray-300">Check-in Interval (Minutes)</label>
-                        <input type="number" id="checkinInterval" value="30" min="5" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <p class="text-xs text-gray-400 mt-1">If check-ins are enabled, how often should the worker be prompted? (e.g., 30)</p>
-                    </div>
+                    <!-- === Fields moved to Step 3 === -->
                      <div>
                         <label for="logoUrl" class="block text-sm font-medium text-gray-300">Company Logo URL (Optional)</label>
                         <input type="url" id="logoUrl" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="https://your-logo.com/image.png">
@@ -263,7 +264,9 @@
         geminiKey: "",
         deployedUrl: "",
         escalationMinutes: "5",
-        firstAlertMinutes: "15"
+        firstAlertMinutes: "15",
+        checkinEnabled: false,
+        checkinInterval: "30"
     };
     
     // Define header strings
@@ -311,6 +314,7 @@
                 scriptPreviewEl.textContent = templates['apps_script_simple.txt'];
             }
             
+            // --- MOVED: Event listener setup to here ---
             const enableCheckinEl = document.getElementById('enableCheckin');
             const checkinIntervalDivEl = document.getElementById('checkinIntervalDiv');
             if (enableCheckinEl && checkinIntervalDivEl) {
@@ -386,7 +390,9 @@
             const keyInput = document.getElementById('secretKeyStep3');
             const orgNameInput = document.getElementById('organisationName');
             const escalationInput = document.getElementById('escalationMinutes');
-            const firstAlertInput = document.getElementById('firstAlert'); // <-- Add this
+            const firstAlertInput = document.getElementById('firstAlert'); 
+            const checkinEnabledInput = document.getElementById('enableCheckin');
+            const checkinIntervalInput = document.getElementById('checkinInterval');
 
             if (!keyInput || !keyInput.value) {
                 alert("Please enter a Secret Key before proceeding.");
@@ -400,7 +406,7 @@
                  alert("Please enter an Alert Escalation Time before proceeding.");
                  return;
             }
-            if (!firstAlertInput || !firstAlertInput.value) { // <-- Add this check
+            if (!firstAlertInput || !firstAlertInput.value) { 
                  alert("Please enter a First Overdue Alert time before proceeding.");
                  return;
             }
@@ -411,7 +417,9 @@
             config.isAdvanced = document.getElementById('enableReporting').checked;
             config.geminiKey = document.getElementById('geminiApiKeyStep3').value;
             config.escalationMinutes = escalationInput.value; 
-            config.firstAlertMinutes = firstAlertInput.value; // <-- Add this
+            config.firstAlertMinutes = firstAlertInput.value; 
+            config.checkinEnabled = checkinEnabledInput.checked;
+            config.checkinInterval = checkinIntervalInput.value;
         }
         
         if (currentStep === 4) {
@@ -467,7 +475,9 @@
         const keyInput = document.getElementById('secretKeyStep3');
         const geminiKeyInput = document.getElementById('geminiApiKeyStep3');
         const escalationInput = document.getElementById('escalationMinutes'); 
-        const firstAlertInput = document.getElementById('firstAlert'); // <-- Add this
+        const firstAlertInput = document.getElementById('firstAlert'); 
+        const enableCheckinInput = document.getElementById('enableCheckin'); 
+        const checkinIntervalInput = document.getElementById('checkinInterval'); 
         const isAdvanced = document.getElementById('enableReporting').checked;
         
         const key = keyInput ? keyInput.value : '';
@@ -476,7 +486,9 @@
             return;
         }
         const escalationMinutes = escalationInput ? escalationInput.value : '5'; 
-        const firstAlertMinutes = firstAlertInput ? firstAlertInput.value : '15'; // <-- Add this
+        const firstAlertMinutes = firstAlertInput ? firstAlertInput.value : '15'; 
+        const checkinEnabled = enableCheckinInput ? enableCheckinInput.checked : false; 
+        const checkinInterval = checkinIntervalInput ? checkinIntervalInput.value : '30'; 
 
         // Determine which script to use
         const templateName = isAdvanced ? 'apps_script_advanced.txt' : 'apps_script_simple.txt';
@@ -499,6 +511,9 @@
         injectedScript = injectedScript.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
         // --- NEW: Inject First Alert Minutes ---
         injectedScript = injectedScript.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlertMinutes);
+        // --- NEW: Inject Checkin Config ---
+        injectedScript = injectedScript.replace(/%%CHECKIN_ENABLED%%/g, checkinEnabled); 
+        injectedScript = injectedScript.replace(/%%CHECKIN_INTERVAL%%/g, checkinInterval);
 
         // Inject Gemini Key (if advanced)
         if (isAdvanced) {
@@ -638,21 +653,17 @@
             const zip = new JSZip();
             
             // --- Read config from stored 'config' object ---
-            // --- NEW: Added escalationMinutes ---
-            const { secretKey, organisationName, isAdvanced, geminiKey, deployedUrl, escalationMinutes, firstAlertMinutes } = config;
+            const { secretKey, organisationName, isAdvanced, geminiKey, deployedUrl, escalationMinutes, firstAlertMinutes, checkinEnabled, checkinInterval } = config;
 
-            // const firstAlertInput = document.getElementById('firstAlert'); // <-- REMOVED FROM HERE
-            const enableCheckinInput = document.getElementById('enableCheckin');
-            const checkinIntervalInput = document.getElementById('checkinInterval');
             const logoUrlInput = document.getElementById('logoUrl');
 
-            if (!deployedUrl || !secretKey || !firstAlertMinutes || !enableCheckinInput || !checkinIntervalInput || !logoUrlInput || !escalationMinutes) {
+            if (!deployedUrl || !secretKey || !firstAlertMinutes || !logoUrlInput || !escalationMinutes) {
                  throw new Error("One or more configuration input elements are missing.");
             }
 
-            const firstAlert = firstAlertMinutes; // <-- Use config value
-            const checkin = enableCheckinInput.checked;
-            const checkinInterval = checkinIntervalInput.value || '30'; 
+            const firstAlert = firstAlertMinutes; 
+            const checkin = checkinEnabled; 
+            const checkinIntervalVal = checkinInterval || '30'; 
             const logoUrl = logoUrlInput.value || 'https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png'; 
             const geminiKeyToInject = geminiKey || "YOUR_GEMINI_API_KEY_HERE"; 
             
@@ -664,7 +675,7 @@
             let workerApp = templates[workerTemplateName];
             workerApp = workerApp.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlert);
             workerApp = workerApp.replace(/%%CHECKIN_ENABLED%%/g, checkin);
-            workerApp = workerApp.replace(/%%CHECKIN_INTERVAL%%/g, checkinInterval);
+            workerApp = workerApp.replace(/%%CHECKIN_INTERVAL%%/g, checkinIntervalVal);
             // --- === BUG FIX HERE: Escaped slashes in regex === ---
             workerApp = workerApp.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             workerApp = workerApp.replace(/%%GOOGLE_SHEET_URL%%/g, deployedUrl);
@@ -680,7 +691,7 @@
             // --- 2. Process Manifest ---
             let manifest = templates['manifest.json'];
             // --- === BUG FIX HERE: Escaped slashes in regex === ---
-            manifest = manifest.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
+            manifest = manifest.replace(/https://i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             manifest = manifest.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             workerFolder.file('manifest.json', manifest);
 
@@ -703,6 +714,10 @@
             appsScript = appsScript.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
             // --- NEW: Inject first alert minutes ---
             appsScript = appsScript.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlert);
+            // --- NEW: Inject Checkin Config ---
+            appsScript = appsScript.replace(/%%CHECKIN_ENABLED%%/g, checkin); 
+            appsScript = appsScript.replace(/%%CHECKIN_INTERVAL%%/g, checkinIntervalVal);
+
             if (isAdvanced) {
                 appsScript = appsScript.replace(/%%GEMINI_API_KEY%%/g, geminiKeyToInject);
             }
