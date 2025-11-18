@@ -1,6 +1,6 @@
 // ##### --------------------------------------------------- #####
 // ##### On-the-Go AppSuite - ADVANCED Backend Script (Reporting) #####
-// ##### v2.11 (All Features: Quick Stats, $ Entries, SMS, PDFs)
+// ##### v2.12 (All Features + Database Automation)
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -382,7 +382,7 @@ function sendSmsViaGateway(phoneNumber, message) {
       // --- NEW: Fallback Email to Admin ---
       var adminEmail = Session.getEffectiveUser().getEmail();
       var subject = "OTG AppSuite SMS Failure Notification";
-      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded during testing, or the phone number format is invalid. The primary email alert was still sent.";
+      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded, the number was invalid, or TextBelt blocked a URL.";
       MailApp.sendEmail(adminEmail, subject, body);
       // --- END NEW ---
       Logger.log("Free SMS failed (quota likely used, or invalid number): " + result.error);
@@ -1077,7 +1077,7 @@ function generateAllPdfReports() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const controlSheet = ss.getSheetByName("Master Report");
   
-  if (PDF_OUTPUT_FOLDER_ID === "YOUR_OUTPUT_FOLDER_ID_HERE" || DEFAULT_REPORT_TEMPLATE_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE") {
+  if (PDF_OUTPUT_FOLDER_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE" || DEFAULT_REPORT_TEMPLATE_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE") {
     SpreadsheetApp.getUi().alert("Error: PDF_OUTPUT_FOLDER_ID or DEFAULT_REPORT_TEMPLATE_ID not set at the top of the script.");
     return;
   }
@@ -1435,5 +1435,95 @@ function runAllLongitudinalReports() {
   } catch (e) {
     Logger.log(e);
     SpreadsheetApp.getUi().alert("An error occurred: " + e.message);
+  }
+}
+
+// --- === DATABASE MAINTENANCE === ---
+
+/**
+ * Archiving Function to keep the sheet fast.
+ * Moves rows older than 60 days to a separate Archive Spreadsheet.
+ * Recommended Trigger: Time-driven, Weekly.
+ */
+function archiveOldData() {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000); // Wait up to 30 seconds
+  } catch (e) {
+    Logger.log('Could not get lock for archiving');
+    return;
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(VISITS_SHEET_NAME);
+    const dataRange = sheet.getDataRange();
+    const data = dataRange.getValues();
+    const headers = data[0];
+    
+    if (data.length <= 1) return; // Empty or header only
+
+    const now = new Date();
+    const cutOffDate = new Date();
+    cutOffDate.setDate(now.getDate() - 60); // 60 days ago
+
+    const rowsToKeep = [headers]; // Start with headers
+    const rowsToArchive = [];
+
+    // Archive file setup (lazy load)
+    let archiveSheet = null;
+
+    for (let i = 1; i < data.length; i++) {
+      let rowDate = data[i][0];
+      if (!(rowDate instanceof Date)) {
+        rowDate = new Date(rowDate);
+      }
+
+      if (!isNaN(rowDate) && rowDate < cutOffDate) {
+        rowsToArchive.push(data[i]);
+      } else {
+        rowsToKeep.push(data[i]);
+      }
+    }
+
+    if (rowsToArchive.length > 0) {
+      // 1. Prepare Archive File
+      const archiveFileName = "OTG_Archive_" + now.getFullYear();
+      
+      const files = DriveApp.getFilesByName(archiveFileName);
+      let archiveSs;
+      if (files.hasNext()) {
+        archiveSs = SpreadsheetApp.open(files.next());
+      } else {
+        archiveSs = SpreadsheetApp.create(archiveFileName);
+        // Add headers to the new sheet
+        if (archiveSs.getSheets()[0]) {
+             archiveSs.getSheets()[0].setName("Archived_Visits");
+             if (archiveSs.getSheets()[0].getLastRow() === 0) {
+                 archiveSs.getSheets()[0].appendRow(headers);
+             }
+        }
+      }
+      
+      // 2. Append Data
+      const targetSheet = archiveSs.getSheets()[0];
+      // Bulk append
+      const lastRow = targetSheet.getLastRow();
+      targetSheet.getRange(lastRow + 1, 1, rowsToArchive.length, headers.length).setValues(rowsToArchive);
+      
+      // 3. Update Live Sheet
+      // Clearing and rewriting is safer to ensure index integrity
+      sheet.clearContents();
+      sheet.getRange(1, 1, rowsToKeep.length, headers.length).setValues(rowsToKeep);
+      
+      Logger.log(`Archived ${rowsToArchive.length} rows to ${archiveFileName}`);
+    } else {
+      Logger.log("No rows older than 60 days found.");
+    }
+
+  } catch (e) {
+    Logger.log("Error in archiveOldData: " + e.toString());
+  } finally {
+    lock.releaseLock();
   }
 }
