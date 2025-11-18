@@ -832,7 +832,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             sendToGoogleSheet({ 
                 "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
                 "Alarm Status": 'DURESS_CODE_ACTIVATED', 
-                "Notes": `Worker activated silent duress alarm via I AM SAFE button. ${batteryNote}`.trim()
+                "Notes": `Worker activated silent duress alarm via I AM SAFE button. ${batteryNote}`.trim(),
+                "GPS Timestamp": new Date().toISOString() // Set alert time
             }); 
         } else {
             playSoundAndVibrate('safe');
@@ -972,7 +973,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         showAlert("PANIC ALERT SENT", "An immediate alert has been sent to your emergency contact.");
         const sendPanic = (gpsData) => {
              if (!state.activeVisit) return; 
-            const data = { "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'EMERGENCY - PANIC BUTTON', "Notes": 'Panic button activated by worker.' };
+            const data = { 
+                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
+                "Alarm Status": 'EMERGENCY - PANIC BUTTON', 
+                "Notes": 'Panic button activated by worker.',
+                "GPS Timestamp": new Date().toISOString() // --- === ADD THIS LINE === ---
+            };
             if (gpsData) {
                 // --- === BUG FIX: Was `longitude`, changed to `gpsData.longitude` === ---
                 data["Last Known GPS"] = `${gpsData.latitude},${gpsData.longitude}`;
@@ -980,7 +986,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 data.Notes += ' GPS successfully retrieved.';
             } else {
                 data.Notes += ' Failed to retrieve GPS on panic.';
-            }
+           }
             sendToGoogleSheet(data);
             document.getElementById('alertActiveContainer').classList.remove('hidden');
             document.getElementById('normalButtonsContainer').classList.add('hidden');
