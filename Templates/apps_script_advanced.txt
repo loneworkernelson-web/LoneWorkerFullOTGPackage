@@ -1,6 +1,6 @@
 // ##### --------------------------------------------------- #####
 // ##### On-the-Go AppSuite - ADVANCED Backend Script (Reporting) #####
-// ##### v2.11 (SMS URL Fix)
+// ##### v2.11 (SMS URL Fix + Phone Number Fix)
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -23,7 +23,118 @@ var LONGITUDINAL_ID_HEADER = "Longitudinal Report Sheet ID";
 
 // --- WEB APP ENDPOINTS ---
 function doGet(e) {
-  // ... (This function is correct and unchanged) ...
+  var callback = e.parameter.callback;
+  
+  try {
+    // 1. Monitor App Request (JSONP)
+    if (callback) {
+      var token = e.parameter.token;
+      if (token !== SECRET_KEY) {
+        // --- FIX: Return Access Denied in correct JSONP format ---
+        var errorResponse = callback + '(' + JSON.stringify({ status: "error", message: "Access Denied" }) + ')';
+        return ContentService
+          .createTextOutput(errorResponse)
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      
+      var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
+      var data = sheet.getDataRange().getValues();
+      
+      // --- FIX: Handle empty sheet ---
+      if (data.length === 0 || data[0].length === 0) {
+        // Sheet is empty, return empty array
+        var emptyResponse = callback + '([])';
+        return ContentService
+          .createTextOutput(emptyResponse)
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      // --- END FIX ---
+      
+      var headers = data.shift();
+      var json = data.map(function(row) {
+        var obj = {};
+        headers.forEach(function(header, i) {
+          if (row[i] instanceof Date) {
+            obj[header] = row[i].toISOString(); 
+          } else {
+            obj[header] = row[i];
+          }
+        });
+        return obj;
+      });
+
+      var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
+      return ContentService
+        .createTextOutput(jsonpResponse)
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+
+    // 2. Worker App Request (JSON)
+    if (e.parameter.action === 'getForms' && e.parameter.companyName) {
+      var companyName = e.parameter.companyName;
+      var questions = []; // This will now be an array of objects
+      try {
+        var checklistSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
+        var data = checklistSheet.getDataRange().getValues();
+        var headers = data.shift(); // Get headers (Company Name, Question 1, ...)
+        
+        for (var i = 0; i < data.length; i++) {
+          if (data[i][0] === companyName) { // Find matching company in Col A
+            // Loop through question columns (from Col B onwards)
+            for (var j = 1; j < headers.length; j++) {
+              var questionText = data[i][j];
+              if (questionText) { 
+                var textStr = String(questionText);
+                // --- === MODIFIED: Added '$' type === ---
+                if (textStr.startsWith("# ")) {
+                  questions.push({ "type": "header", "text": textStr.substring(2).trim() });
+                } else if (textStr.startsWith("#")) {
+                  questions.push({ "type": "header", "text": textStr.substring(1).trim() });
+                } else if (textStr.startsWith("% ")) {
+                  questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
+                } else if (textStr.startsWith("%")) {
+                  questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
+                } else if (textStr.startsWith("$ ")) { // NEW
+                  questions.push({ "type": "number", "text": textStr.substring(2).trim() });
+                } else if (textStr.startsWith("$")) { // NEW
+                  questions.push({ "type": "number", "text": textStr.substring(1).trim() });
+                } else {
+                  questions.push({ "type": "checkbox", "text": textStr });
+                }
+                // --- === END MODIFIED === ---
+              } else {
+                break; 
+              }
+            }
+            break; 
+          }
+        }
+        Logger.log("Found " + questions.length + " items (questions/headers) for " + companyName);
+      } catch (err) {
+        Logger.log("Error in getForms: " + err.toString());
+      }
+      
+      return ContentService
+        .createTextOutput(JSON.stringify(questions))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Default invalid request
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    Logger.log("Critical doGet Error: " + err.message);
+    // --- FIX: Return a JSONP-formatted error ---
+    var errorResponse = callback 
+      ? callback + '(' + JSON.stringify({ status: "error", message: err.message }) + ')'
+      : JSON.stringify({ status: "error", message: err.message });
+    
+    return ContentService
+      .createTextOutput(errorResponse)
+      .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  }
 }
 
 
@@ -206,9 +317,10 @@ function checkOverdueWorkers() {
       var alertToSend = null;
       var overdueMinutes = (now.getTime() - anticipatedDeparture.getTime()) / 60000;
       var escalationTime = parseInt(ESCALATION_MINUTES) || 5; // Use config, default to 5
+      var firstAlertTime = parseInt(FIRST_ALERT_MINUTES) || 15;
 
       // 2. Check for NEW Overdue alerts
-      if (status === 'ON SITE' && overdueMinutes > (parseInt(FIRST_ALERT_MINUTES) || 15)) {
+      if (status === 'ON SITE' && overdueMinutes > firstAlertTime) {
           alertToSend = 'EMAIL_1_SENT';
           // --- NEW: Set the alert timestamp for escalation ---
           sheet.getRange(i + 1, headers.indexOf('GPS Timestamp') + 1).setValue(new Date().toISOString());
@@ -264,7 +376,8 @@ function sendSmsViaGateway(phoneNumber, message) {
     return;
   }
   
-  const cleanPhone = phoneNumber.replace(/[^0-9+]/g, ''); // --- MODIFIED: Keep the '+'
+  // --- BUG FIX: Keep the '+' sign ---
+  const cleanPhone = phoneNumber.replace(/[^0-9+]/g, '');
   
   const payload = {
     phone: cleanPhone,
@@ -348,10 +461,11 @@ function sendAlertEmail(workerData, alertType, isEscalation) {
     case 'EMAIL_1_SENT':
     case 'EMAIL_2_SENT':
     case 'EMAIL_3_SENT':
-      var minutesOverdue = parseInt(FIRST_ALERT_MINUTES) || 15;
+      var firstAlertTime = parseInt(FIRST_ALERT_MINUTES) || 15;
       var escalationTime = parseInt(ESCALATION_MINUTES) || 5;
-      if (alertType === 'EMAIL_2_SENT') minutesOverdue = minutesOverdue + (escalationTime * 1);
-      if (alertType === 'EMAIL_3_SENT') minutesOverdue = minutesOverdue + (escalationTime * 2);
+      var minutesOverdue = firstAlertTime;
+      if (alertType === 'EMAIL_2_SENT') minutesOverdue = firstAlertTime + (escalationTime * 1);
+      if (alertType === 'EMAIL_3_SENT') minutesOverdue = firstAlertTime + (escalationTime * 2);
       subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
       body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
       smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Check Monitor App or Email.`;
@@ -400,7 +514,6 @@ function sendAlertEmail(workerData, alertType, isEscalation) {
     sendSmsViaGateway(phoneRecipient, smsMessage);
   }
 }
-
 // --- === REPORTING FUNCTIONS (REFACTORED v2.8) === ---
 
 /**
@@ -894,8 +1007,6 @@ function writeReportToTab(reportSheet, coData, reportTitle, monthStr, aiCorrecti
     reportSheet.autoResizeColumn(5 + allCustomNoteHeaders.length + i);
   }
 }
-
-
 /**
  * Generates a master report for ALL companies for a specified month.
  * Creates a new, separate tab for each COMPANY-SITE combination.
@@ -982,7 +1093,7 @@ function generateAllPdfReports() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const controlSheet = ss.getSheetByName("Master Report");
   
-  if (PDF_OUTPUT_FOLDER_ID === "YOUR_OUTPUT_FOLDER_ID_HERE" || DEFAULT_REPORT_TEMPLATE_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE") {
+  if (PDF_OUTPUT_FOLDER_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE" || DEFAULT_REPORT_TEMPLATE_ID === "YOUR_DEFAULT_TEMPLATE_ID_HERE") {
     SpreadsheetApp.getUi().alert("Error: PDF_OUTPUT_FOLDER_ID or DEFAULT_REPORT_TEMPLATE_ID not set at the top of the script.");
     return;
   }
