@@ -211,8 +211,8 @@
 
             <!-- Step 4: Configure Apps -->
             <div id="step4" class="step">
-                <h2 class="text-xl font-semibold mb-4 text-blue-300">Step 4: Configure Worker App</h2>
-                <p class="text-gray-300 mb-6">These settings will be injected into the Worker App for your team.</p>
+                <h2 class="text-xl font-semibold mb-4 text-blue-300">Step 4: Configure Apps</h2>
+                <p class="text-gray-300 mb-6">Enter the Web App URL from the previous step and choose your app logo.</p>
                 <div class="space-y-4">
                     <div>
                         <label for="scriptUrl" class="block text-sm font-medium text-gray-300">Web App URL</label>
@@ -691,7 +691,7 @@
             // --- 2. Process Manifest ---
             let manifest = templates['manifest.json'];
             // --- === BUG FIX HERE: Escaped slashes in regex === ---
-            manifest = manifest.replace(/https://i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
+            manifest = manifest.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             manifest = manifest.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             workerFolder.file('manifest.json', manifest);
 
