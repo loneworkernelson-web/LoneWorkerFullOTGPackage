@@ -1,6 +1,6 @@
 // ##### --------------------------------------------------- #####
 // ##### On-the-Go AppSuite - SIMPLE Backend Script (Safety Only) #####
-// ##### v2.2 (SMS URL Fix)
+// ##### v2.2 (With doGet crash fix and SMS Fallback)
 // ##### --------------------------------------------------- #####
 
 // --- CONFIGURATION ---
@@ -11,8 +11,73 @@ var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Time in minutes to wait befo
 var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%; // Time in minutes for first overdue alert
 
 // --- WEB APP ENDPOINTS ---
+
+/**
+ * Handles GET requests from the Monitor App.
+ */
 function doGet(e) {
-  // ... (This function is correct and unchanged) ...
+  var callback = e.parameter.callback;
+  
+  try {
+    // 1. Monitor App Request (JSONP)
+    if (callback) {
+      var token = e.parameter.token;
+      if (token !== SECRET_KEY) {
+        // --- FIX: Return Access Denied in correct JSONP format ---
+        var errorResponse = callback + '(' + JSON.stringify({ status: "error", message: "Access Denied" }) + ')';
+        return ContentService
+          .createTextOutput(errorResponse)
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      
+      var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
+      var data = sheet.getDataRange().getValues();
+      
+      // --- FIX: Handle empty sheet ---
+      if (data.length === 0 || data[0].length === 0) {
+        // Sheet is empty, return empty array
+        var emptyResponse = callback + '([])';
+        return ContentService
+          .createTextOutput(emptyResponse)
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      // --- END FIX ---
+      
+      var headers = data.shift();
+      var json = data.map(function(row) {
+        var obj = {};
+        headers.forEach(function(header, i) {
+          if (row[i] instanceof Date) {
+            obj[header] = row[i].toISOString(); 
+          } else {
+            obj[header] = row[i];
+          }
+        });
+        return obj;
+      });
+
+      var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
+      return ContentService
+        .createTextOutput(jsonpResponse)
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+
+    // 2. Default invalid request (if not JSONP)
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    Logger.log("Critical doGet Error: " + err.message);
+    // --- FIX: Return a JSONP-formatted error ---
+    var errorResponse = callback 
+      ? callback + '(' + JSON.stringify({ status: "error", message: err.message }) + ')'
+      : JSON.stringify({ status: "error", message: err.message });
+    
+    return ContentService
+      .createTextOutput(errorResponse)
+      .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  }
 }
 
 
@@ -48,7 +113,7 @@ function doPost(e) {
     }
 
     // Find existing row or create a new one
-    var dataRange = sheet.getDataRange().getValues();
+    var dataRange = sheet.getDataRange();
     var rowIndex = -1;
     for (var i = 1; i < dataRange.length; i++) {
       var rowArrivalTimeISO = "";
@@ -194,9 +259,10 @@ function checkOverdueWorkers() {
       var alertToSend = null;
       var overdueMinutes = (now.getTime() - anticipatedDeparture.getTime()) / 60000;
       var escalationTime = parseInt(ESCALATION_MINUTES) || 5; // Use config, default to 5
+      var firstAlertTime = parseInt(FIRST_ALERT_MINUTES) || 15;
 
       // 2. Check for NEW Overdue alerts
-      if (status === 'ON SITE' && overdueMinutes > (parseInt(FIRST_ALERT_MINUTES) || 15)) {
+      if (status === 'ON SITE' && overdueMinutes > firstAlertTime) {
           alertToSend = 'EMAIL_1_SENT';
           // --- NEW: Set the alert timestamp for escalation ---
           sheet.getRange(i + 1, headers.indexOf('GPS Timestamp') + 1).setValue(new Date().toISOString());
@@ -339,8 +405,8 @@ function sendAlertEmail(workerData, alertType, isEscalation) {
     case 'EMAIL_3_SENT':
       var minutesOverdue = parseInt(FIRST_ALERT_MINUTES) || 15;
       var escalationTime = parseInt(ESCALATION_MINUTES) || 5;
-      if (alertType === 'EMAIL_2_SENT') minutesOverdue = minutesOverdue + (escalationTime * 1);
-      if (alertType === 'EMAIL_3_SENT') minutesOverdue = minutesOverdue + (escalationTime * 2);
+      if (alertType === 'EMAIL_2_SENT') minutesOverdue = firstAlertTime + (escalationTime * 1);
+      if (alertType === 'EMAIL_3_SENT') minutesOverdue = firstAlertTime + (escalationTime * 2);
       subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
       body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
       smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Check email for map link.`;
