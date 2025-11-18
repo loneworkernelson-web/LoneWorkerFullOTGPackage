@@ -322,7 +322,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         selectedLocationId: null, 
         visitDurationMinutes: 0, 
         activeVisit: null,
-        cachedForms: {}, // Stores custom checklists { "CompanyName": [{"type":"header", "text":"Q1"}] }
+        cachedForms: {}, // Stores custom checklists { "Template Name": [{"type":"header", "text":"Q1"}] }
         pendingUploads: [] // Stores visit report data submitted offline
     };
     const DURATION_STEPS = [0, 10, 15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
@@ -337,11 +337,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     ];
     
     // --- TEMPLATE PLACEHOLDERS ---
-    var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%;
+    var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
     const PRE_ALERT_OFFSET = 2; 
-    var CHECKIN_ENABLED = %%CHECKIN_ENABLED%%;
-    var CHECKIN_INTERVAL = %%CHECKIN_INTERVAL%%; 
-    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
+    var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
+    var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
+    var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
     // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
@@ -796,500 +796,607 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             const seconds = Math.floor((remaining % 60000) / 1000);
             document.getElementById('countdownTimer').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             document.getElementById('countdownTimer').classList.remove('text-red-500');
-} else {
-            const overdue = now.getTime() - state.activeVisit.anticipatedDepartureTime.getTime();
-            const hours = Math.floor(overdue / 3600000);
-            const minutes = Math.floor((overdue % 3600000) / 60000);
-            const seconds = Math.floor((overdue % 60000) / 1000);
-            document.getElementById('countdownTimer').textContent = `+${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            document.getElementById('countdownTimer').classList.add('text-red-500');
-        }
-        document.getElementById('lockedAnticipatedTime').textContent = new Date(state.activeVisit.anticipatedDepartureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
+<div id="infoModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">How to Use This App</h2>
+        <div class="text-gray-300 space-y-4">
+            <h3 class="font-semibold text-lg text-blue-400">1. Installation ("Add to Home Screen")</h3>
+            <p>For the best experience, add the app to your phone's home screen. This makes it work like a regular app.</p>
+            <ul class="list-disc list-inside space-y-2">
+                <li><strong>On iPhone (Safari):</strong> Tap the <strong>Share</strong> icon, scroll down, and select <strong>"Add to Home Screen"</strong>.</li>
+                <li><strong>On Android (Chrome):</strong> Tap the <strong>three-dot menu</strong> icon and select <strong>"Install app"</strong> or "Add to Home Screen".</li>
+            </ul>
+
+            <h3 class="font-semibold text-lg text-blue-400">2. First-Time Setup (Crucial)</h3>
+            <p>The first time you open the app, you must configure your settings.</p>
+            <ol class="list-decimal list-inside space-y-1">
+                <li>Tap the <strong>Settings icon</strong> (gear) in the top-right corner.</li>
+                <li>The **Google Sheet URL** field should already be filled in for you.</li>
+                <li>Fill in **all other fields**. For phone numbers, please use the full international format (e.g., `+64 21 123 4567`).</li>
+                <li>Set both a **Normal PIN** and a separate **Duress PIN**.</li>
+                <li>Tap <strong>Save Settings</strong>.</li>
+            </ol>
+            
+            <h3 class="font-semibold text-lg text-blue-400">3. Setting Up Locations & Reports</h3>
+            <p>When you **Add or Edit a Location**, you must also fill in the new fields:</p>
+            <ul class="list-disc list-inside space-y-2">
+                 <li><strong>Report As: (Company Name):</strong> The name of the company at this location (e.g., "Smith & Co."). This is used for reporting.</li>
+                 <li><strong>Use Template: (Optional):</strong> Enter the name of the report form you want to use (e.g., "Site Audit"). If you leave this blank, the app will use the `(Standard)` form.</li>
+                 <li><strong>No Report Required:</strong> Check this box if this location is for safety only (like "Travelling") and should not ask for a report when you depart.</li>
+            </ul>
+
+            <h3 class="font-semibold text-lg text-blue-400">4. Using the App for a Visit</h3>
+             <ol class="list-decimal list-inside space-y-1">
+                <li><strong>Select a Location:</strong> Tap a location from the list.</li>
+                <li><strong>Set Duration:</strong> Use the slider to set how long you expect to be at the location.</li>
+                <li><strong>Start Your Visit:</strong> Press and hold the green <strong>"Start"</strong> button for 1.5 seconds. The screen will lock, and your countdown timer will begin.</li>
+            </ol>
+            
+            <!-- === NEW: Quick Stat Info === -->
+            <h3 class="font-semibold text-lg text-blue-400">5. Filing a "Quick Stat" (Data Entry)</h3>
+             <ol class="list-decimal list-inside space-y-1">
+                <li>Select a **Location** from the main screen (one that does not have "No Report Required" checked).</li>
+                <li>Tap the **"Quick Stat"** button (you do not need to set a duration).</li>
+                <li>The report form for that location will appear immediately.</li>
+                <li>Fill out the form and click **"Submit Report"**.</li>
+                <li>This will log your report without starting a safety timer. Use this for phone calls or visits you are logging after the fact.</li>
+            </ol>
+            <!-- === END NEW === -->
+
+            <h3 class="font-semibold text-lg text-blue-400">6. Special Note: GPS Tracking</h3>
+            <p>For GPS tracking to work reliably (either for the "Travelling" location or if you become overdue), the app must be **open on your screen**. If you lock your phone or switch to another app, GPS updates may stop.</p>
+
+
+             <h3 class="font-semibold text-lg text-blue-400">7. While On-Site</h3>
+              <ul class="list-disc list-inside space-y-2">
+                <li><strong>Extend Time:</strong> Press and hold the <strong>"Extend 10 Mins"</strong> button for 1 second and enter your PIN.</li> 
+                <li><strong>Depart Safely:</strong> When you are finished, press and hold the <strong>"DEPART & FILE REPORT"</strong> button for 1.5 seconds. This will open your visit report form (unless "No Report Required" is checked for this location).</li>
+                <li><strong>Panic Alert (SOS):</strong> In an emergency, **triple-tap the red "SOS" button** to send an immediate alert.</li>
+                 <li><strong>Check-ins (If Enabled):</strong> If your administrator has enabled check-ins, a prompt will appear periodically asking "Are you OK?". You have 2 minutes to tap the "I am OK" button. The alert sound will escalate if you don't respond.</li>
+            </ul>
+            
+              <h3 class="font-semibold text-lg text-blue-400">8. Filing Your Report & Departing</h3>
+             <ol class="list-decimal list-inside space-y-1">
+                 <li>When you hold the **"DEPART & FILE REPORT"** button, a "Visit Report" form will appear (unless disabled for that location).</li>
+                 <li>It will show either the standard checklist or a custom one for that company. Custom forms may include section headers (like "# Section 1"), number fields (like "$ KMs"), and text boxes (like "% Custom Note").</li>
+                 <li>Tick the relevant boxes, fill in any number fields, and add your visit notes in all text fields.</li>
+                 <li>Click **"Submit Report"**. This sends your report and ends your safety timer (if one was active).</li>
+                 <li><strong>Offline? No Problem.</strong> If you have no internet, the app will save your report and upload it automatically the next time you open the app with a connection.</li>
+            </ol>
+
+              <h3 class="font-semibold text-lg text-blue-400">9. Alerts & Duress</h3>
+              <ul class="list-disc list-inside space-y-2">
+                <li>If you go overdue or miss a check-in, the system will automatically email and send an SMS to your emergency contact.</li>
+                <li><strong>To Cancel an Alert:</strong> Press and hold the <strong>"I AM SAFE"</strong> button for 1 second and enter your **normal PIN**. This will clear the alert and then open the Visit Report form (if one is required).</li>
+                <li><strong>Silent (Duress) Alert:</strong> If you are being forced to cancel an alert, enter your **Duress PIN** instead. The app will look like it has been cancelled/extended, but it will silently send a high-priority alert to the monitor.</li>
+            </ul>
+
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button type="button" id="closeInfoModalBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Close</button>
+        </div>
+    </div>
+    <div id="pinModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-xs p-6 animate-fadeIn text-center">
+         <h2 id="pinModalTitle" class="text-xl font-bold mb-4">Enter PIN</h2>
+         <p id="pinModalPrompt" class="text-gray-400 mb-4">Please enter your 4-digit PIN to proceed.</p>
+         <input type="password" id="pinInput" maxlength="4" class="text-center text-3xl tracking-[1em] w-48 mx-auto bg-gray-900 border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="numeric">
+         <div class="mt-6 flex justify-end space-x-3">
+            <button type="button" id="cancelPinBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+            <button type="button" id="confirmPinBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Confirm</button>
+         </div>
+    </div>
+    <div id="alertModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn text-center">
+        <h2 id="alertModalTitle" class="text-xl font-bold mb-2">Alert</h2>
+        <p id="alertModalMessage" class="text-gray-300 mb-6"></p>
+        <button type="button" id="alertModalOkBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg w-24">OK</button>
+    </div>
+    <div id="checkinModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn text-center">
+        <h2 class="text-2xl font-bold text-yellow-400 mb-4">Are you OK?</h2>
+        <p class="text-lg text-gray-300 mb-4">Please confirm you are safe.</p>
+        <div id="checkinCountdown" class="text-6xl font-bold text-yellow-400 mb-6">2:00</div>
+        <button type="button" id="checkinOkBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I am OK</button>
+    </div>
+    <!-- === NEW: Confirm Modal === -->
+    <div id="confirmModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn text-center">
+        <h2 id="confirmModalTitle" class="text-xl font-bold mb-2 text-yellow-400">Confirmation Required</h2>
+        <p id="confirmModalMessage" class="text-gray-300 mb-6"></p>
+        <div class="flex justify-center space-x-4">
+            <button type="button" id="confirmModalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg w-24">Cancel</button>
+            <button type="button" id="confirmModalOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-24">Confirm</button>
+        </div>
+    </div>
+</div>
+<script>
+    let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
+    // --- NEW: Add quickStatBtn ---
+    let quickStatBtn;
+    // --- WSA: Added new modal elements ---
+    let reportModal, reportModalTitle, reportFormContainer, reportFormChecklists, reportNotes, reportLoading, cancelReportBtn, submitReportBtn, uploadQueueBanner;
+    // --- NEW: Confirm Modal elements ---
+    let confirmModal, confirmModalTitle, confirmModalMessage, confirmModalCancelBtn, confirmModalOkBtn;
+    let confirmCallback = () => {};
+
+    // --- WSA: Added new state properties ---
+    let state = { 
+        settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
+        locations: [], 
+        selectedLocationId: null, 
+        visitDurationMinutes: 0, 
+        activeVisit: null,
+        cachedForms: {}, // Stores custom checklists { "Template Name": [{"type":"header", "text":"Q1"}] }
+        pendingUploads: [] // Stores visit report data submitted offline
+    };
+    const DURATION_STEPS = [0, 10, 15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
+    
+    // --- MODIFIED: Fallback Checklist ---
+    const STANDARD_CHECKLIST_FALLBACK = [
+        { "type": "header", "text": "Standard Visit Report (Fallback)" },
+        { "type": "checkbox", "text": "Safety check completed" },
+        { "type": "checkbox", "text": "Client goals reviewed" },
+        { "type": "checkbox", "text": "Next appointment scheduled" },
+        { "type": "checkbox", "text": "Visit notes recorded" }
+    ];
+    
+    // --- TEMPLATE PLACEHOLDERS ---
+    var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
+    const PRE_ALERT_OFFSET = 2; 
+    var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
+    var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
+    var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
+    // --- END PLACEHOLDERS ---
+
+    let synth, checkinCountdownInterval;
+    let lastBatteryReportTime = 0; 
+    let mainScreenReminderTimer = null;
+    let isSyncing = false; // --- WSA: Syncing flag ---
+
+    async function initAudio() { if (synth || (Tone.context && Tone.context.state === 'running')) return; try { await Tone.start(); synth = new Tone.Synth().toDestination(); console.log("Audio context started"); } catch (e) { console.error("Could not start audio context:", e); } }
+    async function playSoundAndVibrate(action) {
+        await initAudio();
+        const play = () => {
+             if (!synth && Tone.context && Tone.context.state === 'running') { synth = new Tone.Synth().toDestination(); } 
+             else if (!synth) { console.warn("playSoundAndVibrate: Synth not ready."); return; } 
+
+            const now = Tone.now();
+            switch(action) {
+                case 'arrive': synth.triggerAttackRelease("C4", "8n", now); synth.triggerAttackRelease("G4", "8n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate(50); break;
+                case 'depart': synth.triggerAttackRelease("G4", "8n", now); synth.triggerAttackRelease("C4", "8n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate(50); break;
+                case 'extend': synth.triggerAttackRelease("A4", "16n", now); if ('vibrate' in navigator) navigator.vibrate(50); break;
+                case 'safe': synth.triggerAttackRelease("C5", "8n", now); if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]); break;
+                case 'warning': synth.triggerAttackRelease("E5", "16n", now); synth.triggerAttackRelease("G5", "16n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate([800, 200, 800]); break;
+                case 'panic': synth.triggerAttackRelease("G5", "16n", now); synth.triggerAttackRelease("G5", "16n", now + 0.1); synth.triggerAttackRelease("G5", "16n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]); break;
+                case 'checkin': 
+                    if(synth.context.state === 'running'){ 
+                        synth.triggerAttackRelease("A4", "16n", now); 
+                    } 
+                    break; 
+            }
+        };
+        play();
     }
     
-    // --- UPDATED: Add battery note to depart/iamSafe ---
-    async function getBatteryNote() {
-        if (!navigator.getBattery) {
-            return "";
+    function navigate(page) { 
+        Object.values(pages).forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); }); 
+        if (pages[page]) { 
+            pages[page].classList.remove('hidden'); 
+            pages[page].classList.add('active'); 
         }
-        try {
-            const battery = await navigator.getBattery();
-            const level = Math.floor(battery.level * 100);
-            let note = `Battery: ${level}%`;
-            if (level < 15 && !battery.charging) {
-                note += " (LOW - WARNING)";
-            }
-            return note;
-        } catch (e) {
-            console.warn("Could not check battery:", e);
-            return "";
+
+        if (mainScreenReminderTimer) clearTimeout(mainScreenReminderTimer); 
+        if (startReminderBanner) startReminderBanner.classList.add('hidden'); 
+
+        if (page === 'main') {
+            startReminderTimer(); 
+            // WSA: Sync forms and process queue when returning to main
+            syncAllForms(); // --- MODIFIED
+            processUploadQueue();
         }
     }
 
-    async function depart(reportData = {}) {
-        if (!state.activeVisit) return; 
-        const now = new Date();
-        const batteryNote = await getBatteryNote(); // Get current battery
+    function startReminderTimer() {
+        if (mainScreenReminderTimer) clearTimeout(mainScreenReminderTimer);
+        if (startReminderBanner) startReminderBanner.classList.add('hidden'); 
+
+        mainScreenReminderTimer = setTimeout(() => {
+            if (!state.activeVisit && pages.main.classList.contains('active')) {
+                if (startReminderBanner) startReminderBanner.classList.remove('hidden');
+            }
+        }, 300000); 
+    }
+
+    function showModal(modalKey, onShow) {
+        const modal = modals[modalKey];
+        modals.backdrop.classList.remove('hidden');
+        modals.backdrop.classList.add('flex');
+        Object.values(modals).forEach(m => {
+            if (m !== modals.backdrop && m !== modals[modalKey]) m.classList.add('hidden');
+        });
+        if (modal) {
+            modal.classList.remove('hidden');
+            if (onShow) onShow();
+        }
+    }
+    // --- MODIFIED: Clear Quick Stat flag ---
+    function hideModals() { 
+        modals.backdrop.classList.add('hidden'); 
+        modals.backdrop.classList.remove('flex'); 
+        if (reportModal) {
+            reportModal.dataset.isQuickStat = 'false'; // Clear flag
+            reportModal.dataset.isFromAlert = 'false'; // Clear flag
+        }
+        if (confirmModal) {
+            confirmCallback = () => {}; // Clear callback
+        }
+    }
+    function showAlert(title, message) { document.getElementById('alertModalTitle').textContent = title; document.getElementById('alertModalMessage').textContent = message; showModal('alert'); }
+    
+    // --- NEW: Custom Confirm Modal ---
+    function showConfirm(title, message, onConfirm) {
+        confirmModalTitle.textContent = title;
+        confirmModalMessage.textContent = message;
+        confirmCallback = onConfirm; // Set the callback
+        showModal('confirm');
+    }
+
+    // --- UPDATED loadState (WSA v1.1 FIX) ---
+    function loadState() { 
+        const savedState = JSON.parse(localStorage.getItem('loneWorkerState')); 
         
-        const dataToSend = {
-            ...reportData, 
-            "Arrival Time": state.activeVisit.arrivalTimeForSheet,
-            "Actual Departure Time": now.toISOString(),
-            "Alarm Status": 'DEPARTED',
-            "Notes": batteryNote // Add battery note on depart
+        const defaultState = {
+            settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
+            locations: [], 
+            selectedLocationId: null, 
+            visitDurationMinutes: 0, 
+            activeVisit: null,
+            cachedForms: {},
+            pendingUploads: []
+        };
+        
+        // Merge saved state onto default state
+        state = { ...defaultState, ...savedState };
+        // Deep merge settings object
+        state.settings = { ...defaultState.settings, ...(savedState ? savedState.settings : {}) };
+
+        // --- ROBUSTNESS FIX: Ensure arrays/objects are correct type ---
+        if (!Array.isArray(state.locations)) {
+            console.warn("Locations in localStorage was not an array, resetting.");
+            state.locations = [];
+        }
+        if (!Array.isArray(state.pendingUploads)) {
+             console.warn("PendingUploads in localStorage was not an array, resetting.");
+            state.pendingUploads = [];
+        }
+        if (typeof state.cachedForms !== 'object' || state.cachedForms === null || Array.isArray(state.cachedForms)) {
+             console.warn("CachedForms in localStorage was not an object, resetting.");
+            state.cachedForms = {};
+        }
+        // --- END FIX ---
+        
+        // --- MODIFIED: Ensure templateName & noReport exists ---
+        state.locations = state.locations.map(loc => ({
+            ...loc,
+            companyName: loc.companyName || "",
+            templateName: loc.templateName || "", // Add new templateName
+            noReport: loc.noReport || false // Add new noReport flag
+        }));
+
+        if (savedState && savedState.activeVisit) { 
+            state.activeVisit.startTime = new Date(savedState.activeVisit.startTime); 
+            state.activeVisit.anticipatedDepartureTime = new Date(savedState.activeVisit.anticipatedDepartureTime); 
+        } 
+        
+        const travellingExists = state.locations.some(loc => loc.id === 'loc_travelling_default'); 
+        if (!travellingExists) { 
+            state.locations.push({ 
+                id: 'loc_travelling_default', 
+                name: 'Travelling', 
+                address: 'GPS updates will be sent every 15 minutes.',
+                companyName: 'Internal', 
+                templateName: "", // Uses (Standard) form
+                noReport: true // --- NEW: Travelling never requires a report
+            }); 
+        } 
+        
+        const prefilledUrl = "%%GOOGLE_SHEET_URL%%";
+        if (prefilledUrl.startsWith('http') && !state.settings.googleSheetUrl) {
+            state.settings.googleSheetUrl = prefilledUrl;
+        }
+        saveState(); // Save state once after all initialization
+    }
+    // --- END UPDATED loadState ---
+
+    function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
+    
+    function renderLocations() {
+        locationList.innerHTML = ''; if (state.locations.length === 0) { locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; }
+        state.locations.sort((a,b) => a.name.localeCompare(b.name)).forEach(loc => { 
+            const isSelected = loc.id === state.selectedLocationId; 
+            // --- MODIFIED: Show Template Name ---
+            let templateInfo = loc.templateName ? ` (${loc.templateName})` : ' ((Standard))';
+            if (loc.noReport) templateInfo = " (No Report)";
+            const companyHtml = loc.companyName ? `<p class="text-sm text-blue-400">${loc.companyName}${templateInfo}</p>` : '';
+            const locationEl = document.createElement('div'); 
+            locationEl.className = `selectable-item p-3 rounded-lg cursor-pointer border-2 transition-transform duration-100 ${isSelected ? 'bg-blue-900/50 border-blue-500' : 'bg-gray-800 border-transparent hover:border-gray-600'}`; 
+            locationEl.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-semibold">${loc.name}</p><p class="text-sm text-gray-400">${loc.address}</p>${companyHtml}</div><button type="button" class="edit-location-btn p-2 rounded-full hover:bg-gray-700" data-id="${loc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button></div>`; 
+            locationList.appendChild(locationEl); 
+        });
+    }
+
+    function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; const hours = Math.floor(minutes / 60); const mins = minutes % 60; return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`; }
+    
+    // --- RENAMED: from updateArrivedButtonState to updateHomeScreenButtons ---
+    function updateHomeScreenButtons() { 
+        if (state.selectedLocationId) { 
+            // Enable Start Button
+            arrivedBtn.disabled = false; 
+            arrivedBtn.classList.remove('bg-gray-700', 'text-gray-400'); 
+            arrivedBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white'); 
+            arrivedBtn.textContent = state.visitDurationMinutes > 0 ? 'Start (Hold 1.5s)' : 'Set Duration';
+            
+            // --- NEW: Enable Quick Stat Button ---
+            const location = state.locations.find(l => l.id === state.selectedLocationId);
+            if (location && !location.noReport) { // Enable if it's not "No Report"
+                quickStatBtn.disabled = false;
+                quickStatBtn.classList.remove('bg-teal-900', 'text-teal-700');
+                quickStatBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'text-white');
+            } else {
+                 quickStatBtn.disabled = true;
+                 quickStatBtn.classList.add('bg-teal-900', 'text-teal-700');
+                 quickStatBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
+            }
+
+            if (state.visitDurationMinutes === 0) {
+                 arrivedBtn.disabled = true;
+                 arrivedBtn.classList.add('bg-gray-700', 'text-gray-400'); 
+                 arrivedBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white'); 
+                 arrivedBtn.textContent = 'Set Duration';
+            }
+            
+        } else { 
+            // Disable Start Button
+            arrivedBtn.disabled = true; 
+            arrivedBtn.classList.add('bg-gray-700', 'text-gray-400'); 
+            arrivedBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white'); 
+            arrivedBtn.textContent = 'Select Location'; 
+            
+            // --- NEW: Disable Quick Stat Button ---
+            quickStatBtn.disabled = true;
+            quickStatBtn.classList.add('bg-teal-900', 'text-teal-700');
+            quickStatBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
+        } 
+    }
+    
+    function sendToGoogleSheet(data, isRetry = false) {
+        if (!state.settings.googleSheetUrl || !state.settings.googleSheetUrl.startsWith('http')) {
+            console.error("Google Sheet URL is not set.");
+            showAlert("Error", "Google Sheet URL is not configured in settings. Data was not saved.");
+            return Promise.reject("No URL");
+        }
+
+        const payload = {
+            ...data,
+            "Worker Name": data["Worker Name"] || state.settings.workerName,
+            "Worker Phone Number": data["Worker Phone Number"] || state.settings.workerPhone,
+            "Emergency Contact Name": data["Emergency Contact Name"] || state.settings.emergencyName,
+            "Emergency Contact Number": data["Emergency Contact Number"] || state.settings.emergencyPhone,
+            "Emergency Contact Email": data["Emergency Contact Email"] || state.settings.emergencyEmail,
+            "Escalation Contact Name": data["Escalation Contact Name"] || state.settings.escalationName,
+            "Escalation Contact Number": data["Escalation Contact Number"] || state.settings.escalationPhone,
+            "Escalation Contact Email": data["Escalation Contact Email"] || state.settings.escalationEmail
         };
 
-        sendToGoogleSheet(dataToSend); // This will now queue if offline
-        endVisit();
+        const formData = new FormData();
+        for (const key in payload) {
+            formData.append(key, payload[key]);
+        }
+
+        return fetch(state.settings.googleSheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: new URLSearchParams(formData)
+        }).then(() => {
+            console.log('Data sent to Google Sheet:', data);
+            return Promise.resolve(); // Success
+        }).catch(error => {
+            console.error('Error sending data to Google Sheet:', error);
+            // --- UPDATED: Queue 'SAFE' and 'DATA_ENTRY_ONLY' status as well ---
+            const queueableStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'DATA_ENTRY_ONLY'];
+            if (!isRetry && queueableStatuses.includes(data["Alarm Status"])) {
+                console.log("Network failed. Queuing report.");
+                state.pendingUploads.push(payload); 
+                saveState();
+                showAlert("Offline", "Report saved. Will upload when you're back online.");
+            } else if (!isRetry) {
+                 showAlert("Network Error", "Failed to send data. Please check connection.");
+            }
+            return Promise.reject(error); // Failure
+        });
     }
 
-    function extendVisit() {
-        if (!state.activeVisit) return; 
-        console.log("ExtendVisit function called (normal PIN verified). Time already updated.");
+    function withPinVerification(callback, isDuressAction = false) {
+        if (!state.settings.pinCode) { showAlert("PIN Not Set", "Please set a PIN in settings."); return; }
+        showModal('pin');
+        const pinInputEl = document.getElementById('pinInput');
+        pinInputEl.value = '';
+        pinInputEl.focus();
+        
+        const confirmHandler = () => {
+            const pinValue = pinInputEl.value;
+            if (pinValue === state.settings.pinCode) {
+                hideModals();
+                pinInputEl.value = '';
+                callback(false); // Normal PIN entered
+            } else if (isDuressAction && state.settings.duressPin && pinValue === state.settings.duressPin) {
+                hideModals();
+                pinInputEl.value = '';
+                callback(true); // Duress PIN entered
+            } else {
+                showAlert("Incorrect PIN", "The PIN you entered is incorrect.");
+                pinInputEl.value = '';
+                pinInputEl.focus();
+            }
+            cleanup();
+        };
+        const cancelHandler = () => {
+            pinInputEl.value = '';
+            hideModals();
+            cleanup();
+        };
+        const cleanup = () => {
+            document.getElementById('confirmPinBtn').removeEventListener('click', confirmHandler);
+            document.getElementById('cancelPinBtn').removeEventListener('click', cancelHandler);
+        };
+        document.getElementById('confirmPinBtn').addEventListener('click', confirmHandler);
+        document.getElementById('cancelPinBtn').addEventListener('click', cancelHandler);
+    }
+    let visitInterval;
+    function handleArriveLongPress() { playSoundAndVibrate('arrive'); attemptStartVisit(); }
+    
+    function handleDepartLongPress() {
+        playSoundAndVibrate('depart');
+        showReportModal(false); // false = not from an alert
     }
     
-    async function iamSafe(isDuress, reportData = {}) { 
-        if (!state.activeVisit) return; 
-        const now = new Date();
-        const batteryNote = await getBatteryNote(); // Get current battery
-        
-        if (isDuress) {
-            sendToGoogleSheet({ 
-                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                "Alarm Status": 'DURESS_CODE_ACTIVATED', 
-                "Notes": `Worker activated silent duress alarm via I AM SAFE button. ${batteryNote}`.trim(),
-                "GPS Timestamp": new Date().toISOString() // Set alert time
-            }); 
+    function handleExtendLongPress() {
+        withPinVerification((isDuress) => {
+             if (!state.activeVisit) return; 
+
+             state.activeVisit.anticipatedDepartureTime = new Date(state.activeVisit.anticipatedDepartureTime.getTime() + 10 * 60 * 1000);
+             state.activeVisit.preWarningSent = false;
+             updateLockedScreen(); 
+             saveState(); 
+
+            if (isDuress) {
+                 sendToGoogleSheet({ 
+                     "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
+                     "Alarm Status": 'DURESS_CODE_ACTIVATED', 
+                     "Notes": 'Worker activated silent duress alarm during extend action.',
+                     "GPS Timestamp": new Date().toISOString() // Set alert time
+                 });
+                 console.log("Duress PIN entered for Extend. Sent DURESS_CODE_ACTIVATED.");
+            } else {
+                 playSoundAndVibrate('extend');
+                 sendToGoogleSheet({
+                     "Arrival Time": state.activeVisit.arrivalTimeForSheet,
+                     "Anticipated Departure Time": state.activeVisit.anticipatedDepartureTime.toISOString(),
+                     "Notes": `Extended 10 mins at ${new Date().toISOString()}`,
+                 });
+                 console.log("Normal PIN entered for Extend. Visit extended.");
+            }
+        }, true); 
+    }
+    
+    // --- UPDATED handleSafeLongPress (OTG v1.8) ---
+    function handleSafeLongPress() {
+        withPinVerification((isDuress) => {
+            if (isDuress) {
+                iamSafe(true); // Call iamSafe with duress flag, no report
+            } else {
+                // --- MODIFIED: Check for "Travelling" or "No Report" before showing report ---
+                if (!state.activeVisit) return; // Safety check
+                const location = state.locations.find(l => l.id === state.activeVisit.locationId);
+                if (location && (location.name === 'Travelling' || location.noReport)) {
+                    console.log("Location is 'Travelling' or 'No Report', skipping report on 'I Am Safe'.");
+                    iamSafe(false); // Call iamSafe (non-duress) with no report data
+                } else {
+                    // Not duress, not travelling. Show the report modal.
+                    showReportModal(true); // true = from an alert
+                }
+                // --- END MODIFIED ---
+            }
+        }, true); 
+    }
+    // --- END UPDATED handleSafeLongPress ---
+
+
+    function attemptStartVisit() {
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => { console.log("GPS permission seems to be granted."); executeStartVisit(); },
+                (error) => {
+                    console.error("Initial GPS check failed:", error.message);
+                    showAlert("GPS Not Available", "Could not access location. Overdue alerts will use the manually entered address. Please check location settings.");
+                    executeStartVisit();
+                },
+                { timeout: 10000, enableHighAccuracy: true }
+            );
         } else {
-            playSoundAndVibrate('safe');
-            const dataToSend = {
-                 ...reportData,
-                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                "Actual Departure Time": now.toISOString(), 
-                "Alarm Status": 'SAFE - MANUALLY CLEARED', 
-                "Notes": `Worker confirmed they are safe after an alert was triggered. ${batteryNote}`.trim()
-            };
-            sendToGoogleSheet(dataToSend); // This will queue if offline
-            showAlert("Confirmation", "Your status has been updated to SAFE.");
+            showAlert("GPS Not Supported", "Geolocation is not supported by your browser.");
+            executeStartVisit();
         }
-        endVisit(); 
     }
-    // --- END UPDATED depart/iamSafe ---
-
-    function endVisit() {
-        clearInterval(visitInterval);
-        visitInterval = null;
-        if (checkinCountdownInterval) clearInterval(checkinCountdownInterval); 
-        checkinCountdownInterval = null;
-        state.activeVisit = null;
-        state.selectedLocationId = null;
-        state.visitDurationMinutes = 0;
-        durationSlider.value = 0;
-        durationDisplay.textContent = formatDuration(0);
-        saveState();
-        navigate('main');
-        renderLocations();
-        updateHomeScreenButtons();
-        document.getElementById('alertActiveContainer').classList.add('hidden');
-        document.getElementById('normalButtonsContainer').classList.remove('hidden');
-        if(synth) synth.volume.value = 0; 
+    async function executeStartVisit() {
+        if (!navigator.onLine) { showAlert("No Network", "A network connection is required to start a visit."); return; }
         lastBatteryReportTime = 0; 
-    }
-    function tryGetGps(notePrefix = "Overdue GPS") {
-        if (!state.activeVisit) return; 
-        state.activeVisit.lastGpsAttemptTime = new Date().getTime();
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                 if (!state.activeVisit) return; 
-                const { latitude, longitude } = position.coords;
-                // --- === BUG FIX: Use gpsData.longitude === ---
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Last Known GPS": `${latitude},${longitude}`, "GPS Timestamp": new Date().toISOString(), "Notes": `${notePrefix}: Successfully retrieved GPS.` });
-            },
-            (error) => {
-                 if (!state.activeVisit) return; 
-                console.error("GPS Error:", error);
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Notes": `${notePrefix}: Failed to retrieve GPS.` });
-            },
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-        );
-    }
-    
-    // --- UPDATED tick function (Battery Fix) ---
-    async function tick() {
-        if (!state.activeVisit) { clearInterval(visitInterval); visitInterval = null; return; }
-        updateLockedScreen();
-        const now = new Date().getTime();
-        const departureTime = state.activeVisit.anticipatedDepartureTime.getTime();
-        const remainingMinutes = (departureTime - now) / 60000;
-        
-        if (remainingMinutes <= PRE_ALERT_OFFSET && remainingMinutes > 0 && !state.activeVisit.preWarningSent) {
-            state.activeVisit.preWarningSent = true;
-            playSoundAndVibrate('warning');
-        }
-
-        const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-        if (location && location.name === 'Travelling') {
-            const fifteenMinutes = 15 * 60 * 1000;
-            if (!state.activeVisit.lastTravelGpsTime || (now - state.activeVisit.lastTravelGpsTime) >= fifteenMinutes) {
-                tryGetGps("15 minute travelling update");
-                state.activeVisit.lastTravelGpsTime = now;
-            }
-        }
-
-        const overdueMinutes = (now - departureTime) / 60000;
-        if (overdueMinutes > 0) {
-            // First alert trigger
-            if (overdueMinutes >= (parseInt(FIRST_ALERT_MINUTES) || 15) && state.activeVisit.alertState < 2) {
-                state.activeVisit.alertState = 2;
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'ALERT SENT', "GPS Timestamp": new Date().toISOString() }); // Set alert timestamp
-                document.getElementById('alertActiveContainer').classList.remove('hidden');
-                document.getElementById('normalButtonsContainer').classList.add('hidden');
-                tryGetGps("First overdue alert GPS");
-            }
-            // Recurring GPS check (e.g., every 20 mins)
-            if (state.activeVisit.lastGpsAttemptTime && (now - state.activeVisit.lastGpsAttemptTime) > 20 * 60 * 1000) {
-                tryGetGps("Recurring overdue check");
-            }
-        }
-
-        if (String(CHECKIN_ENABLED) === 'true' && state.activeVisit.nextCheckinTime && now >= state.activeVisit.nextCheckinTime) {
-            triggerCheckin();
-            state.activeVisit.nextCheckinTime = null; 
-        }
-
-        // --- Battery Check Logic Updated ---
-        const BATTERY_REPORT_INTERVAL = 15 * 60 * 1000; // 15 minutes
-        if (navigator.getBattery && (now - lastBatteryReportTime) > BATTERY_REPORT_INTERVAL) {
-             lastBatteryReportTime = now; 
+        let initialBatteryNote = "";
+        if (navigator.getBattery) {
             try {
                 const battery = await navigator.getBattery();
                 const level = Math.floor(battery.level * 100);
-                let batteryNote = `Battery: ${level}%`;
-                let batteryStatusChanged = false; 
-                
-                if (level < 15 && !battery.charging) {
-                    batteryNote += " (LOW - WARNING)";
-                    if (!state.activeVisit.batteryAlertSent) {
-                         state.activeVisit.batteryAlertSent = true; 
-                         batteryStatusChanged = true;
-                    }
-                } 
-
-                // --- ALWAYS SEND THE UPDATE ---
-                sendToGoogleSheet({ 
-                    "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                    "Notes": batteryNote 
-                });
-                // --- END FIX ---
-                
-                if (batteryStatusChanged) {
-                     saveState(); 
+                 initialBatteryNote = `Battery: ${level}%`; 
+                 lastBatteryReportTime = Date.now();
+                if (level < 20 && !battery.charging) { 
+                    showAlert("Low Battery", `Battery is at ${level}%. It may not last for the duration of this visit.`);
+                    initialBatteryNote += " (LOW)"; 
                 }
-
             } catch(e) { console.warn("Could not check battery:", e); }
         }
-    }
-    // --- END UPDATED tick ---
-
-    // --- UPDATED triggerPanicAlert (OTG v1.5 - BUG FIX) ---
-    function triggerPanicAlert() {
-        if (!state.activeVisit) return; 
-        playSoundAndVibrate('panic');
-        showAlert("PANIC ALERT SENT", "An immediate alert has been sent to your emergency contact.");
-        const sendPanic = (gpsData) => {
-             if (!state.activeVisit) return; 
-            const data = { 
-                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                "Alarm Status": 'EMERGENCY - PANIC BUTTON', 
-                "Notes": 'Panic button activated by worker.',
-                "GPS Timestamp": new Date().toISOString() // --- === ADD THIS LINE === ---
-            };
-            if (gpsData) {
-                // --- === BUG FIX: Was `longitude`, changed to `gpsData.longitude` === ---
-                data["Last Known GPS"] = `${gpsData.latitude},${gpsData.longitude}`;
-                data["GPS Timestamp"] = new Date().toISOString();
-                data.Notes += ' GPS successfully retrieved.';
-            } else {
-                data.Notes += ' Failed to retrieve GPS on panic.';
-            }
-            sendToGoogleSheet(data);
-            document.getElementById('alertActiveContainer').classList.remove('hidden');
-            document.getElementById('normalButtonsContainer').classList.add('hidden');
-        };
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => sendPanic(position.coords),
-                () => sendPanic(null),
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        } else {
-            sendPanic(null);
-        }
-    }
-    // --- END UPDATED triggerPanicAlert ---
-    
-    function triggerCheckin() {
-        showModal('checkin');
-        let remaining = 120; 
-        const totalDuration = 120; 
-        const countdownEl = document.getElementById('checkinCountdown');
-        countdownEl.textContent = '2:00';
-
-        if (checkinCountdownInterval) clearInterval(checkinCountdownInterval);
-
-        initAudio().then(() => {
-            if (!synth) synth = new Tone.Synth().toDestination();
-            synth.volume.value = -20; 
-        });
-        
-        if ('vibrate' in navigator) navigator.vibrate(200); 
-
-        checkinCountdownInterval = setInterval(() => {
-            remaining--;
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
-            countdownEl.textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
-
-            // --- Escalation Logic ---
-            const elapsedRatio = (totalDuration - remaining) / totalDuration; 
-            
-            if (synth && elapsedRatio >= 0.5) {
-                const volumeRatio = (elapsedRatio - 0.5) * 2; 
-                const gain = volumeRatio * 0.9 + 0.1; 
-                synth.volume.value = Tone.gainToDb(gain); 
-            } else if (synth) {
-                 synth.volume.value = -20; 
-            }
-
-            if (remaining <= 30 && remaining % 2 === 0 && 'vibrate' in navigator) {
-                 navigator.vibrate([300, 100, 300]); 
-            } else if (remaining > 30 && remaining % 5 === 0 && 'vibrate' in navigator) {
-                 navigator.vibrate(200); 
-            }
-            
-             if (remaining <= 60 && remaining % 3 === 0) { 
-                 playSoundAndVibrate('checkin'); 
-             } else if (remaining > 60 && remaining % 10 === 0) { 
-                  playSoundAndVibrate('checkin');
-             }
-            // --- End Escalation Logic ---
-
-
-            if (remaining <= 0) {
-                clearInterval(checkinCountdownInterval);
-                checkinCountdownInterval = null;
-                hideModals();
-                 if (!state.activeVisit) return; 
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'MISSED_CHECKIN', "Notes": 'Worker missed a scheduled check-in.', "GPS Timestamp": new Date().toISOString() });
-                document.getElementById('alertActiveContainer').classList.remove('hidden');
-                document.getElementById('normalButtonsContainer').classList.add('hidden');
-                if(synth) synth.volume.value = 0; 
-            }
-        }, 1000);
-    }
-
-    function handleCheckinOK() {
-        clearInterval(checkinCountdownInterval);
-        checkinCountdownInterval = null; 
-        hideModals();
-        
-        if ('vibrate' in navigator) {
-            navigator.vibrate([50, 50, 50]); 
-        }
-
-         if (!state.activeVisit) return; 
-        state.activeVisit.nextCheckinTime = new Date().getTime() + (parseInt(CHECKIN_INTERVAL) * 60 * 1000); 
-        saveState();
-        if(synth) synth.volume.value = 0; 
-    }
-
-    // --- WSA: NEW FUNCTIONS ---
-
-    /**
-     * Shows the report modal, building the form dynamically.
-     */
-    // --- UPDATED showReportModal (OTG v1.8) ---
-    function showReportModal(isFromAlert = false) {
-        if (!state.activeVisit) return;
-
-        const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-        if (!location) {
-            showAlert("Error", "Could not find location data.");
-            return;
-        }
-
-        // --- NEW: Check for "Travelling" or "No Report" ---
-        if (location.name === 'Travelling' || location.noReport) {
-            console.log("Location is 'Travelling' or 'No Report', skipping report.");
-            if (isFromAlert) {
-                iamSafe(false); // Call iamSafe with no report
-            } else {
-                depart(); // Call depart with no report
-            }
-            return; // Stop here, don't show modal
-        }
-        // --- END NEW ---
-
-        // Store if this modal was triggered from an "I AM SAFE" button
-        reportModal.dataset.isFromAlert = isFromAlert;
-        reportModal.dataset.isQuickStat = 'false'; // --- NEW: Set QuickStat to false ---
-
-        // Show the modal
-        showModal('report');
-        reportModalTitle.textContent = `Visit Report for: ${location.name}`;
-        reportFormContainer.classList.add('hidden');
-        reportLoading.classList.add('hidden');
-        reportNotes.value = ''; // Clear notes
-        reportFormChecklists.innerHTML = ''; // Clear old checklist
-        submitReportBtn.textContent = "Submit Report & Depart"; // Set default button text
-
-        // --- MODIFIED: Form Loading Logic ---
-        let checklistItems;
-        let formToLoad = location.templateName || "(Standard)"; // Get template name, or default to (Standard)
-
-        console.log(`Loading form: '${formToLoad}'`);
-        const cachedForm = state.cachedForms[formToLoad];
-
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
-            // Found the specified form in cache
-            checklistItems = cachedForm;
-        } else if (cachedForm) {
-            // Form is cached but empty. This is fine.
-            checklistItems = [];
-        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
-            // Specified custom form *not found*, but (Standard) *is* found
-            console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
-            checklistItems = state.cachedForms["(Standard)"];
-        } else {
-            // Specified form OR (Standard) not found. Use hardcoded fallback.
-            console.warn(`No forms found in cache. Using hardcoded fallback.`);
-            checklistItems = STANDARD_CHECKLIST_FALLBACK;
-        }
-        
-        // If we're here, we have a list (even if empty). Build the form.
-        buildReportForm(checklistItems);
-        // --- END MODIFIED ---
-    }
-    
-    // --- NEW: showQuickStatModal ---
-    function showQuickStatModal() {
-        if (!state.selectedLocationId) {
-            showAlert("No Location", "Please select a location from the list first.");
-            return;
-        }
-
         const location = state.locations.find(l => l.id === state.selectedLocationId);
-        if (!location) {
-            showAlert("Error", "Could not find location data.");
-            return;
-        }
-
-        if (location.name === 'Travelling' || location.noReport) {
-            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'.");
-            return;
-        }
-
-        // Set flags for submission
-        reportModal.dataset.isFromAlert = 'false';
-        reportModal.dataset.isQuickStat = 'true';
-
-        // Show the modal
-        showModal('report');
-        reportModalTitle.textContent = `Quick Stat for: ${location.name}`;
-        reportFormContainer.classList.add('hidden');
-        reportLoading.classList.add('hidden');
-        reportNotes.value = ''; // Clear notes
-        reportFormChecklists.innerHTML = ''; // Clear old checklist
-        submitReportBtn.textContent = "Submit Report"; // Change button text
-
-        // --- Form Loading Logic (copied from showReportModal) ---
-        let checklistItems;
-        let formToLoad = location.templateName || "(Standard)"; 
-        const cachedForm = state.cachedForms[formToLoad];
-
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
-            checklistItems = cachedForm;
-        } else if (cachedForm) {
-            checklistItems = [];
-        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
-            console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
-            checklistItems = state.cachedForms["(Standard)"];
+        const now = new Date();
+        const anticipatedDepartureTime = new Date(now.getTime() + state.visitDurationMinutes * 60 * 1000);
+        state.activeVisit = {
+            locationId: location.id,
+            startTime: now,
+            anticipatedDepartureTime: anticipatedDepartureTime,
+            arrivalTimeForSheet: now.toISOString(),
+            alertState: 0,
+            preWarningSent: false,
+            lastGpsAttemptTime: null,
+            lastTravelGpsTime: null,
+            nextCheckinTime: (String(CHECKIN_ENABLED) === 'true') ? now.getTime() + (parseInt(CHECKIN_INTERVAL) * 60 * 1000) : null, 
+            batteryAlertSent: initialBatteryNote.includes("(LOW)") 
+        };
+        if (location.name === 'Travelling') {
+            state.activeVisit.lastTravelGpsTime = now.getTime();
+            tryGetGps("Started travelling");
+            showAlert("GPS Tracking Active", "For 'Travelling' to work best, please keep this app open on your screen during your journey.");
         } else {
-            console.warn(`No forms found in cache. Using hardcoded fallback.`);
-            checklistItems = STANDARD_CHECKLIST_FALLBACK;
-        }
-        
-        buildReportForm(checklistItems);
-    }
-    
-    /**
-     * Helper to build the checklist HTML from an array of objects.
-     */
-    // --- UPDATED buildReportForm (OTG v1.8 - with '$') ---
-    function buildReportForm(items) {
-         reportFormChecklists.innerHTML = items.map((item, index) => {
-            if (!item || typeof item.text === 'undefined') {
-                 console.warn("Invalid checklist item:", item);
-                 return ''; // Skip this item
-            }
-
-            if (item.type === 'header') {
-                return `<h3 class="text-lg font-semibold text-blue-300 mt-4 mb-2">${item.text}</h3>`;
-            
-            } else if (item.type === 'textarea') {
-                return `
-                <div class="mt-4">
-                    <label for="wsa-note-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
-                    <textarea id="wsa-note-${index}" data-header="${item.text}" class="wsa-custom-note mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
-                </div>
-                `;
-            // --- === NEW: Added 'number' type === ---
-            } else if (item.type === 'number') { 
-                return `
-                <div class="mt-4">
-                    <label for="wsa-num-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
-                    <input type="number" id="wsa-num-${index}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="numeric" pattern="[0-9]*">
-                </div>
-                `;
-            // --- === END NEW === ---
-            } else { // Default to checkbox (item.type === 'checkbox')
-                return `<label for="check-${index}" class="flex items-center p-2 bg-gray-900 rounded-md cursor-pointer">
-                    <input id="check-${index}" name="${item.text}" type="checkbox" class="h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                    <span class="ml-3 text-gray-300">${item.text}</span>
-                </label>`;
-            }
-         }).join('');
-        reportFormContainer.classList.remove('hidden');
-        submitReportBtn.disabled = false;
-    }
-
-    /**
-     * Gathers report data and calls depart() or iamSafe()
-     */
-    // --- UPDATED submitReport (OTG v1.8 - with '$' and 'QuickStat') ---
-    function submitReport() {
-        const isFromAlert = reportModal.dataset.isFromAlert === 'true';
-        const isQuickStat = reportModal.dataset.isQuickStat === 'true';
-
-        if (isQuickStat) {
-            submitQuickStatReport(); // Call new function
-        } else {
-            // This is a normal visit (depart or safe)
-            if (!state.activeVisit) return; 
-            const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-            const finalData = gatherFormData(location); // Get form data
-            
-            if (isFromAlert) {
-                iamSafe(false, finalData); // Call iamSafe with the report data
-            } else {
-                depart(finalData); // Call depart with the report data
+            if (!localStorage.getItem('gpsWarningShown')) {
+                showAlert("GPS Tracking Notice", "For reliable GPS tracking in an emergency, please keep this app open on your screen during your visit.");
+                localStorage.setItem('gpsWarningShown', 'true');
             }
         }
-        
-        hideModals();
+        saveState();
+        sendToGoogleSheet({
+            "Date": now.toLocaleDateString('en-CA'),
+            "Location Name": location.name,
+            "Location Address": location.address,
+            "Company Name": location.companyName || "", // WSA: Send Company Name
+            "Arrival Time": state.activeVisit.arrivalTimeForSheet,
+            "Anticipated Departure Time": anticipatedDepartureTime.toISOString(),
+            "Alarm Status": 'ON SITE', 
+            "Notes": initialBatteryNote 
+        });
+        enterLockedScreen();
     }
-    
-    // --- NEW: Gathers all form data ---
+    function enterLockedScreen() {
+        const location = state.locations.find(l => l.id === state.activeVisit.locationId);
+        document.getElementById('lockedLocationName').textContent = location.name;
+        updateLockedScreen();
+        navigate('locked');
+        if (visitInterval) clearInterval(visitInterval);
+        visitInterval = setInterval(tick, 1000);
+    }
+    function updateLockedScreen() {
+        if (!state.activeVisit) return;
+        const now = new Date();
+        const remaining = state.activeVisit.anticipatedDepartureTime.getTime() - now.getTime();
+        if (remaining > 0) {
+            const hours = Math.floor(remaining / 3600000);
+            const minutes = Math.floor((remaining % 3600000) / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            document.getElementById('countdownTimer').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.getElementById('countdownTimer').classList.remove('text-red-500');
+// --- NEW: Gathers all form data ---
     function gatherFormData(location) {
         // 1. Gather checklist data
         const checklistData = {};
