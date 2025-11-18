@@ -1,18 +1,30 @@
-# Project Specification: On-the-Go AppSuite v2.0
+# Project Specification: On-the-Go AppSuite v2.3
 
 ## 1. Overview
 
 This document specifies a complete, free, self-hosted On-the-Go AppSuite (OTG AppSuite). The system is **modular**, allowing a "Deployment Administrator" to deploy either:
 
 1.  **Simple Mode (Safety-Only):** A classic Lone Worker Safety (LWS) system with a worker app, monitor app, and safety logging.
-2.  **Advanced Mode (Safety + Reporting):** The full suite, which adds visit reporting, custom checklists, AI-powered grammar correction, PDF report generation, and longitudinal data tracking.
+2.  **Advanced Mode (Safety + Reporting):** The full suite, which adds visit reporting, custom checklists (including numerical data entry), AI-powered grammar correction, PDF report generation, longitudinal data tracking, and "Quick Stat" logging.
 
 The system is delivered via a single `setup.html` deployment tool that generates the required application files based on the administrator's choice.
 
 ## 2. Core Components & File Structure
 
 The project repository (`lws-deploy-tool`) contains the setup tool and a `templates` folder.
-
+/ (Repository Root) 
+├── setup.html 
+│ └── templates/ 
+         ├── apps_script_simple.txt 
+         ├── apps_script_advanced.txt 
+         ├── worker_app_simple.txt 
+         ├── worker_app_advanced.txt 
+         ├── monitor_app_template.txt 
+         ├── manifest.json 
+         ├── sw.js 
+         ├── Deployment_Admin_Guide.md 
+         ├── Installer Creation Guide.md 
+         └── Promotional Blurb.md
 ## 3. The Deployment Tool (`setup.html`)
 
 This is the central tool for generating the custom apps.
@@ -21,7 +33,7 @@ This is the central tool for generating the custom apps.
 
 The tool is a 6-step web-based wizard:
 
-* **Step 1: Welcome:** Fetches all required template files from the `/templates/` folder on `window.onload`. The "Start Setup" button is disabled until all files are loaded.
+* **Step 1: Welcome:** Fetches all required template files from the `/templates/` folder on `window.onload`.
 * **Step 2: Sheet Setup:** Instructs the user to create a Google Sheet.
     * **`Visits` Sheet:** All users must create this tab.
     * **`Checklists` Sheet:** This instruction is hidden by default and only appears if "Advanced Reporting" is enabled in Step 3.
@@ -35,15 +47,12 @@ The tool is a 6-step web-based wizard:
         * `onchange` event calls `toggleReporting()`.
     * **`Advanced Reporting Options` (Hidden Div):**
         * Contains `Gemini API Key` (Input). This div is shown/hidden by `toggleReporting()`.
-    * **`toggleReporting()` Function:** When the checkbox is clicked, this function updates:
-        * `headersDisplayText` in Step 2.
-        * `checklistsInstruction` visibility in Step 2.
-        * `scriptPreview` to show the correct `_simple` or `_advanced` script.
+    * **`toggleReporting()` Function:** When the checkbox is clicked, this function updates `headersDisplayText`, `checklistsInstruction` visibility, and the `scriptPreview`.
     * **"Copy Script" Button:** Calls `copyInjectedScript()`.
-    * **`copyInjectedScript()` Function:** Reads the "Advanced" checkbox. It selects `apps_script_simple.txt` or `apps_script_advanced.txt`, injects `%%SECRET_KEY%%`, `%%ORGANISATION_NAME%%`, and (if advanced) `%%GEMINI_API_KEY%%`, then copies the result to the clipboard.
+    * **`copyInjectedScript()` Function:** Reads the "Advanced" checkbox. It selects `apps_script_simple.txt` or `apps_script_advanced.txt`, injects all `%%...%%` placeholders, and copies the result to the clipboard.
 * **Step 4: Configure Apps:**
     * **`Web App URL` (Input):** User pastes their deployed URL here.
-    * **Other Inputs:** `firstAlert`, `enableCheckin`, `checkinInterval`, `logoUrl`.
+    * **Other Inputs:** `firstAlert`, `escalationMinutes`, `enableCheckin`, `checkinInterval`, `logoUrl`.
     * **"Test Connection" Button:** Calls `testAndProceed()`.
     * **`testAndProceed()` Function:** Performs a JSONP "ping" (`?callback=...&token=...`) to the user's `Web app URL` to validate the URL and `Secret Key`.
 * **Step 5: Download Apps:**
@@ -59,82 +68,82 @@ The tool is a 6-step web-based wizard:
 
 ### 4.1. Common Features (Both Scripts)
 * **`doPost(e)`:** The main entry point for all data from the Worker App. It finds the correct row (by `Worker Name` + `Arrival Time`) or appends a new one, saving all data. It parses the `Notes` field for `Battery: XX%` and saves the number to the `Battery Level` column.
-* **`checkOverdueWorkers()`:** The time-triggered function. Scans the `Visits` sheet for active workers, checks their `Anticipated Departure Time` against `now()`, and sends escalating alerts by calling `sendAlertEmail()`.
-* **`sendAlertEmail()`:** Sends formatted HTML emails for all alert types (`PANIC`, `DURESS`, `MISSED_CHECKIN`, `EMAIL_1_SENT`, etc.).
+    * **Alert Timestamping:** When a `PANIC`, `DURESS`, or `MISSED_CHECKIN` alert is received, this function writes the current `new Date().toISOString()` to the `GPS Timestamp` column to act as the "alert start time" for escalation.
+* **`checkOverdueWorkers()`:** The time-triggered function. Scans the `Visits` sheet.
+    * **Resolved Statuses:** It maintains a `resolvedStatuses` array (e.g., `['DEPARTED', 'MONITOR_CLEARED_ALERT', 'DATA_ENTRY_ONLY']`) and ignores any worker with these statuses.
+    * **New Overdue:** Finds `ON SITE` workers whose `Anticipated Departure Time` has passed, changes their status to `EMAIL_1_SENT`, and sets their `GPS Timestamp` to start the escalation clock.
+    * **Escalation Logic:** Finds any *unresolved* alert (e.g., `PANIC`, `EMAIL_1_SENT`). It checks the "alert age" (by comparing `now()` to the `GPS Timestamp`) against the `ESCALATION_MINUTES` variable. If the age exceeds the threshold, it sends a new alert (email + SMS) to the *secondary* contact and updates the status (e.g., to `ESCALATION_SENT` or `EMAIL_2_SENT`).
+* **`sendSmsViaGateway(phoneNumber, message)`:** (New in v2.0) Sends a free SMS alert using the TextBelt API's free tier (`key: "textbelt"`).
+    * **Fallback:** If `!result.success`, it logs the error and sends a **fallback email** to the script owner (`Session.getEffectiveUser().getEmail()`) notifying them of the SMS failure.
+* **`sendAlertEmail(workerData, alertType, isEscalation)`:** Sends formatted HTML emails. It determines the correct recipient (primary or escalation contact) based on the `isEscalation` boolean. For critical alerts, it also generates a short SMS summary and calls `sendSmsViaGateway`.
 
 ### 4.2. `apps_script_simple.txt` (Simple Mode)
-* **Placeholders:** `%%SECRET_KEY%%`, `%%ORGANISATION_NAME%%`.
+* **Placeholders:** `%%SECRET_KEY%%`, `%%ORGANISATION_NAME%%`, `%%ESCALATION_MINUTES%%`, `%%FIRST_ALERT_MINUTES%%`.
 * **`doGet(e)`:** Only handles the Monitor App. It validates the `token` and returns all data from the `Visits` sheet as JSONP.
 * **Schema:** Expects the 19-column `Visits` sheet.
 
 ### 4.3. `apps_script_advanced.txt` (Advanced Mode)
-* **Placeholders:** `%%SECRET_KEY%%`, `%%ORGANISATION_NAME%%`, `%%GEMINI_API_KEY%%`.
+* **Placeholders:** `%%SECRET_KEY%%`, `%%ORGANISATION_NAME%%`, `%%ESCALATION_MINUTES%%`, `%%FIRST_ALERT_MINUTES%%`, `%%GEMINI_API_KEY%%`.
 * **Config Vars:** `DEFAULT_REPORT_TEMPLATE_ID`, `PDF_OUTPUT_FOLDER_ID`, `LONGITUDINAL_ID_HEADER`.
 * **Schema:** Expects the 21-column `Visits` sheet and the `Checklists` sheet.
 * **`doGet(e)`:** Handles two request types:
     * **Monitor (JSONP):** Same as simple mode.
-    * **Worker (JSON):** If `action=getForms`, it performs a **keyless** read of the `Checklists` sheet for the given `companyName` and returns a JSON array of question objects (e.g., `{type: "header", text: "..."}`).
-* **`_aggregateDataForMonth()`:** A private helper function that performs the core data aggregation for all reporting. It reads the `Visits` sheet, filters by month, and groups data by `Company Name - Location Name` and `Company Name (Combined)`. It returns a single object containing `masterReport`, `combinedReport`, `templateIdMap`, etc.
-* **`generateMasterMonthlyReport()`:** Calls `_aggregateDataForMonth`, runs `runAICorrection` on the data, and creates a new spreadsheet **tab** for each site and combined total.
-* **`generateAllPdfReports()`:** Calls `_aggregateDataForMonth`, runs `runAICorrection`, then loops through each combined company. It finds the correct `templateId` (from `templateIdMap` or default), copies the Google Doc, replaces all `{{...}}` tags, builds and inserts the tables using `buildTableInDoc`, and saves the final file as a PDF in the `PDF_OUTPUT_FOLDER_ID`.
-* **`runAllLongitudinalReports()`:** Calls `_aggregateDataForMonth`, then loops through each company, opens their specific spreadsheet (using the ID from `longitudinalIdMap`), and appends the month's summary data as a new row.
-* **`createLongitudinalWorkbook()`:** A utility function run manually by the admin to create a new spreadsheet for a company and save its ID back to the `Checklists` sheet.
-* **Helper Functions:** `runAICorrection` (handles AI calls), `writeReportToTab` (builds spreadsheet tabs), `buildTableInDoc` (builds Google Doc tables).
+    * **Worker (JSON):** If `action=getForms`, it performs a **keyless** read of the `Checklists` sheet for the given `companyName`. It parses questions and returns a JSON array of objects:
+        * `"#"` -> `{type: "header", ...}`
+        * `"%"` -> `{type: "textarea", ...}`
+        * `"$"` -> `{type: "number", ...}`
+        * Other -> `{type: "checkbox", ...}`
+* **Reporting Functions:**
+    * **`_aggregateDataForMonth()`:** A private helper function. It aggregates data from the `Visits` sheet, calculates `questionTally` (checkboxes) and **`numericTally`** (SUM of all `$` fields), and compiles notes.
+    * **`generateMasterMonthlyReport()`:** Calls aggregation, runs AI correction, and creates spreadsheet tabs. It adds a specific section for "Numeric Totals."
+    * **`generateAllPdfReports()`:** Calls aggregation, runs AI correction, then merges data into Google Doc templates. It supports the new `{{NumericTotalsTable}}` tag.
+    * **`runAllLongitudinalReports()`:** Appends summary data (including numeric totals) to external spreadsheets defined in the `Checklists` sheet.
+    * **`createLongitudinalWorkbook()`:** Creates the external sheet and adds columns for all `$` fields found in the template.
+* **Database Maintenance:**
+    * **`archiveOldData()`:** A time-triggered function that moves rows older than 60 days from `Visits` to a separate `OTG_Archive_[Year]` spreadsheet to maintain performance.
 
 ---
 
 ## 5. Worker App (PWA)
 
-### 5.1. Common Features (Both Apps)
-* **`localStorage` State:** `settings`, `locations`, `activeVisit`.
-* **`loadState()`:** Initializes the app. Must create the default `"Travelling"` location if it doesn't exist.
-* **Safety Logic:**
-    * `handleArriveLongPress`: Calls `executeStartVisit`.
-    * `executeStartVisit`: Sends `ON SITE` data via `sendToGoogleSheet`.
-    * `handleExtendLongPress`: Prompts for PIN, calls `withPinVerification`, sends `Notes` update.
-    * `triggerPanicAlert`: Sends `EMERGENCY - PANIC BUTTON` data, attempts to get GPS, and sends that as well. **Must** handle `gpsData.longitude` correctly.
-* **PIN Logic:** `withPinVerification` must check for both `pinCode` (normal) and `duressPin`.
-* **Alerts:** `handleSafeLongPress` and `tick` function for check-ins, pre-alerts, and overdue alerts.
+### 5.1. Common Features
+* **Screen Wake Lock:** Implements the `navigator.wakeLock` API to prevent the phone from sleeping/freezing the app while a visit is active.
+* **Safety Logic:** `handleArriveLongPress`, `triggerPanicAlert` (with GPS timestamp fix), `handleExtendLongPress`.
 
 ### 5.2. `worker_app_simple.txt` (Simple Mode)
+* **Placeholders:** `%%ORGANISATION_NAME%%`, `%%FIRST_ALERT_MINUTES%%`, `%%ESCALATION_MINUTES%%`, `%%CHECKIN_ENABLED%%`, `%%CHECKIN_INTERVAL%%`, `%%GOOGLE_SHEET_URL%%`, `https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png`
 * **Location Modal:** Only collects `Location Name` and `Location Address`.
-* **`handleDepartLongPress`:** Calls `depart()`.
 * **`depart()`:** Simply sends `DEPARTED` status and `Battery:` note.
-* **`handleSafeLongPress`:** Calls `withPinVerification`. On success, calls `iamSafe()`.
-* **`iamSafe()`:** Simply sends `SAFE - MANUALLY CLEARED` status.
 
 ### 5.3. `worker_app_advanced.txt` (Advanced Mode)
+* **Placeholders:** (Same as Simple Mode)
 * **`localStorage` State:** Adds `cachedForms: {}` and `pendingUploads: []`.
-* **Location Modal:** Collects `Location Name`, `Location Address`, **`Company Name`**, and **`Template Name (Optional)`**.
-* **`handleDepartLongPress`:** Calls `showReportModal(false)`.
-* **`handleSafeLongPress`:** Calls `withPinVerification`. On normal PIN, it checks if `location.name === 'Travelling'`. If so, it calls `iamSafe(false)`. If not, it calls `showReportModal(true)`.
-* **`showReportModal(isFromAlert)`:**
-    * Skips modal entirely if `location.name === 'Travelling'`.
-    * Gets `templateName` from location. If blank, sets `formToLoad = "(Standard)"`.
-    * Loads form from `state.cachedForms[formToLoad]`.
-    * If not found, loads `state.cachedForms["(Standard)"]`.
-    * If *still* not found, loads hardcoded `STANDARD_CHECKLIST_FALLBACK`.
-* **`buildReportForm(items)`:** Renders HTML based on `item.type` (`header`, `textarea`, `checkbox`).
-* **`submitReport()`:** Gathers all checklist/notes into a JSON object and passes it to `depart()` or `iamSafe()` in the `reportData` parameter.
-* **`sendToGoogleSheet()`:** Is modified to catch errors and add `DEPARTED` or `SAFE` reports to the `pendingUploads` queue if the network is offline.
-* **`syncAllForms()`:** On app load, *always* calls `fetchForm("(Standard)")`. Also loops through all `locations` and fetches any unique `templateName`s not in the cache.
-* **`fetchForm(companyName)`:** Makes a **keyless** `GET` request to the script URL (`?action=getForms...`).
-* **`processUploadQueue()`:** Runs on app load, re-sends any reports in `pendingUploads`.
+* **UI:** Adds a **"Quick Stat"** button to the main page next to the "Start" button.
+* **Location Modal:** Collects `Location Name`, `Location Address`, **`Report As: (Company Name)`**, **`Use Template: (Optional)`**, and **`[ ] No Report Required`**.
+* **Logic Branching:**
+    * **"Travelling" or "No Report Required":** Skips the report modal entirely on Depart/Safe.
+    * **"Quick Stat" Button:** Opens the report modal immediately (no timer), sets status to `DATA_ENTRY_ONLY`.
+    * **Standard Visit:** Opens the report modal on Depart/Safe.
+* **`buildReportForm(items)`:** Renders HTML based on `item.type`:
+    * `header` -> `<h3>`
+    * `textarea` -> `<textarea class="wsa-custom-note">`
+    * `number` -> `<input type="number" class="wsa-custom-number">`
+    * `checkbox` -> `<input type="checkbox">`
+* **`gatherFormData()`:** Collects checklist, notes, and numeric entries into a JSON object.
+* **`submitQuickStatReport()`:** Sends data with `DATA_ENTRY_ONLY` status and `Arrival/Departure` time as `now()`.
+* **Troubleshooting:** A "Clear Cached Forms & Data" button in Settings uses a custom `showConfirm` modal (instead of `window.confirm`) for safety.
 
 ---
 
 ## 6. Monitor App (`monitor_app_template.txt`)
 * **Placeholders:** `%%LOGO_URL%%`, `%%ORGANISATION_NAME%%`.
-* **Login:** `setupPage` is shown first. `saveUrlBtn` tests the URL/Key with a JSONP ping. On success, saves to `localStorage` and calls `Maps('dashboard')`.
-* **`fetchData()`:** Runs on a 15-second `setInterval`. Performs a JSONP request with the saved token.
-* **`processData()`:** Filters for `activeStatuses` and sorts by `statusPriority`.
+* **Login:** `setupPage` is shown first. `saveUrlBtn` tests the URL/Key with a JSONP ping.
+* **`processData()`:** Filters for `activeStatuses`. The list **excludes** `DATA_ENTRY_ONLY`, so Quick Stats do not appear on the dashboard.
 * **`renderWorkers()`:**
     * Renders one card per worker.
-    * Sets card color based on `Alarm Status`.
-    * Shows `(Batt: N/A)` if `Battery Level` is null.
-    * **Reads `Battery Level` column** (not the `Notes` field) for battery status.
+    * **Reads `Battery Level` column** for battery status.
     * Shows "STALE GPS" warning if `Location Name` is "Travelling" and `GPS Timestamp` is > 30 mins old.
-* **`checkForNewAlerts()`:** Compares new data to `lastKnownStatuses` to trigger `playAlarm()` or `playUpdateSound()` and show a `Notification`.
+* **Audio:** Uses `Tone.js` for alarms and chimes. Requires user interaction to initialize AudioContext.
 
 ---
 
@@ -151,9 +160,10 @@ The tool is a 6-step web-based wizard:
 ### Injected by Setup Tool:
 * `%%ORGANISATION_NAME%%` (All apps, manifest, backend scripts)
 * `%%SECRET_KEY%%` (Both backend scripts)
-* `%%GEMINI_API_KEY%%` (Advanced backend script)
+* `%%ESCALATION_MINUTES%%` (Both backend scripts)
+* `%%FIRST_ALERT_MINUTES%%` (Both backend scripts)
+* `%%GEMINI_API_KEY%%` (Advanced backend script only)
 * `%%GOOGLE_SHEET_URL%%` (Both worker apps)
-* `%%FIRST_ALERT_MINUTES%%` (Both worker apps)
 * `%%CHECKIN_ENABLED%%` (Both worker apps)
 * `%%CHECKIN_INTERVAL%%` (Both worker apps)
 * `%%LOGO_URL%%` (Default: `https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png`) (All apps, manifest)
@@ -163,8 +173,9 @@ The tool is a 6-step web-based wizard:
 * `{{ReportMonth}}`
 * `{{TotalVisits}}`
 * `{{TotalHours}}`
-* `{{ChecklistTable}}` (Tag to be replaced by checklist table)
-* `{{NotesTable}}` (Tag to be replaced by notes table)
+* `{{ChecklistTable}}`
+* `{{NumericTotalsTable}}`
+* `{{NotesTable}}`
 
 ---
 
@@ -174,6 +185,3 @@ The `templates` folder must contain the three source `.md` files for the final `
 * `Deployment_Admin_Guide.md`
 * `Installer Creation Guide.md`
 * `Promotional Blurb.md`
-
-The main `Documentation.pdf` must be manually compiled from these and hosted at the root of the setup tool repository.
-```
