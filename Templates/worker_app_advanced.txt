@@ -57,7 +57,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     </div>
 <div class="flex items-center space-x-1">
 <button type="button" id="infoBtn" class="p-3 rounded-full hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
-<button type="button" id="settingsBtn" class="p-3 rounded-full hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.82l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 1 0-2.82l.15.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+<button type="button" id="settingsBtn" class="p-3 rounded-full hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.82l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2.82l.15.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
 </div>
 </header>
 <div class="flex-1 overflow-y-auto min-h-0 -mx-4 px-4">
@@ -340,11 +340,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     ];
     
     // --- TEMPLATE PLACEHOLDERS ---
-    var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
+    var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%;
     const PRE_ALERT_OFFSET = 2; 
-    var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
-    var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
-    var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
+    var CHECKIN_ENABLED = %%CHECKIN_ENABLED%%;
+    var CHECKIN_INTERVAL = %%CHECKIN_INTERVAL%%; 
+    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
     // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
@@ -825,7 +825,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             const seconds = Math.floor((remaining % 60000) / 1000);
             document.getElementById('countdownTimer').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             document.getElementById('countdownTimer').classList.remove('text-red-500');
-} else {
+        } else {
             const overdue = now.getTime() - state.activeVisit.anticipatedDepartureTime.getTime();
             const hours = Math.floor(overdue / 3600000);
             const minutes = Math.floor((overdue % 3600000) / 60000);
@@ -1537,6 +1537,14 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 const input = document.getElementById(key);
                 if (input && !input.disabled) state.settings[key] = input.value;
             });
+            
+            // --- NEW: Mandatory PIN Check ---
+            if (!state.settings.pinCode || state.settings.pinCode.length !== 4 || !state.settings.duressPin || state.settings.duressPin.length !== 4) {
+                showAlert("Setup Required", "Please enter a valid 4-digit Normal PIN and 4-digit Duress PIN.");
+                return; // Do not save or exit
+            }
+            // --- END NEW ---
+
             saveState();
             showAlert("Success", "Settings have been saved.");
             navigate('main'); // This will trigger syncs
@@ -1653,13 +1661,14 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     useCurrentLocationBtn.textContent = "Use Current Location";
                     useCurrentLocationBtn.disabled = false;
                 },
-                 { timeout: 10000 } 
+                 { timeout: 100”
+00, enableHighAccuracy: true } 
             );
         });
         durationSlider.addEventListener('input', (e) => {
             state.visitDurationMinutes = DURATION_STEPS[parseInt(e.target.value)];
             durationDisplay.textContent = formatDuration(state.visitDurationMinutes);
-            updateHomeScreenButtons(); // --- RENAMED ---
+            updateHomeScreenButtons();
         });
         let tapCount = 0;
         let tapTimer = null;
@@ -1675,7 +1684,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }
         });
         
-        // --- MODIFIED: clearCacheBtn listener ---
+        // --- clearCacheBtn listener ---
         clearCacheBtn.addEventListener('click', () => {
             showConfirm("Clear All Data?", "Are you sure? This will log you out and clear all saved locations and pending reports. This cannot be undone.", () => {
                 localStorage.clear(); // Clear all
@@ -1698,7 +1707,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                  document.head.appendChild(pseudoElementStyle); 
              }
              pseudoElementStyle.textContent = `#${element.id}::after { transition-duration: ${duration / 1000}s; }`;
-
 
             const start = (e) => {
                 if (element.disabled) return;
@@ -1777,11 +1785,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             alert: document.getElementById('alertModal'), 
             checkin: document.getElementById('checkinModal'),
             report: document.getElementById('reportModal'),
-            confirm: document.getElementById('confirmModal') // --- NEW ---
+            confirm: document.getElementById('confirmModal') 
         };
         locationList = document.getElementById('locationList');
         arrivedBtn = document.getElementById('arrivedBtn');
-        quickStatBtn = document.getElementById('quickStatBtn'); // --- NEW ---
+        quickStatBtn = document.getElementById('quickStatBtn');
         durationSlider = document.getElementById('durationSlider');
         durationDisplay = document.getElementById('durationDisplay');
         infoBtn = document.getElementById('infoBtn');
@@ -1802,6 +1810,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         checkinOkBtn = document.getElementById('checkinOkBtn');
         startReminderBanner = document.getElementById('startReminderBanner');
         clearCacheBtn = document.getElementById('clearCacheBtn'); 
+        
         // --- WSA: Find new elements ---
         reportModal = document.getElementById('reportModal');
         reportModalTitle = document.getElementById('reportModalTitle');
@@ -1812,6 +1821,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         cancelReportBtn = document.getElementById('cancelReportBtn');
         submitReportBtn = document.getElementById('submitReportBtn');
         uploadQueueBanner = document.getElementById('uploadQueueBanner');
+        
         // --- NEW: Find Confirm Modal elements ---
         confirmModal = document.getElementById('confirmModal');
         confirmModalTitle = document.getElementById('confirmModalTitle');
@@ -1824,21 +1834,51 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW registered.', reg)).catch(err => console.log('SW reg failed:', err));
             });
         } 
+        
         loadState(); 
-        updateHomeScreenButtons(); // --- RENAMED ---
-        if (state.activeVisit) {
-            enterLockedScreen();
+
+        // --- v1.11: Mandatory PIN Check on Init ---
+        const pinInvalid = !state.settings.pinCode || state.settings.pinCode.length !== 4;
+        const duressInvalid = !state.settings.duressPin || state.settings.duressPin.length !== 4;
+
+        if (pinInvalid || duressInvalid) {
+            // Redirect to settings immediately
+            navigate('settings');
+            // Disable the close button visually (opacity) and pointer events
+            closeSettingsBtn.style.opacity = '0.5';
+            closeSettingsBtn.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                showAlert("Welcome / Setup Required", "To ensure your safety, please set your Name, Phone, and Security PINs before using the app.");
+            }, 500);
         } else {
-            navigate('main'); 
-            renderLocations();
-            // --- WSA: Sync forms and process queue on load ---
-            syncAllForms();
-            processUploadQueue();
-        } 
+            // Normal load
+            updateHomeScreenButtons();
+            if (state.activeVisit) {
+                enterLockedScreen();
+            } else {
+                navigate('main'); 
+                renderLocations();
+                syncAllForms();
+                processUploadQueue();
+            } 
+        }
+        // --- END v1.11 Check ---
+
         initEventListeners(); 
-        Object.keys(pages).forEach(key => { if (pages[key] && !pages[key].classList.contains('active')) { pages[key].classList.add('hidden'); } });
+        
+        // Hide inactive pages
+        Object.keys(pages).forEach(key => { 
+            // Don't hide settings if we just forced it open
+            if (key === 'settings' && (pinInvalid || duressInvalid)) return; 
+            
+            if (pages[key] && !pages[key].classList.contains('active')) { 
+                pages[key].classList.add('hidden'); 
+            } 
+        });
     }
     window.addEventListener('load', init);
     </script>
 </body>
 </html>
+
