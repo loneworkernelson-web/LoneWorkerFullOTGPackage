@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>%%ORGANISATION_NAME%% Safety App</title>
+<title>%%ORGANISATION_NAME%% Safety</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="%%ORGANISATION_NAME%% App">
+<meta name="apple-mobile-web-app-title" content="%%ORGANISATION_NAME%% Safety">
 <meta name="theme-color" content="#111827">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png">
@@ -85,7 +85,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 <div id="alertActiveContainer" class="hidden w-full mb-4">
 <div class="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-4">
 <h3 class="text-xl font-bold text-red-300">ALERT ACTIVE</h3>
-<p class="text-red-400">Automated emails have been sent to your contacts.</p>
+<p class="text-red-400">Automated alerts have been sent to your contacts.</p>
 </div>
 <button type="button" id="iamSafeBtn" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I AM SAFE</button>
 </div>
@@ -212,24 +212,23 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         locations: [], 
         selectedLocationId: null, 
         visitDurationMinutes: 0, 
-        activeVisit: null
+        activeVisit: null,
+        pendingUploads: [] 
     };
     const DURATION_STEPS = [0, 10, 15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
     
     // --- TEMPLATE PLACEHOLDERS ---
-    var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%;
+    var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
     const PRE_ALERT_OFFSET = 2; 
-    var CHECKIN_ENABLED = %%CHECKIN_ENABLED%%;
-    var CHECKIN_INTERVAL = %%CHECKIN_INTERVAL%%; 
-    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
+    var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
+    var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
+    var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
     // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
     let lastBatteryReportTime = 0; 
     let mainScreenReminderTimer = null;
-
-    // --- NEW: Wake Lock variable ---
-    let wakeLock = null;
+    let wakeLock = null; // --- NEW: Wake Lock ---
 
     async function initAudio() { if (synth || (Tone.context && Tone.context.state === 'running')) return; try { await Tone.start(); synth = new Tone.Synth().toDestination(); console.log("Audio context started"); } catch (e) { console.error("Could not start audio context:", e); } }
     async function playSoundAndVibrate(action) {
@@ -255,7 +254,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         };
         play();
     }
-
+    
     // --- NEW: Screen Wake Lock API functions ---
     async function requestWakeLock() {
         if ('wakeLock' in navigator) {
@@ -278,7 +277,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         }
     }
     // --- END NEW ---
-    
+
     function navigate(page) { 
         Object.values(pages).forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); }); 
         if (pages[page]) { 
@@ -329,6 +328,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             selectedLocationId: null, 
             visitDurationMinutes: 0, 
             activeVisit: null,
+            pendingUploads: []
         };
         
         // Merge saved state onto default state
@@ -395,7 +395,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         } 
     }
     
-    function sendToGoogleSheet(data) {
+    function sendToGoogleSheet(data, isRetry = false) {
         if (!state.settings.googleSheetUrl || !state.settings.googleSheetUrl.startsWith('http')) {
             console.error("Google Sheet URL is not set.");
             showAlert("Error", "Google Sheet URL is not configured in settings. Data was not saved.");
@@ -428,7 +428,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             return Promise.resolve(); // Success
         }).catch(error => {
             console.error('Error sending data to Google Sheet:', error);
-            showAlert("Network Error", "Failed to send data. Please check connection.");
+            // --- UPDATED: Queue 'SAFE' status as well ---
+            if (!isRetry && (data["Alarm Status"] === 'DEPARTED' || data["Alarm Status"] === 'SAFE - MANUALLY CLEARED')) {
+                console.log("Network failed. Queuing report.");
+                state.pendingUploads.push(payload); 
+                saveState();
+                showAlert("Offline", "Report saved. Will upload when you're back online.");
+            } else if (!isRetry) {
+                 showAlert("Network Error", "Failed to send data. Please check connection.");
+            }
             return Promise.reject(error); // Failure
         });
     }
@@ -531,7 +539,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         if (!navigator.onLine) { showAlert("No Network", "A network connection is required to start a visit."); return; }
         // --- NEW: Request Wake Lock ---
         requestWakeLock();
-
+        
         lastBatteryReportTime = 0; 
         let initialBatteryNote = "";
         if (navigator.getBattery) {
@@ -636,12 +644,14 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         const now = new Date();
         const batteryNote = await getBatteryNote(); // Get current battery
         
-        sendToGoogleSheet({ 
+        const dataToSend = {
             "Arrival Time": state.activeVisit.arrivalTimeForSheet,
             "Actual Departure Time": now.toISOString(),
             "Alarm Status": 'DEPARTED',
             "Notes": batteryNote // Add battery note on depart
-        });
+        };
+
+        sendToGoogleSheet(dataToSend); // This will now queue if offline
         // --- NEW: Release Wake Lock ---
         releaseWakeLock();
         endVisit();
@@ -666,12 +676,13 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }); 
         } else {
             playSoundAndVibrate('safe');
-            sendToGoogleSheet({ 
+            const dataToSend = {
                 "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
                 "Actual Departure Time": now.toISOString(), 
                 "Alarm Status": 'SAFE - MANUALLY CLEARED', 
                 "Notes": `Worker confirmed they are safe after an alert was triggered. ${batteryNote}`.trim()
-            }); 
+            };
+            sendToGoogleSheet(dataToSend); // This will queue if offline
             showAlert("Confirmation", "Your status has been updated to SAFE.");
         }
         // --- NEW: Release Wake Lock ---
@@ -936,9 +947,17 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 const input = document.getElementById(key);
                 if (input && !input.disabled) state.settings[key] = input.value;
             });
+            
+            // --- NEW: Mandatory PIN Check ---
+            if (!state.settings.pinCode || state.settings.pinCode.length !== 4 || !state.settings.duressPin || state.settings.duressPin.length !== 4) {
+               showAlert("Setup Required", "Please enter a valid 4-digit Normal PIN and 4-digit Duress PIN.");
+               return; // Do not save or exit
+            }
+            // --- END NEW ---
+
             saveState();
             showAlert("Success", "Settings have been saved.");
-            navigate('main');
+            navigate('main'); // This will trigger syncs
         });
         addLocationBtn.addEventListener('click', () => {
             showModal('location', () => {
@@ -1175,16 +1194,47 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         } 
         loadState(); 
         updateArrivedButtonState(); 
-        if (state.activeVisit) {
-            enterLockedScreen();
+
+        // --- v1.11: Mandatory PIN Check on Init ---
+        const pinInvalid = !state.settings.pinCode || state.settings.pinCode.length !== 4;
+        const duressInvalid = !state.settings.duressPin || state.settings.duressPin.length !== 4;
+
+        if (pinInvalid || duressInvalid) {
+            // Redirect to settings immediately
+            navigate('settings');
+            // Disable the close button visually (opacity) and pointer events
+            closeSettingsBtn.style.opacity = '0.5';
+            closeSettingsBtn.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                showAlert("Welcome / Setup Required", "To ensure your safety, please set your Name, Phone, and Security PINs before using the app.");
+            }, 500);
         } else {
-            navigate('main'); 
-            renderLocations();
-        } 
+             // Normal load
+            if (state.activeVisit) {
+                enterLockedScreen();
+            } else {
+                navigate('main'); 
+                renderLocations();
+            } 
+        }
+        // --- END v1.11 Check ---
+
         initEventListeners(); 
-        Object.keys(pages).forEach(key => { if (pages[key] && !pages[key].classList.contains('active')) { pages[key].classList.add('hidden'); } });
+        
+        // Hide inactive pages
+        Object.keys(pages).forEach(key
+=> { 
+            // Don't hide settings if we just forced it open
+            if (key === 'settings' && (pinInvalid || duressInvalid)) return; 
+            
+            if (pages[key] && !pages[key].classList.contains('active')) { 
+                pages[key].classList.add('hidden'); 
+            } 
+        });
     }
     window.addEventListener('load', init);
     </script>
 </body>
 </html>
+
