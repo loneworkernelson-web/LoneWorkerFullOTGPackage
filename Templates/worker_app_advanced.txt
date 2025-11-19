@@ -74,10 +74,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 </div>
 <input id="durationSlider" type="range" min="0" max="14" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
 </div>
+<!-- === MODIFIED: Button Group === -->
 <div class="flex space-x-4 flex-shrink-0">
     <button type="button" id="quickStatBtn" disabled class="flex-1 bg-teal-900 text-teal-700 font-bold py-4 px-4 rounded-lg text-lg transition-colors duration-300">Quick Stat</button>
     <button type="button" id="arrivedBtn" disabled class="long-press-btn relative flex-2 bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 w-2/3">Select Location</button>
 </div>
+<!-- === END MODIFIED === -->
 </div>
 </div>
 </div>
@@ -124,11 +126,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 <div><label for="pinCode" class="block text-sm font-medium text-gray-400">Normal 4-Digit PIN</label><input type="password" id="pinCode" pattern="[0-9]*" inputmode="numeric" maxlength="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
 <div><label for="duressPin" class="block text-sm font-medium text-gray-400">Duress 4-Digit PIN (Silent Alarm)</label><input type="password" id="duressPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
 <div><label for="googleSheetUrl" class="block text-sm font-medium text-gray-400">Google Sheet Web App URL</label><input type="url" id="googleSheetUrl" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
+
+<!-- === NEW: Troubleshooting Section === -->
 <div class="border-t border-gray-700 pt-4 mt-4">
      <label class="block text-sm font-medium text-gray-400">Troubleshooting</label>
      <button type="button" id="clearCacheBtn" class="mt-2 w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg">Clear Cached Forms & Data</button>
      <p class="text-xs text-gray-500 mt-1">If your report forms are not updating, click this button to clear the app's cache and re-sync all forms.</p>
 </div>
+<!-- === END NEW === -->
+
 </div>
 </div>
 <div class="pt-4 flex-shrink-0"><button type="button" id="saveSettingsBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Save Settings</button></div>
@@ -143,6 +149,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             <div><label for="locationName" class="block text-sm font-medium text-gray-400">Location Name</label><input type="text" id="locationName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
             <div><label for="locationAddress" class="block text-sm font-medium text-gray-400">Location Address</label><input type="text" id="locationAddress" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"><button type="button" id="useCurrentLocationBtn" class="mt-2 text-sm text-blue-400 hover:text-blue-300">Use Current Location</button></div>
             
+            <!-- === MODIFIED: Template Name === -->
             <div class="border-t border-gray-700 pt-4">
                  <label for="companyName" class="block text-sm font-medium text-gray-400">Report As: (Company Name)</label>
                  <input type="text" id="companyName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. Smith & Co.">
@@ -152,10 +159,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <input type="text" id="templateName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Leave blank for (Standard) form">
                  <p class="text-xs text-gray-500 mt-1">Enter the exact name of the form from the `Checklists` sheet (e.g., "Site Audit").</p>
             </div>
+            <!-- === NEW: No Report Required === -->
              <div class="flex items-center">
                 <input id="noReportRequired" type="checkbox" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
                 <label for="noReportRequired" class="ml-2 block text-sm font-medium text-gray-300">No report required for this location</label>
             </div>
+             <!-- === END NEW === -->
         </div>
         <div class="mt-6 flex justify-end space-x-3">
             <button type="button" id="deleteLocationBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden">Delete</button>
@@ -164,10 +173,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         </div>
     </div>
 
+    <!-- === NEW WSA REPORT MODAL === -->
     <div id="reportModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] flex flex-col">
         <h2 id="reportModalTitle" class="text-xl font-bold mb-4">Visit Report</h2>
         <div id="reportFormContainer" class="flex-1 overflow-y-auto pr-2">
             <div id="reportFormChecklists" class="space-y-2">
+                <!-- Checklists will be dynamically inserted here -->
             </div>
             <div class="mt-4">
                 <label for="reportNotes" class="block text-sm font-medium text-gray-400">Brief Record of Visit (Standard)</label>
@@ -183,6 +194,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             <button type="button" id="submitReportBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Submit Report</button>
         </div>
     </div>
+    <!-- === END NEW WSA REPORT MODAL === -->
+
     <div id="infoModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
         <h2 class="text-xl font-bold mb-4">How to Use This App</h2>
         <div class="text-gray-300 space-y-4">
@@ -218,6 +231,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <li><strong>Start Your Visit:</strong> Press and hold the green <strong>"Start"</strong> button for 1.5 seconds. The screen will lock, and your countdown timer will begin.</li>
             </ol>
             
+            <!-- === NEW: Quick Stat Info === -->
             <h3 class="font-semibold text-lg text-blue-400">5. Filing a "Quick Stat" (Data Entry)</h3>
              <ol class="list-decimal list-inside space-y-1">
                 <li>Select a **Location** from the main screen (one that does not have "No Report Required" checked).</li>
@@ -226,9 +240,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <li>Fill out the form and click **"Submit Report"**.</li>
                 <li>This will log your report without starting a safety timer. Use this for phone calls or visits you are logging after the fact.</li>
             </ol>
+            <!-- === END NEW === -->
 
             <h3 class="font-semibold text-lg text-blue-400">6. Special Note: GPS Tracking</h3>
             <p>For GPS tracking to work reliably (either for the "Travelling" location or if you become overdue), the app must be **open on your screen**. If you lock your phone or switch to another app, GPS updates may stop.</p>
+
 
              <h3 class="font-semibold text-lg text-blue-400">7. While On-Site</h3>
               <ul class="list-disc list-inside space-y-2">
@@ -289,7 +305,248 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         </div>
     </div>
 </div>
-function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; const hours = Math.floor(minutes / 60); const mins = minutes % 60; return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`; }
+<script>
+    let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
+    // --- NEW: Add quickStatBtn ---
+    let quickStatBtn;
+    // --- WSA: Added new modal elements ---
+    let reportModal, reportModalTitle, reportFormContainer, reportFormChecklists, reportNotes, reportLoading, cancelReportBtn, submitReportBtn, uploadQueueBanner;
+    // --- NEW: Confirm Modal elements ---
+    let confirmModal, confirmModalTitle, confirmModalMessage, confirmModalCancelBtn, confirmModalOkBtn;
+    let confirmCallback = () => {};
+
+    // --- NEW: Wake Lock variable ---
+    let wakeLock = null;
+
+    // --- WSA: Added new state properties ---
+    let state = { 
+        settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
+        locations: [], 
+        selectedLocationId: null, 
+        visitDurationMinutes: 0, 
+        activeVisit: null,
+        cachedForms: {}, // Stores custom checklists { "Template Name": [{"type":"header", "text":"Q1"}] }
+        pendingUploads: [] // Stores visit report data submitted offline
+    };
+    const DURATION_STEPS = [0, 10, 15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
+    
+    // --- MODIFIED: Fallback Checklist ---
+    const STANDARD_CHECKLIST_FALLBACK = [
+        { "type": "header", "text": "Standard Visit Report (Fallback)" },
+        { "type": "checkbox", "text": "Safety check completed" },
+        { "type": "checkbox", "text": "Client goals reviewed" },
+        { "type": "checkbox", "text": "Next appointment scheduled" },
+        { "type": "checkbox", "text": "Visit notes recorded" }
+    ];
+    
+    // --- TEMPLATE PLACEHOLDERS ---
+    var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
+    const PRE_ALERT_OFFSET = 2; 
+    var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
+    var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
+    var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
+    // --- END PLACEHOLDERS ---
+
+    let synth, checkinCountdownInterval;
+    let lastBatteryReportTime = 0; 
+    let mainScreenReminderTimer = null;
+    let isSyncing = false; // --- WSA: Syncing flag ---
+
+    async function initAudio() { if (synth || (Tone.context && Tone.context.state === 'running')) return; try { await Tone.start(); synth = new Tone.Synth().toDestination(); console.log("Audio context started"); } catch (e) { console.error("Could not start audio context:", e); } }
+    async function playSoundAndVibrate(action) {
+        await initAudio();
+        const play = () => {
+             if (!synth && Tone.context && Tone.context.state === 'running') { synth = new Tone.Synth().toDestination(); } 
+             else if (!synth) { console.warn("playSoundAndVibrate: Synth not ready."); return; } 
+
+            const now = Tone.now();
+            switch(action) {
+                case 'arrive': synth.triggerAttackRelease("C4", "8n", now); synth.triggerAttackRelease("G4", "8n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate(50); break;
+                case 'depart': synth.triggerAttackRelease("G4", "8n", now); synth.triggerAttackRelease("C4", "8n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate(50); break;
+                case 'extend': synth.triggerAttackRelease("A4", "16n", now); if ('vibrate' in navigator) navigator.vibrate(50); break;
+                case 'safe': synth.triggerAttackRelease("C5", "8n", now); if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]); break;
+                case 'warning': synth.triggerAttackRelease("E5", "16n", now); synth.triggerAttackRelease("G5", "16n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate([800, 200, 800]); break;
+                case 'panic': synth.triggerAttackRelease("G5", "16n", now); synth.triggerAttackRelease("G5", "16n", now + 0.1); synth.triggerAttackRelease("G5", "16n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]); break;
+                case 'checkin': 
+                    if(synth.context.state === 'running'){ 
+                        synth.triggerAttackRelease("A4", "16n", now); 
+                    } 
+                    break; 
+            }
+        };
+        play();
+    }
+
+    // --- NEW: Screen Wake Lock API functions ---
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Screen Wake Lock active');
+                wakeLock.addEventListener('release', () => {
+                    console.log('Screen Wake Lock released');
+                });
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+    }
+
+    async function releaseWakeLock() {
+        if (wakeLock !== null) {
+            await wakeLock.release();
+            wakeLock = null;
+        }
+    }
+    
+    function navigate(page) { 
+        Object.values(pages).forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); }); 
+        if (pages[page]) { 
+            pages[page].classList.remove('hidden'); 
+            pages[page].classList.add('active'); 
+        }
+
+        if (mainScreenReminderTimer) clearTimeout(mainScreenReminderTimer); 
+        if (startReminderBanner) startReminderBanner.classList.add('hidden'); 
+
+        if (page === 'main') {
+            startReminderTimer(); 
+            // WSA: Sync forms and process queue when returning to main
+            syncAllForms(); // --- MODIFIED
+            processUploadQueue();
+        }
+    }
+
+    function startReminderTimer() {
+        if (mainScreenReminderTimer) clearTimeout(mainScreenReminderTimer);
+        if (startReminderBanner) startReminderBanner.classList.add('hidden'); 
+
+        mainScreenReminderTimer = setTimeout(() => {
+            if (!state.activeVisit && pages.main.classList.contains('active')) {
+                if (startReminderBanner) startReminderBanner.classList.remove('hidden');
+            }
+        }, 300000); 
+    }
+
+    function showModal(modalKey, onShow) {
+        const modal = modals[modalKey];
+        modals.backdrop.classList.remove('hidden');
+        modals.backdrop.classList.add('flex');
+        Object.values(modals).forEach(m => {
+            if (m !== modals.backdrop && m !== modals[modalKey]) m.classList.add('hidden');
+        });
+        if (modal) {
+            modal.classList.remove('hidden');
+            if (onShow) onShow();
+        }
+    }
+    // --- MODIFIED: Clear Quick Stat flag ---
+    function hideModals() { 
+        modals.backdrop.classList.add('hidden'); 
+        modals.backdrop.classList.remove('flex'); 
+        if (reportModal) {
+            reportModal.dataset.isQuickStat = 'false'; // Clear flag
+            reportModal.dataset.isFromAlert = 'false'; // Clear flag
+        }
+        if (confirmModal) {
+            confirmCallback = () => {}; // Clear callback
+        }
+    }
+    function showAlert(title, message) { document.getElementById('alertModalTitle').textContent = title; document.getElementById('alertModalMessage').textContent = message; showModal('alert'); }
+    
+    // --- NEW: Custom Confirm Modal ---
+    function showConfirm(title, message, onConfirm) {
+        confirmModalTitle.textContent = title;
+        confirmModalMessage.textContent = message;
+        confirmCallback = onConfirm; // Set the callback
+        showModal('confirm');
+    }
+
+    // --- UPDATED loadState (WSA v1.1 FIX) ---
+    function loadState() { 
+        const savedState = JSON.parse(localStorage.getItem('loneWorkerState')); 
+        
+        const defaultState = {
+            settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
+            locations: [], 
+            selectedLocationId: null, 
+            visitDurationMinutes: 0, 
+            activeVisit: null,
+            cachedForms: {},
+            pendingUploads: []
+        };
+        
+        // Merge saved state onto default state
+        state = { ...defaultState, ...savedState };
+        // Deep merge settings object
+        state.settings = { ...defaultState.settings, ...(savedState ? savedState.settings : {}) };
+
+        // --- ROBUSTNESS FIX: Ensure arrays/objects are correct type ---
+        if (!Array.isArray(state.locations)) {
+            console.warn("Locations in localStorage was not an array, resetting.");
+            state.locations = [];
+        }
+        if (!Array.isArray(state.pendingUploads)) {
+             console.warn("PendingUploads in localStorage was not an array, resetting.");
+            state.pendingUploads = [];
+        }
+        if (typeof state.cachedForms !== 'object' || state.cachedForms === null || Array.isArray(state.cachedForms)) {
+             console.warn("CachedForms in localStorage was not an object, resetting.");
+            state.cachedForms = {};
+        }
+        // --- END FIX ---
+        
+        // --- MODIFIED: Ensure templateName & noReport exists ---
+        state.locations = state.locations.map(loc => ({
+            ...loc,
+            companyName: loc.companyName || "",
+            templateName: loc.templateName || "", // Add new templateName
+            noReport: loc.noReport || false // Add new noReport flag
+        }));
+
+        if (savedState && savedState.activeVisit) { 
+            state.activeVisit.startTime = new Date(savedState.activeVisit.startTime); 
+            state.activeVisit.anticipatedDepartureTime = new Date(savedState.activeVisit.anticipatedDepartureTime); 
+        } 
+        
+        const travellingExists = state.locations.some(loc => loc.id === 'loc_travelling_default'); 
+        if (!travellingExists) { 
+            state.locations.push({ 
+                id: 'loc_travelling_default', 
+                name: 'Travelling', 
+                address: 'GPS updates will be sent every 15 minutes.',
+                companyName: 'Internal', 
+                templateName: "", // Uses (Standard) form
+                noReport: true // --- NEW: Travelling never requires a report
+            }); 
+        } 
+        
+        const prefilledUrl = "%%GOOGLE_SHEET_URL%%";
+        if (prefilledUrl.startsWith('http') && !state.settings.googleSheetUrl) {
+            state.settings.googleSheetUrl = prefilledUrl;
+        }
+        saveState(); // Save state once after all initialization
+    }
+    // --- END UPDATED loadState ---
+
+    function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
+    
+    function renderLocations() {
+        locationList.innerHTML = ''; if (state.locations.length === 0) { locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; }
+        state.locations.sort((a,b) => a.name.localeCompare(b.name)).forEach(loc => { 
+            const isSelected = loc.id === state.selectedLocationId; 
+            // --- MODIFIED: Show Template Name ---
+            let templateInfo = loc.templateName ? ` (${loc.templateName})` : ' ((Standard))';
+            if (loc.noReport) templateInfo = " (No Report)";
+            const companyHtml = loc.companyName ? `<p class="text-sm text-blue-400">${loc.companyName}${templateInfo}</p>` : '';
+            const locationEl = document.createElement('div'); 
+            locationEl.className = `selectable-item p-3 rounded-lg cursor-pointer border-2 transition-transform duration-100 ${isSelected ? 'bg-blue-900/50 border-blue-500' : 'bg-gray-800 border-transparent hover:border-gray-600'}`; 
+            locationEl.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-semibold">${loc.name}</p><p class="text-sm text-gray-400">${loc.address}</p>${companyHtml}</div><button type="button" class="edit-location-btn p-2 rounded-full hover:bg-gray-700" data-id="${loc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button></div>`; 
+            locationList.appendChild(locationEl); 
+        });
+    }
+
+    function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; const hours = Math.floor(minutes / 60); const mins = minutes % 60; return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`; }
     
     // --- RENAMED: from updateArrivedButtonState to updateHomeScreenButtons ---
     function updateHomeScreenButtons() { 
@@ -650,7 +907,8 @@ function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; c
         endVisit(); 
     }
     // --- END UPDATED depart/iamSafe ---
-function endVisit() {
+
+    function endVisit() {
         clearInterval(visitInterval);
         visitInterval = null;
         if (checkinCountdownInterval) clearInterval(checkinCountdownInterval); 
@@ -876,7 +1134,8 @@ function endVisit() {
         saveState();
         if(synth) synth.volume.value = 0; 
     }
-// --- WSA: NEW FUNCTIONS ---
+
+    // --- WSA: NEW FUNCTIONS ---
 
     /**
      * Shows the report modal, building the form dynamically.
@@ -1573,18 +1832,47 @@ function endVisit() {
             });
         } 
         loadState(); 
-        updateHomeScreenButtons(); // --- RENAMED ---
-        if (state.activeVisit) {
-            enterLockedScreen();
+        
+        // --- v1.11: Mandatory PIN Check on Init ---
+        const pinInvalid = !state.settings.pinCode || state.settings.pinCode.length !== 4;
+        const duressInvalid = !state.settings.duressPin || state.settings.duressPin.length !== 4;
+
+        if (pinInvalid || duressInvalid) {
+            // Redirect to settings immediately
+            navigate('settings');
+            // Disable the close button visually (opacity) and pointer events
+            closeSettingsBtn.style.opacity = '0.5';
+            closeSettingsBtn.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                showAlert("Welcome / Setup Required", "To ensure your safety, please set your Name, Phone, and Security PINs before using the app.");
+            }, 500);
         } else {
-            navigate('main'); 
-            renderLocations();
-            // --- WSA: Sync forms and process queue on load ---
-            syncAllForms();
-            processUploadQueue();
-        } 
+            // Normal load
+            updateHomeScreenButtons();
+            if (state.activeVisit) {
+                enterLockedScreen();
+            } else {
+                navigate('main'); 
+                renderLocations();
+                // --- WSA: Sync forms and process queue on load ---
+                syncAllForms();
+                processUploadQueue();
+            } 
+        }
+        // --- END v1.11 Check ---
+
         initEventListeners(); 
-        Object.keys(pages).forEach(key => { if (pages[key] && !pages[key].classList.contains('active')) { pages[key].classList.add('hidden'); } });
+        
+        // Hide inactive pages
+        Object.keys(pages).forEach(key => { 
+            // Don't hide settings if we just forced it open
+            if (key === 'settings' && (pinInvalid || duressInvalid)) return; 
+            
+            if (pages[key] && !pages[key].classList.contains('active')) { 
+                pages[key].classList.add('hidden'); 
+            } 
+        });
     }
     window.addEventListener('load', init);
     </script>
