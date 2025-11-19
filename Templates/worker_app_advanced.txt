@@ -340,11 +340,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     ];
     
     // --- TEMPLATE PLACEHOLDERS ---
-    var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%;
+    var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
     const PRE_ALERT_OFFSET = 2; 
-    var CHECKIN_ENABLED = %%CHECKIN_ENABLED%%;
-    var CHECKIN_INTERVAL = %%CHECKIN_INTERVAL%%; 
-    var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
+    var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
+    var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
+    var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
     // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
@@ -1833,47 +1833,20 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             });
         } 
         loadState(); 
-        
-        // --- v1.11: Mandatory PIN Check on Init ---
-        const pinInvalid = !state.settings.pinCode || state.settings.pinCode.length !== 4;
-        const duressInvalid = !state.settings.duressPin || state.settings.duressPin.length !== 4;
-
-        if (pinInvalid || duressInvalid) {
-            // Redirect to settings immediately
-            navigate('settings');
-            // Disable the close button visually (opacity) and pointer events
-            closeSettingsBtn.style.opacity = '0.5';
-            closeSettingsBtn.style.pointerEvents = 'none';
-            
-            setTimeout(() => {
-                showAlert("Welcome / Setup Required", "To ensure your safety, please set your Name, Phone, and Security PINs before using the app.");
-            }, 500);
+        updateHomeScreenButtons(); // --- RENAMED ---
+        if (state.activeVisit) {
+            enterLockedScreen();
         } else {
-            // Normal load
-            updateHomeScreenButtons();
-            if (state.activeVisit) {
-                enterLockedScreen();
-            } else {
-                navigate('main'); 
-                renderLocations();
-                // --- WSA: Sync forms and process queue on load ---
-                syncAllForms();
-                processUploadQueue();
-            } 
-        }
-        // --- END v1.11 Check ---
-
+            navigate('main'); 
+            renderLocations();
+            // --- WSA: Sync forms and process queue on load ---
+            syncAllForms();
+            processUploadQueue();
+        } 
         initEventListeners(); 
-        
-        // Hide inactive pages
-        Object.keys(pages).forEach(key => { 
-            // Don't hide settings if we just forced it open
-            if (key === 'settings' && (pinInvalid || duressInvalid)) return; 
-            
-            if (pages[key] && !pages[key].classList.contains('active')) { 
-                pages[key].classList.add('hidden'); 
-            } 
-        });
+        Object.keys(pages).forEach(key => { if (pages[key] && !pages[key].classList.contains('active')) { pages[key].classList.add('hidden'); } });
     }
     window.addEventListener('load', init);
     </script>
+</body>
+</html>
