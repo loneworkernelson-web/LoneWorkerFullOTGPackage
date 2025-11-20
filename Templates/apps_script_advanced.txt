@@ -1533,3 +1533,171 @@ function archiveOldData() {
     lock.releaseLock();
   }
 }
+
+// --- === TRAVEL REPORTING === ---
+
+/**
+ * Generates a per-worker travel report (Time & Distance).
+ * Aggregates duration and looks for '$' fields matching 'km', 'mil', 'dist'.
+ */
+function generateWorkerTravelReport() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const controlSheet = ss.getSheetByName("Master Report");
+  const visitsSheet = ss.getSheetByName(VISITS_SHEET_NAME);
+  
+  if (!controlSheet || !visitsSheet) {
+    SpreadsheetApp.getUi().alert("Error: 'Master Report' or 'Visits' sheet not found.");
+    return;
+  }
+  
+  // 1. Get Month
+  let monthStr = controlSheet.getRange("B1").getValue(); 
+  if (!monthStr) {
+    SpreadsheetApp.getUi().alert("Please enter a Month (YYYY-MM) in cell B1.");
+    return;
+  }
+  // Sanitize Month
+  if (monthStr instanceof Date) {
+      var tz = ss.getSpreadsheetTimeZone();
+      monthStr = Utilities.formatDate(monthStr, tz, "yyyy-MM");
+  } else {
+      monthStr = String(monthStr).substring(0, 7); 
+  }
+  
+  const parts = monthStr.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; 
+  const startDate = new Date(Date.UTC(year, month, 1)); 
+  const endDate = new Date(Date.UTC(year, month + 1, 1)); 
+
+  // 2. Create/Reset Report Sheet
+  const reportSheetName = "Travel Report - " + monthStr;
+  let reportSheet = ss.getSheetByName(reportSheetName);
+  if (reportSheet) ss.deleteSheet(reportSheet);
+  reportSheet = ss.insertSheet(reportSheetName);
+
+  // 3. Get Data
+  const data = visitsSheet.getDataRange().getValues();
+  const headers = data.shift();
+  
+  const col = {
+    worker: headers.indexOf("Worker Name"),
+    arrival: headers.indexOf("Arrival Time"),
+    depart: headers.indexOf("Actual Departure Time"),
+    report: headers.indexOf("Visit Report Data"),
+    location: headers.indexOf("Location Name")
+  };
+
+  if (col.worker === -1 || col.arrival === -1) {
+    SpreadsheetApp.getUi().alert("Error: Required columns not found.");
+    return;
+  }
+
+  // 4. Aggregate Data
+  const workerStats = {};
+
+  data.forEach(row => {
+    const worker = row[col.worker];
+    if (!worker) return;
+
+    let departTime = null;
+    try {
+       if(row[col.depart]) departTime = new Date(row[col.depart]);
+    } catch(e) {}
+
+    // Filter by Month
+    if (departTime && departTime >= startDate && departTime < endDate) {
+        if (!workerStats[worker]) {
+            workerStats[worker] = { trips: [], totalDist: 0, totalDurMs: 0 };
+        }
+        
+        let arrivalTime = null;
+        try { if(row[col.arrival]) arrivalTime = new Date(row[col.arrival]); } catch(e){}
+
+        let durationMs = 0;
+        if (arrivalTime) durationMs = departTime - arrivalTime;
+        if (durationMs < 0) durationMs = 0;
+
+        // Parse Distance
+        let distance = 0;
+        let reportJson = row[col.report];
+        if (reportJson) {
+            try {
+                const r = JSON.parse(reportJson);
+                if (r.numeric_entries) {
+                    for (let key in r.numeric_entries) {
+                        // Look for keywords: km, mile, dist
+                        if (/km|mil|dist/i.test(key)) {
+                            let val = parseFloat(r.numeric_entries[key]);
+                            if (!isNaN(val)) distance += val;
+                        }
+                    }
+                }
+            } catch(e){}
+        }
+
+        workerStats[worker].trips.push({
+            date: departTime,
+            location: row[col.location],
+            duration: durationMs,
+            distance: distance
+        });
+        
+        workerStats[worker].totalDist += distance;
+        workerStats[worker].totalDurMs += durationMs;
+    }
+  });
+
+  // 5. Write Report
+  let rowIdx = 1;
+  
+  // Title
+  reportSheet.getRange(rowIdx, 1).setValue("Travel Report: " + monthStr).setFontWeight("bold").setFontSize(14);
+  rowIdx += 2;
+
+  const sortedWorkers = Object.keys(workerStats).sort();
+
+  sortedWorkers.forEach(worker => {
+      const data = workerStats[worker];
+      
+      // Worker Header
+      reportSheet.getRange(rowIdx, 1).setValue(worker).setFontWeight("bold").setBackground("#e2e8f0");
+      reportSheet.getRange(rowIdx, 1, 1, 5).merge();
+      rowIdx++;
+      
+      // Column Headers
+      const headerRange = reportSheet.getRange(rowIdx, 1, 1, 5);
+      headerRange.setValues([["Date", "Location", "Duration (H:M)", "Distance", "Notes"]]);
+      headerRange.setFontWeight("bold").setBorder(false, false, true, false, false, false);
+      rowIdx++;
+
+      // Trips
+      data.trips.sort((a,b) => a.date - b.date).forEach(trip => {
+          const durationStr = msToTime(trip.duration);
+          reportSheet.getRange(rowIdx, 1, 1, 5).setValues([[
+              trip.date.toLocaleDateString(),
+              trip.location,
+              durationStr,
+              trip.distance > 0 ? trip.distance : "-",
+              ""
+          ]]);
+          rowIdx++;
+      });
+
+      // Subtotal
+      const subTotalRow = reportSheet.getRange(rowIdx, 1, 1, 5);
+      subTotalRow.setValues([["TOTALS:", "", msToTime(data.totalDurMs), data.totalDist.toFixed(1), ""]]);
+      subTotalRow.setFontWeight("bold").setBorder(true, false, false, false, false, false);
+      rowIdx += 2; // Space between workers
+  });
+
+  // Formatting
+  reportSheet.autoResizeColumns(1, 5);
+  SpreadsheetApp.getUi().alert("Travel Report Generated!");
+}
+
+function msToTime(duration) {
+  let minutes = Math.floor((duration / (1000 * 60)) % 60);
+  let hours = Math.floor((duration / (1000 * 60 * 60)));
+  return hours + "h " + minutes + "m";
+}
