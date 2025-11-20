@@ -1415,18 +1415,24 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
     }
     // --- END NEW WSA FUNCTIONS ---
 
-    // --- NEW HELPER: Populate Settings Inputs ---
-    function populateSettingsInputs() {
+    // --- NEW HELPER: Populate Settings Inputs (Fixes URL Issue) ---
+    function populateSettingsUI() {
         Object.keys(state.settings).forEach(key => {
             const input = document.getElementById(key);
             if (input) { 
                 input.value = state.settings[key];
-                if (key === 'googleSheetUrl' && input.value) {
-                     input.disabled = true;
-                     input.classList.add('bg-gray-800', 'text-gray-500');
-                } else if (key === 'googleSheetUrl') {
-                    input.disabled = false;
-                    input.classList.remove('bg-gray-800', 'text-gray-500');
+                
+                // Handle Read-Only URL Logic
+                if (key === 'googleSheetUrl') {
+                    if (input.value && input.value.startsWith('http')) {
+                        // If URL exists, lock it so user doesn't break it
+                        input.disabled = true;
+                        input.classList.add('bg-gray-800', 'text-gray-500');
+                    } else {
+                        // If empty, allow editing
+                        input.disabled = false;
+                        input.classList.remove('bg-gray-800', 'text-gray-500');
+                    }
                 }
             }
         });
@@ -1436,7 +1442,7 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
         document.body.addEventListener('pointerdown', initAudio, { once: true });
         
         settingsBtn.addEventListener('click', () => {
-            populateSettingsInputs(); // Use the helper function
+            populateSettingsUI(); // Use the new helper
             navigate('settings');
         });
 
@@ -1445,7 +1451,7 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
         closeInfoModalBtn.addEventListener('click', hideModals);
         alertModalOkBtn.addEventListener('click', hideModals);
         checkinOkBtn.addEventListener('click', handleCheckinOK);
-        // --- NEW: Confirm Modal Listeners ---
+        
         confirmModalCancelBtn.addEventListener('click', hideModals);
         confirmModalOkBtn.addEventListener('click', () => {
             if (typeof confirmCallback === 'function') {
@@ -1453,11 +1459,10 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
             }
             hideModals();
         });
-        // --- WSA: Add listeners for report modal ---
+
         cancelReportBtn.addEventListener('click', hideModals);
-        submitReportBtn.addEventListener('click', submitReport); // This now branches
+        submitReportBtn.addEventListener('click', submitReport);
         
-        // --- NEW: Add listener for Quick Stat button ---
         quickStatBtn.addEventListener('click', showQuickStatModal);
 
         saveSettingsBtn.addEventListener('click', () => {
@@ -1465,32 +1470,38 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
                 const input = document.getElementById(key);
                 if (input && !input.disabled) state.settings[key] = input.value;
             });
-            
-            // --- NEW: Mandatory PIN Check ---
+
             if (!state.settings.pinCode || state.settings.pinCode.length !== 4 || !state.settings.duressPin || state.settings.duressPin.length !== 4) {
                showAlert("Setup Required", "Please enter a valid 4-digit Normal PIN and 4-digit Duress PIN.");
-               return; // Do not save or exit
+               return; 
             }
-            // --- END NEW ---
 
             saveState();
             showAlert("Success", "Settings have been saved.");
-            navigate('main'); // This will trigger syncs
+            
+            closeSettingsBtn.style.opacity = '1';
+            closeSettingsBtn.style.pointerEvents = 'auto';
+            renderLocations(); 
+            updateHomeScreenButtons();
+            
+            navigate('main'); 
         });
+
         addLocationBtn.addEventListener('click', () => {
             showModal('location', () => {
                 document.getElementById('locationModalTitle').textContent = 'Add New Location';
                 document.getElementById('locationName').value = '';
                 document.getElementById('locationAddress').value = '';
-                // --- MODIFIED: Clear new location fields ---
+                
                 document.getElementById('companyName').value = '';
                 document.getElementById('templateName').value = '';
                 document.getElementById('noReportRequired').checked = false;
-                // --- End MODIFIED ---
+                
                 document.getElementById('deleteLocationBtn').classList.add('hidden');
                 document.querySelector('#saveLocationBtn').dataset.id = '';
             });
         });
+
         locationList.addEventListener('click', e => { 
             const editBtn = e.target.closest('.edit-location-btn'); 
             if (editBtn) { 
@@ -1501,11 +1512,10 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
                     document.getElementById('locationModalTitle').textContent = 'Edit Location'; 
                     document.getElementById('locationName').value = location.name; 
                     document.getElementById('locationAddress').value = location.address; 
-                    // --- MODIFIED: Populate new location fields ---
+                    
                     document.getElementById('companyName').value = location.companyName || '';
                     document.getElementById('templateName').value = location.templateName || '';
                     document.getElementById('noReportRequired').checked = location.noReport || false;
-                    // --- End MODIFIED ---
                     
                     if (locId === 'loc_travelling_default') {
                         document.getElementById('deleteLocationBtn').classList.add('hidden');
@@ -1523,38 +1533,40 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
                     state.selectedLocationId = locId; 
                     if('vibrate' in navigator) navigator.vibrate(20);
                     renderLocations(); 
-                    updateHomeScreenButtons(); // --- RENAMED ---
+                    updateHomeScreenButtons();
                 }
             }
         });
+
         cancelLocationBtn.addEventListener('click', hideModals);
+        
         saveLocationBtn.addEventListener('click', () => {
             const id = document.querySelector('#saveLocationBtn').dataset.id;
             const name = document.getElementById('locationName').value.trim();
             const address = document.getElementById('locationAddress').value.trim();
-            // --- MODIFIED: Get new location fields ---
+            
             const companyName = document.getElementById('companyName').value.trim();
             const templateName = document.getElementById('templateName').value.trim();
             const noReport = document.getElementById('noReportRequired').checked;
-            // --- End MODIFIED ---
 
             if (!name || !address) { showAlert("Missing Info", "Please provide both a name and an address for the location."); return; }
+            
             if (id) {
                 const index = state.locations.findIndex(l => l.id === id);
-                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName, noReport }; // MODIFIED
+                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName, noReport };
             } else {
-                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName, noReport }); // MODIFIED
+                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName, noReport });
             }
             saveState();
             renderLocations();
             updateHomeScreenButtons();
             hideModals();
 
-            // --- MODIFIED: If new/edited location uses custom form, fetch it now ---
             if (templateName) {
                 fetchForm(templateName);
             }
         });
+
         deleteLocationBtn.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
             if (id === 'loc_travelling_default') { showAlert('Cannot Delete', 'The "Travelling" location cannot be deleted.'); return; }
@@ -1562,9 +1574,10 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
             if (state.selectedLocationId === id) { state.selectedLocationId = null; }
             saveState();
             renderLocations();
-            updateHomeScreenButtons(); // --- RENAMED ---
+            updateHomeScreenButtons();
             hideModals();
         });
+
         useCurrentLocationBtn.addEventListener('click', () => {
             if (!navigator.geolocation) { showAlert("Not Supported", "Geolocation is not supported by your browser."); return; }
             useCurrentLocationBtn.textContent = "Getting location...";
@@ -1592,11 +1605,13 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
                  { timeout: 10000 } 
             );
         });
+
         durationSlider.addEventListener('input', (e) => {
             state.visitDurationMinutes = DURATION_STEPS[parseInt(e.target.value)];
             durationDisplay.textContent = formatDuration(state.visitDurationMinutes);
-            updateHomeScreenButtons(); // --- RENAMED ---
+            updateHomeScreenButtons();
         });
+
         let tapCount = 0;
         let tapTimer = null;
         panicBtn.addEventListener('click', () => {
@@ -1611,7 +1626,6 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
             }
         });
         
-        // --- MODIFIED: clearCacheBtn listener ---
         clearCacheBtn.addEventListener('click', () => {
             showConfirm("Clear All Data?", "Are you sure? This will log you out and clear all saved locations and pending reports. This cannot be undone.", () => {
                 localStorage.clear(); // Clear all
@@ -1634,7 +1648,6 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
                  document.head.appendChild(pseudoElementStyle); 
              }
              pseudoElementStyle.textContent = `#${element.id}::after { transition-duration: ${duration / 1000}s; }`;
-
 
             const start = (e) => {
                 if (element.disabled) return;
@@ -1677,6 +1690,7 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
                 const deltaY = Math.abs(currentY - startY);
                 if (deltaX > tolerance || deltaY > tolerance) { cancel(); }
             };
+            // Clean up old listeners first to avoid duplicates
             element.removeEventListener('mousedown', start);
             element.removeEventListener('mouseup', cancel);
             element.removeEventListener('mouseleave', cancel);
@@ -1686,6 +1700,7 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
             element.removeEventListener('touchmove', move);
             element.removeEventListener('mousemove', move);
 
+            // Add new listeners
             element.addEventListener('mousedown', start);
             element.addEventListener('mouseup', cancel);
             element.addEventListener('mouseleave', cancel);
@@ -1713,11 +1728,11 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
             alert: document.getElementById('alertModal'), 
             checkin: document.getElementById('checkinModal'),
             report: document.getElementById('reportModal'),
-            confirm: document.getElementById('confirmModal') // --- NEW ---
+            confirm: document.getElementById('confirmModal')
         };
         locationList = document.getElementById('locationList');
         arrivedBtn = document.getElementById('arrivedBtn');
-        quickStatBtn = document.getElementById('quickStatBtn'); // --- NEW ---
+        quickStatBtn = document.getElementById('quickStatBtn'); 
         durationSlider = document.getElementById('durationSlider');
         durationDisplay = document.getElementById('durationDisplay');
         infoBtn = document.getElementById('infoBtn');
@@ -1738,7 +1753,8 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
         checkinOkBtn = document.getElementById('checkinOkBtn');
         startReminderBanner = document.getElementById('startReminderBanner');
         clearCacheBtn = document.getElementById('clearCacheBtn'); 
-        // --- WSA: Find new elements ---
+        
+        // Find new elements
         reportModal = document.getElementById('reportModal');
         reportModalTitle = document.getElementById('reportModalTitle');
         reportFormContainer = document.getElementById('reportFormContainer');
@@ -1748,7 +1764,8 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
         cancelReportBtn = document.getElementById('cancelReportBtn');
         submitReportBtn = document.getElementById('submitReportBtn');
         uploadQueueBanner = document.getElementById('uploadQueueBanner');
-        // --- NEW: Find Confirm Modal elements ---
+        
+        // Find Confirm Modal elements
         confirmModal = document.getElementById('confirmModal');
         confirmModalTitle = document.getElementById('confirmModalTitle');
         confirmModalMessage = document.getElementById('confirmModalMessage');
@@ -1763,16 +1780,16 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
         
         loadState(); 
         
-        // --- v1.11: Mandatory PIN Check on Init ---
+        // Mandatory PIN Check
         const pinInvalid = !state.settings.pinCode || state.settings.pinCode.length !== 4;
         const duressInvalid = !state.settings.duressPin || state.settings.duressPin.length !== 4;
 
         if (pinInvalid || duressInvalid) {
-            // Redirect to settings immediately
-            // --- FIX: Ensure inputs are populated so the user sees blank fields ---
-            populateSettingsInputs(); 
+            // --- FIX: Populate the inputs before navigating ---
+            populateSettingsUI(); 
+            // --- END FIX ---
+
             navigate('settings');
-            // Disable the close button visually (opacity) and pointer events
             closeSettingsBtn.style.opacity = '0.5';
             closeSettingsBtn.style.pointerEvents = 'none';
             
@@ -1780,27 +1797,21 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
                 showAlert("Welcome / Setup Required", "To ensure your safety, please set your Name, Phone, and Security PINs before using the app.");
             }, 500);
         } else {
-            // Normal load
             updateHomeScreenButtons();
             if (state.activeVisit) {
                 enterLockedScreen();
             } else {
                 navigate('main'); 
                 renderLocations();
-                // --- WSA: Sync forms and process queue on load ---
                 syncAllForms();
                 processUploadQueue();
             } 
         }
-        // --- END v1.11 Check ---
 
         initEventListeners(); 
         
-        // Hide inactive pages
         Object.keys(pages).forEach(key => { 
-            // Don't hide settings if we just forced it open
             if (key === 'settings' && (pinInvalid || duressInvalid)) return; 
-            
             if (pages[key] && !pages[key].classList.contains('active')) { 
                 pages[key].classList.add('hidden'); 
             } 
