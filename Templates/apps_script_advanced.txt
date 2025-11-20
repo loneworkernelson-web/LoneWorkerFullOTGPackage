@@ -382,7 +382,7 @@ function sendSmsViaGateway(phoneNumber, message) {
       // --- NEW: Fallback Email to Admin ---
       var adminEmail = Session.getEffectiveUser().getEmail();
       var subject = "OTG AppSuite SMS Failure Notification";
-      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded, the number was invalid, or TextBelt blocked a URL.";
+      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded during testing, or the phone number format is invalid. The primary email alert was still sent.";
       MailApp.sendEmail(adminEmail, subject, body);
       // --- END NEW ---
       Logger.log("Free SMS failed (quota likely used, or invalid number): " + result.error);
@@ -497,6 +497,7 @@ function sendAlertEmail(workerData, alertType, isEscalation) {
 }
 
 // --- === REPORTING FUNCTIONS (REFACTORED v2.8) === ---
+
 /**
  * Gathers all data and aggregates it by company and site.
  * This is the core logic used by all report generators.
@@ -540,7 +541,7 @@ function _aggregateDataForMonth(monthStr, ss) {
           const questions = [];
           const numericEntries = []; // --- NEW: Array to hold keys like "KMs", "Expenses"
           for (let i = 1; i < checklistHeaders.length; i++) {
-              if (i === templateIdCol || i === longitudinalIdCol) continue; 
+              if (i === templateIdCol || i === longitudinalIdCol) continue; // Skip ID columns
               if (row[i]) {
                   const q = String(row[i]);
                   // Detect '$' fields and separate them
@@ -553,7 +554,7 @@ function _aggregateDataForMonth(monthStr, ss) {
                   break; 
               }
           }
-          allChecklists[companyName] = questions; 
+          allChecklists[companyName] = questions; // Store all, including (Standard)
           allNumericEntries[companyName] = numericEntries; // Store the list of keys
           
           if (templateIdCol !== -1 && row[templateIdCol]) {
@@ -565,13 +566,14 @@ function _aggregateDataForMonth(monthStr, ss) {
       }
   });
   
+  // 3. Define Standard Checklist FALLBACK (if (Standard) is missing from sheet)
   const STANDARD_CHECKLIST_FALLBACK = [
         "Safety check completed",
         "Client goals reviewed",
         "Next appointment scheduled",
         "Visit notes recorded"
   ];
-  const STANDARD_NUMERIC_FALLBACK = []; 
+  const STANDARD_NUMERIC_FALLBACK = []; // --- NEW ---
 
   // 4. Get all visit data
   const dataRange = visitsSheet.getDataRange();
@@ -586,7 +588,7 @@ function _aggregateDataForMonth(monthStr, ss) {
   const workerCol = visitsHeaders.indexOf("Worker Name");
 
   if (companyCol === -1 || locationCol === -1 || arrivalCol === -1 || departureCol === -1 || reportCol === -1 || workerCol === -1) {
-      throw new Error("Error: Could not find required columns in 'Visits' sheet.");
+      throw new Error("Error: Could not find required columns ('Company Name', 'Location Name', 'Arrival Time', 'Actual Departure Time', 'Visit Report Data', 'Worker Name') in 'Visits' sheet.");
   }
 
   // 5. Process the data
@@ -612,18 +614,18 @@ function _aggregateDataForMonth(monthStr, ss) {
 
     if (departureTime && departureTime >= startDate && departureTime < endDate) {
       
-      let questionList = allChecklists[companyName]; 
+      let questionList = allChecklists[companyName]; // Try custom form first
       let numericList = allNumericEntries[companyName]; // Get specific keys for this company
       
       if (!questionList || questionList.length === 0) {
-         questionList = allChecklists["(Standard)"]; 
-         numericList = allNumericEntries["(Standard)"]; 
+         questionList = allChecklists["(Standard)"]; // Try (Standard) form from sheet
+         numericList = allNumericEntries["(Standard)"]; // --- NEW ---
       }
       if (!questionList || questionList.length === 0) {
-        questionList = STANDARD_CHECKLIST_FALLBACK; 
-        numericList = STANDARD_NUMERIC_FALLBACK; 
+        questionList = STANDARD_CHECKLIST_FALLBACK; // Use hardcoded fallback
+        numericList = STANDARD_NUMERIC_FALLBACK; // --- NEW ---
       }
-      if (!numericList) numericList = []; 
+      if (!numericList) numericList = []; // Ensure it's an array
 
       
       // Initialize the SITE-LEVEL report object
@@ -665,8 +667,8 @@ function _aggregateDataForMonth(monthStr, ss) {
           totalDurationMs: 0,
           questionList: questionList, 
           questionTally: initialTally, 
-          numericList: numericList, 
-          numericTally: initialNumericTally, 
+          numericList: numericList, // --- NEW ---
+          numericTally: initialNumericTally, // --- NEW ---
           allCustomNoteHeaders: new Set(), 
           notes: []
         };
@@ -699,7 +701,7 @@ function _aggregateDataForMonth(monthStr, ss) {
       
       let mainNote = "";
       let customNotes = {};
-      let numericEntries = {}; 
+      let numericEntries = {}; // --- NEW ---
       let durationMins = (durationMs / (1000 * 60));
       
       const reportJson = row[reportCol];
@@ -753,7 +755,7 @@ function _aggregateDataForMonth(monthStr, ss) {
             worker: row[workerCol], 
             mainNote: mainNote, 
             customNotes: customNotes,
-            numericEntries: numericEntries, 
+            numericEntries: numericEntries, // --- NEW ---
             durationMins: durationMins
       };
       coData.notes.push(noteEntry);
@@ -769,6 +771,7 @@ function _aggregateDataForMonth(monthStr, ss) {
     monthStr: monthStr
   };
 }
+
 
 /**
  * Helper function to run AI correction on an array of notes.
