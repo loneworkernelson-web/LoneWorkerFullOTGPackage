@@ -497,7 +497,6 @@ function sendAlertEmail(workerData, alertType, isEscalation) {
 }
 
 // --- === REPORTING FUNCTIONS (REFACTORED v2.8) === ---
-
 /**
  * Gathers all data and aggregates it by company and site.
  * This is the core logic used by all report generators.
@@ -526,7 +525,7 @@ function _aggregateDataForMonth(monthStr, ss) {
   
   // 2. Cache ALL Checklists, Template IDs, and Longitudinal IDs from sheet
   const allChecklists = {}; 
-  const allNumericEntries = {}; // --- NEW: Store numeric entry labels
+  const allNumericEntries = {}; // --- NEW: Store numeric entry labels separately
   const templateIdMap = {};
   const longitudinalIdMap = {};
   
@@ -539,12 +538,13 @@ function _aggregateDataForMonth(monthStr, ss) {
       const companyName = row[0];
       if (companyName) {
           const questions = [];
-          const numericEntries = []; // --- NEW ---
+          const numericEntries = []; // --- NEW: Array to hold keys like "KMs", "Expenses"
           for (let i = 1; i < checklistHeaders.length; i++) {
-              if (i === templateIdCol || i === longitudinalIdCol) continue; // Skip ID columns
+              if (i === templateIdCol || i === longitudinalIdCol) continue; 
               if (row[i]) {
                   const q = String(row[i]);
-                  if (q.startsWith("$ ") || q.startsWith("$")) { // --- NEW ---
+                  // Detect '$' fields and separate them
+                  if (q.startsWith("$ ") || q.startsWith("$")) { 
                      numericEntries.push(q.substring(q.startsWith("$ ") ? 2 : 1).trim());
                   } else if (!q.startsWith("#") && !q.startsWith("%")) {
                      questions.push(q);
@@ -553,8 +553,8 @@ function _aggregateDataForMonth(monthStr, ss) {
                   break; 
               }
           }
-          allChecklists[companyName] = questions; // Store all, including (Standard)
-          allNumericEntries[companyName] = numericEntries; // --- NEW ---
+          allChecklists[companyName] = questions; 
+          allNumericEntries[companyName] = numericEntries; // Store the list of keys
           
           if (templateIdCol !== -1 && row[templateIdCol]) {
               templateIdMap[companyName] = row[templateIdCol];
@@ -565,14 +565,13 @@ function _aggregateDataForMonth(monthStr, ss) {
       }
   });
   
-  // 3. Define Standard Checklist FALLBACK (if (Standard) is missing from sheet)
   const STANDARD_CHECKLIST_FALLBACK = [
         "Safety check completed",
         "Client goals reviewed",
         "Next appointment scheduled",
         "Visit notes recorded"
   ];
-  const STANDARD_NUMERIC_FALLBACK = []; // --- NEW ---
+  const STANDARD_NUMERIC_FALLBACK = []; 
 
   // 4. Get all visit data
   const dataRange = visitsSheet.getDataRange();
@@ -587,7 +586,7 @@ function _aggregateDataForMonth(monthStr, ss) {
   const workerCol = visitsHeaders.indexOf("Worker Name");
 
   if (companyCol === -1 || locationCol === -1 || arrivalCol === -1 || departureCol === -1 || reportCol === -1 || workerCol === -1) {
-      throw new Error("Error: Could not find required columns ('Company Name', 'Location Name', 'Arrival Time', 'Actual Departure Time', 'Visit Report Data', 'Worker Name') in 'Visits' sheet.");
+      throw new Error("Error: Could not find required columns in 'Visits' sheet.");
   }
 
   // 5. Process the data
@@ -613,26 +612,28 @@ function _aggregateDataForMonth(monthStr, ss) {
 
     if (departureTime && departureTime >= startDate && departureTime < endDate) {
       
-      let questionList = allChecklists[companyName]; // Try custom form first
-      let numericList = allNumericEntries[companyName]; // --- NEW ---
+      let questionList = allChecklists[companyName]; 
+      let numericList = allNumericEntries[companyName]; // Get specific keys for this company
       
       if (!questionList || questionList.length === 0) {
-         questionList = allChecklists["(Standard)"]; // Try (Standard) form from sheet
-         numericList = allNumericEntries["(Standard)"]; // --- NEW ---
+         questionList = allChecklists["(Standard)"]; 
+         numericList = allNumericEntries["(Standard)"]; 
       }
       if (!questionList || questionList.length === 0) {
-        questionList = STANDARD_CHECKLIST_FALLBACK; // Use hardcoded fallback
-        numericList = STANDARD_NUMERIC_FALLBACK; // --- NEW ---
+        questionList = STANDARD_CHECKLIST_FALLBACK; 
+        numericList = STANDARD_NUMERIC_FALLBACK; 
       }
-      if (!numericList) numericList = []; // Ensure it's an array
+      if (!numericList) numericList = []; 
 
       
       // Initialize the SITE-LEVEL report object
       if (!masterReport[reportKey]) {
         const initialTally = {};
         questionList.forEach(q => initialTally[q] = 0);
-        const initialNumericTally = {}; // --- NEW ---
-        numericList.forEach(q => initialNumericTally[q] = 0); // --- NEW ---
+        
+        // --- NEW: Initialize a bucket for EACH numeric key separately ---
+        const initialNumericTally = {}; 
+        numericList.forEach(q => initialNumericTally[q] = 0); 
 
         masterReport[reportKey] = {
           companyName: companyName, 
@@ -641,8 +642,8 @@ function _aggregateDataForMonth(monthStr, ss) {
           totalDurationMs: 0,
           questionList: questionList, 
           questionTally: initialTally, 
-          numericList: numericList, // --- NEW ---
-          numericTally: initialNumericTally, // --- NEW ---
+          numericList: numericList, // Save the list of keys
+          numericTally: initialNumericTally, // Save the buckets
           allCustomNoteHeaders: new Set(), 
           notes: []
         };
@@ -652,8 +653,10 @@ function _aggregateDataForMonth(monthStr, ss) {
       if (!combinedReport[companyName]) {
         const initialTally = {};
         questionList.forEach(q => initialTally[q] = 0);
-        const initialNumericTally = {}; // --- NEW ---
-        numericList.forEach(q => initialNumericTally[q] = 0); // --- NEW ---
+        
+        // --- NEW: Initialize combined buckets ---
+        const initialNumericTally = {}; 
+        numericList.forEach(q => initialNumericTally[q] = 0); 
 
         combinedReport[companyName] = {
           companyName: companyName,
@@ -662,8 +665,8 @@ function _aggregateDataForMonth(monthStr, ss) {
           totalDurationMs: 0,
           questionList: questionList, 
           questionTally: initialTally, 
-          numericList: numericList, // --- NEW ---
-          numericTally: initialNumericTally, // --- NEW ---
+          numericList: numericList, 
+          numericTally: initialNumericTally, 
           allCustomNoteHeaders: new Set(), 
           notes: []
         };
@@ -696,7 +699,7 @@ function _aggregateDataForMonth(monthStr, ss) {
       
       let mainNote = "";
       let customNotes = {};
-      let numericEntries = {}; // --- NEW ---
+      let numericEntries = {}; 
       let durationMins = (durationMs / (1000 * 60));
       
       const reportJson = row[reportCol];
@@ -724,6 +727,7 @@ function _aggregateDataForMonth(monthStr, ss) {
           }
 
           // --- NEW: Process Numeric Entries ---
+          // This loop ensures values are added to their SPECIFIC named bucket
           if (report.numeric_entries) {
             numericEntries = report.numeric_entries;
             for (const key in numericEntries) {
@@ -749,7 +753,7 @@ function _aggregateDataForMonth(monthStr, ss) {
             worker: row[workerCol], 
             mainNote: mainNote, 
             customNotes: customNotes,
-            numericEntries: numericEntries, // --- NEW ---
+            numericEntries: numericEntries, 
             durationMins: durationMins
       };
       coData.notes.push(noteEntry);
@@ -765,7 +769,6 @@ function _aggregateDataForMonth(monthStr, ss) {
     monthStr: monthStr
   };
 }
-
 
 /**
  * Helper function to run AI correction on an array of notes.
