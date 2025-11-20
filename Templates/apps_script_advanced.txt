@@ -423,21 +423,36 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         });
     }
 
+    // --- UPDATED loadState (v2.1 - Force URL Fix) ---
     function loadState() { 
         const savedState = JSON.parse(localStorage.getItem('loneWorkerState')); 
+        
         const defaultState = {
             settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
-            locations: [], selectedLocationId: null, visitDurationMinutes: 0, activeVisit: null, cachedForms: {}, pendingUploads: []
+            locations: [], 
+            selectedLocationId: null, 
+            visitDurationMinutes: 0, 
+            activeVisit: null,
+            cachedForms: {},
+            pendingUploads: []
         };
+        
+        // Merge saved state onto default state
         state = { ...defaultState, ...savedState };
+        // Deep merge settings object
         state.settings = { ...defaultState.settings, ...(savedState ? savedState.settings : {}) };
 
+        // Ensure arrays/objects are correct type
         if (!Array.isArray(state.locations)) state.locations = [];
         if (!Array.isArray(state.pendingUploads)) state.pendingUploads = [];
         if (typeof state.cachedForms !== 'object' || state.cachedForms === null || Array.isArray(state.cachedForms)) state.cachedForms = {};
         
+        // Ensure templateName & noReport exists
         state.locations = state.locations.map(loc => ({
-            ...loc, companyName: loc.companyName || "", templateName: loc.templateName || "", noReport: loc.noReport || false 
+            ...loc,
+            companyName: loc.companyName || "",
+            templateName: loc.templateName || "", 
+            noReport: loc.noReport || false 
         }));
 
         if (savedState && savedState.activeVisit) { 
@@ -447,13 +462,25 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         
         const travellingExists = state.locations.some(loc => loc.id === 'loc_travelling_default'); 
         if (!travellingExists) { 
-            state.locations.push({ id: 'loc_travelling_default', name: 'Travelling', address: 'GPS updates will be sent every 15 minutes.', companyName: 'Internal', templateName: "", noReport: true }); 
+            state.locations.push({ 
+                id: 'loc_travelling_default', 
+                name: 'Travelling', 
+                address: 'GPS updates will be sent every 15 minutes.',
+                companyName: 'Internal', 
+                templateName: "", 
+                noReport: true 
+            }); 
         } 
         
+        // --- FORCE URL UPDATE ---
+        // We remove the check for !state.settings.googleSheetUrl.
+        // If the Setup Tool injected a URL, we enforce it every time.
         const prefilledUrl = "%%GOOGLE_SHEET_URL%%";
         if (prefilledUrl.startsWith('http')) {
             state.settings.googleSheetUrl = prefilledUrl;
         }
+        // --- END FORCE UPDATE ---
+        
         saveState(); 
     }
 
