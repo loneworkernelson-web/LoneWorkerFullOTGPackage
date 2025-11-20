@@ -306,33 +306,24 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     </div>
 </div>
 <script>
-    let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
-    // --- NEW: Add quickStatBtn ---
+   let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
     let quickStatBtn;
-    // --- WSA: Added new modal elements ---
     let reportModal, reportModalTitle, reportFormContainer, reportFormChecklists, reportNotes, reportLoading, cancelReportBtn, submitReportBtn, uploadQueueBanner;
-    // --- NEW: Confirm Modal elements ---
     let confirmModal, confirmModalTitle, confirmModalMessage, confirmModalCancelBtn, confirmModalOkBtn;
     let confirmCallback = () => {};
-
-    // --- NEW: Wake Lock variable ---
     let wakeLock = null;
-    // --- NEW: ORS API Key ---
-    var ORS_API_KEY = "%%ORS_API_KEY%%";
 
-    // --- WSA: Added new state properties ---
     let state = { 
         settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
         locations: [], 
         selectedLocationId: null, 
         visitDurationMinutes: 0, 
         activeVisit: null,
-        cachedForms: {}, // Stores custom checklists { "Template Name": [{"type":"header", "text":"Q1"}] }
-        pendingUploads: [] // Stores visit report data submitted offline
+        cachedForms: {}, 
+        pendingUploads: [] 
     };
     const DURATION_STEPS = [0, 10, 15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
     
-    // --- MODIFIED: Fallback Checklist ---
     const STANDARD_CHECKLIST_FALLBACK = [
         { "type": "header", "text": "Standard Visit Report (Fallback)" },
         { "type": "checkbox", "text": "Safety check completed" },
@@ -341,18 +332,16 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         { "type": "checkbox", "text": "Visit notes recorded" }
     ];
     
-    // --- TEMPLATE PLACEHOLDERS ---
     var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
     const PRE_ALERT_OFFSET = 2; 
     var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
     var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
     var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
-    // --- END PLACEHOLDERS ---
 
     let synth, checkinCountdownInterval;
     let lastBatteryReportTime = 0; 
     let mainScreenReminderTimer = null;
-    let isSyncing = false; // --- WSA: Syncing flag ---
+    let isSyncing = false; 
 
     async function initAudio() { if (synth || (Tone.context && Tone.context.state === 'running')) return; try { await Tone.start(); synth = new Tone.Synth().toDestination(); console.log("Audio context started"); } catch (e) { console.error("Could not start audio context:", e); } }
     async function playSoundAndVibrate(action) {
@@ -360,7 +349,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         const play = () => {
              if (!synth && Tone.context && Tone.context.state === 'running') { synth = new Tone.Synth().toDestination(); } 
              else if (!synth) { console.warn("playSoundAndVibrate: Synth not ready."); return; } 
-
             const now = Tone.now();
             switch(action) {
                 case 'arrive': synth.triggerAttackRelease("C4", "8n", now); synth.triggerAttackRelease("G4", "8n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate(50); break;
@@ -369,82 +357,37 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 case 'safe': synth.triggerAttackRelease("C5", "8n", now); if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]); break;
                 case 'warning': synth.triggerAttackRelease("E5", "16n", now); synth.triggerAttackRelease("G5", "16n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate([800, 200, 800]); break;
                 case 'panic': synth.triggerAttackRelease("G5", "16n", now); synth.triggerAttackRelease("G5", "16n", now + 0.1); synth.triggerAttackRelease("G5", "16n", now + 0.2); if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]); break;
-                case 'checkin': 
-                    if(synth.context.state === 'running'){ 
-                        synth.triggerAttackRelease("A4", "16n", now); 
-                    } 
-                    break; 
+                case 'checkin': if(synth.context.state === 'running'){ synth.triggerAttackRelease("A4", "16n", now); } break; 
             }
         };
         play();
     }
 
-    // --- NEW: Screen Wake Lock API functions ---
     async function requestWakeLock() {
         if ('wakeLock' in navigator) {
             try {
                 wakeLock = await navigator.wakeLock.request('screen');
                 console.log('Screen Wake Lock active');
-                wakeLock.addEventListener('release', () => {
-                    console.log('Screen Wake Lock released');
-                });
-            } catch (err) {
-                console.error(`${err.name}, ${err.message}`);
-            }
+                wakeLock.addEventListener('release', () => { console.log('Screen Wake Lock released'); });
+            } catch (err) { console.error(`${err.name}, ${err.message}`); }
         }
     }
 
     async function releaseWakeLock() {
-        if (wakeLock !== null) {
-            await wakeLock.release();
-            wakeLock = null;
-        }
+        if (wakeLock !== null) { await wakeLock.release(); wakeLock = null; }
     }
-
-    // --- NEW: ORS Distance Calculation ---
-    async function calculateDistance(start, end) {
-        if (!ORS_API_KEY || ORS_API_KEY.startsWith("%%")) return null;
-        if (!start || !end) return null;
-
-        try {
-            // ORS expects: long,lat
-            const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            if (data.features && data.features.length > 0) {
-                const distMeters = data.features[0].properties.segments[0].distance;
-                return (distMeters / 1000).toFixed(2); // Return KM string
-            }
-        } catch (e) {
-            console.warn("ORS Error:", e);
-        }
-        return null;
-    }
-    // --- END NEW ---
     
     function navigate(page) { 
         Object.values(pages).forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); }); 
-        if (pages[page]) { 
-            pages[page].classList.remove('hidden'); 
-            pages[page].classList.add('active'); 
-        }
-
+        if (pages[page]) { pages[page].classList.remove('hidden'); pages[page].classList.add('active'); }
         if (mainScreenReminderTimer) clearTimeout(mainScreenReminderTimer); 
         if (startReminderBanner) startReminderBanner.classList.add('hidden'); 
-
-        if (page === 'main') {
-            startReminderTimer(); 
-            // WSA: Sync forms and process queue when returning to main
-            syncAllForms(); // --- MODIFIED
-            processUploadQueue();
-        }
+        if (page === 'main') { startReminderTimer(); syncAllForms(); processUploadQueue(); }
     }
 
     function startReminderTimer() {
         if (mainScreenReminderTimer) clearTimeout(mainScreenReminderTimer);
         if (startReminderBanner) startReminderBanner.classList.add('hidden'); 
-
         mainScreenReminderTimer = setTimeout(() => {
             if (!state.activeVisit && pages.main.classList.contains('active')) {
                 if (startReminderBanner) startReminderBanner.classList.remove('hidden');
@@ -454,78 +397,38 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 
     function showModal(modalKey, onShow) {
         const modal = modals[modalKey];
-        modals.backdrop.classList.remove('hidden');
-        modals.backdrop.classList.add('flex');
-        Object.values(modals).forEach(m => {
-            if (m !== modals.backdrop && m !== modals[modalKey]) m.classList.add('hidden');
-        });
-        if (modal) {
-            modal.classList.remove('hidden');
-            if (onShow) onShow();
-        }
+        modals.backdrop.classList.remove('hidden'); modals.backdrop.classList.add('flex');
+        Object.values(modals).forEach(m => { if (m !== modals.backdrop && m !== modals[modalKey]) m.classList.add('hidden'); });
+        if (modal) { modal.classList.remove('hidden'); if (onShow) onShow(); }
     }
-    // --- MODIFIED: Clear Quick Stat flag ---
+
     function hideModals() { 
-        modals.backdrop.classList.add('hidden'); 
-        modals.backdrop.classList.remove('flex'); 
-        if (reportModal) {
-            reportModal.dataset.isQuickStat = 'false'; // Clear flag
-            reportModal.dataset.isFromAlert = 'false'; // Clear flag
-        }
-        if (confirmModal) {
-            confirmCallback = () => {}; // Clear callback
-        }
+        modals.backdrop.classList.add('hidden'); modals.backdrop.classList.remove('flex'); 
+        if (reportModal) { reportModal.dataset.isQuickStat = 'false'; reportModal.dataset.isFromAlert = 'false'; }
+        if (confirmModal) { confirmCallback = () => {}; }
     }
     function showAlert(title, message) { document.getElementById('alertModalTitle').textContent = title; document.getElementById('alertModalMessage').textContent = message; showModal('alert'); }
     
-    // --- NEW: Custom Confirm Modal ---
     function showConfirm(title, message, onConfirm) {
-        confirmModalTitle.textContent = title;
-        confirmModalMessage.textContent = message;
-        confirmCallback = onConfirm; // Set the callback
-        showModal('confirm');
+        confirmModalTitle.textContent = title; confirmModalMessage.textContent = message;
+        confirmCallback = onConfirm; showModal('confirm');
     }
 
-    // --- UPDATED loadState (WSA v1.1 FIX) ---
     function loadState() { 
         const savedState = JSON.parse(localStorage.getItem('loneWorkerState')); 
-        
         const defaultState = {
             settings: { workerName: '', workerPhone: '', emergencyName: '', emergencyPhone: '', emergencyEmail: '', escalationName: '', escalationPhone: '', escalationEmail: '', pinCode: '', duressPin: '', googleSheetUrl: '' }, 
-            locations: [], 
-            selectedLocationId: null, 
-            visitDurationMinutes: 0, 
-            activeVisit: null,
-            cachedForms: {},
-            pendingUploads: []
+            locations: [], selectedLocationId: null, visitDurationMinutes: 0, activeVisit: null, cachedForms: {}, pendingUploads: []
         };
-        
-        // Merge saved state onto default state
         state = { ...defaultState, ...savedState };
-        // Deep merge settings object
         state.settings = { ...defaultState.settings, ...(savedState ? savedState.settings : {}) };
 
-        // --- ROBUSTNESS FIX: Ensure arrays/objects are correct type ---
-        if (!Array.isArray(state.locations)) {
-            console.warn("Locations in localStorage was not an array, resetting.");
-            state.locations = [];
-        }
-        if (!Array.isArray(state.pendingUploads)) {
-             console.warn("PendingUploads in localStorage was not an array, resetting.");
-            state.pendingUploads = [];
-        }
-        if (typeof state.cachedForms !== 'object' || state.cachedForms === null || Array.isArray(state.cachedForms)) {
-             console.warn("CachedForms in localStorage was not an object, resetting.");
-            state.cachedForms = {};
-        }
-        // --- END FIX ---
+        if (!Array.isArray(state.locations)) state.locations = [];
+        if (!Array.isArray(state.pendingUploads)) state.pendingUploads = [];
+        if (typeof state.cachedForms !== 'object' || state.cachedForms === null || Array.isArray(state.cachedForms)) state.cachedForms = {};
         
-        // --- MODIFIED: Ensure templateName & noReport exists ---
         state.locations = state.locations.map(loc => ({
-            ...loc,
-            companyName: loc.companyName || "",
-            templateName: loc.templateName || "", // Add new templateName
-            noReport: loc.noReport || false // Add new noReport flag
+            ...loc, companyName: loc.companyName || "", templateName: loc.templateName || "", noReport: loc.noReport || false 
         }));
 
         if (savedState && savedState.activeVisit) { 
@@ -535,23 +438,16 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         
         const travellingExists = state.locations.some(loc => loc.id === 'loc_travelling_default'); 
         if (!travellingExists) { 
-            state.locations.push({ 
-                id: 'loc_travelling_default', 
-                name: 'Travelling', 
-                address: 'GPS updates will be sent every 15 minutes.',
-                companyName: 'Internal', 
-                templateName: "", // Uses (Standard) form
-                noReport: true // --- NEW: Travelling never requires a report
-            }); 
+            state.locations.push({ id: 'loc_travelling_default', name: 'Travelling', address: 'GPS updates will be sent every 15 minutes.', companyName: 'Internal', templateName: "", noReport: true }); 
         } 
         
+        // --- FIX: Force URL Injection ---
         const prefilledUrl = "%%GOOGLE_SHEET_URL%%";
-        if (prefilledUrl.startsWith('http') && !state.settings.googleSheetUrl) {
+        if (prefilledUrl.startsWith('http')) {
             state.settings.googleSheetUrl = prefilledUrl;
         }
-        saveState(); // Save state once after all initialization
+        saveState(); 
     }
-    // --- END UPDATED loadState ---
 
     function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
     
@@ -559,7 +455,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         locationList.innerHTML = ''; if (state.locations.length === 0) { locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; }
         state.locations.sort((a,b) => a.name.localeCompare(b.name)).forEach(loc => { 
             const isSelected = loc.id === state.selectedLocationId; 
-            // --- MODIFIED: Show Template Name ---
             let templateInfo = loc.templateName ? ` (${loc.templateName})` : ' ((Standard))';
             if (loc.noReport) templateInfo = " (No Report)";
             const companyHtml = loc.companyName ? `<p class="text-sm text-blue-400">${loc.companyName}${templateInfo}</p>` : '';
@@ -572,18 +467,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 
     function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; const hours = Math.floor(minutes / 60); const mins = minutes % 60; return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`; }
     
-    // --- RENAMED: from updateArrivedButtonState to updateHomeScreenButtons ---
     function updateHomeScreenButtons() { 
         if (state.selectedLocationId) { 
-            // Enable Start Button
             arrivedBtn.disabled = false; 
             arrivedBtn.classList.remove('bg-gray-700', 'text-gray-400'); 
             arrivedBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white'); 
             arrivedBtn.textContent = state.visitDurationMinutes > 0 ? 'Start (Hold 1.5s)' : 'Set Duration';
             
-            // --- NEW: Enable Quick Stat Button ---
             const location = state.locations.find(l => l.id === state.selectedLocationId);
-            if (location && !location.noReport) { // Enable if it's not "No Report"
+            if (location && !location.noReport) { 
                 quickStatBtn.disabled = false;
                 quickStatBtn.classList.remove('bg-teal-900', 'text-teal-700');
                 quickStatBtn.classList.add('bg-teal-600', 'hover:bg-teal-700', 'text-white');
@@ -592,22 +484,17 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                  quickStatBtn.classList.add('bg-teal-900', 'text-teal-700');
                  quickStatBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
             }
-
             if (state.visitDurationMinutes === 0) {
                  arrivedBtn.disabled = true;
                  arrivedBtn.classList.add('bg-gray-700', 'text-gray-400'); 
                  arrivedBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white'); 
                  arrivedBtn.textContent = 'Set Duration';
             }
-            
         } else { 
-            // Disable Start Button
             arrivedBtn.disabled = true; 
             arrivedBtn.classList.add('bg-gray-700', 'text-gray-400'); 
             arrivedBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white'); 
             arrivedBtn.textContent = 'Select Location'; 
-            
-            // --- NEW: Disable Quick Stat Button ---
             quickStatBtn.disabled = true;
             quickStatBtn.classList.add('bg-teal-900', 'text-teal-700');
             quickStatBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
@@ -620,7 +507,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             showAlert("Error", "Google Sheet URL is not configured in settings. Data was not saved.");
             return Promise.reject("No URL");
         }
-
         const payload = {
             ...data,
             "Worker Name": data["Worker Name"] || state.settings.workerName,
@@ -632,32 +518,19 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             "Escalation Contact Number": data["Escalation Contact Number"] || state.settings.escalationPhone,
             "Escalation Contact Email": data["Escalation Contact Email"] || state.settings.escalationEmail
         };
-
         const formData = new FormData();
-        for (const key in payload) {
-            formData.append(key, payload[key]);
-        }
-
-        return fetch(state.settings.googleSheetUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: new URLSearchParams(formData)
-        }).then(() => {
-            console.log('Data sent to Google Sheet:', data);
-            return Promise.resolve(); // Success
-        }).catch(error => {
+        for (const key in payload) { formData.append(key, payload[key]); }
+        return fetch(state.settings.googleSheetUrl, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(formData) })
+        .then(() => { console.log('Data sent to Google Sheet:', data); return Promise.resolve(); })
+        .catch(error => {
             console.error('Error sending data to Google Sheet:', error);
-            // --- UPDATED: Queue 'SAFE' and 'DATA_ENTRY_ONLY' status as well ---
             const queueableStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'DATA_ENTRY_ONLY'];
             if (!isRetry && queueableStatuses.includes(data["Alarm Status"])) {
                 console.log("Network failed. Queuing report.");
-                state.pendingUploads.push(payload); 
-                saveState();
+                state.pendingUploads.push(payload); saveState();
                 showAlert("Offline", "Report saved. Will upload when you're back online.");
-            } else if (!isRetry) {
-                 showAlert("Network Error", "Failed to send data. Please check connection.");
-            }
-            return Promise.reject(error); // Failure
+            } else if (!isRetry) { showAlert("Network Error", "Failed to send data. Please check connection."); }
+            return Promise.reject(error); 
         });
     }
 
@@ -667,29 +540,19 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         const pinInputEl = document.getElementById('pinInput');
         pinInputEl.value = '';
         pinInputEl.focus();
-        
         const confirmHandler = () => {
             const pinValue = pinInputEl.value;
             if (pinValue === state.settings.pinCode) {
-                hideModals();
-                pinInputEl.value = '';
-                callback(false); // Normal PIN entered
+                hideModals(); pinInputEl.value = ''; callback(false); 
             } else if (isDuressAction && state.settings.duressPin && pinValue === state.settings.duressPin) {
-                hideModals();
-                pinInputEl.value = '';
-                callback(true); // Duress PIN entered
+                hideModals(); pinInputEl.value = ''; callback(true); 
             } else {
                 showAlert("Incorrect PIN", "The PIN you entered is incorrect.");
-                pinInputEl.value = '';
-                pinInputEl.focus();
+                pinInputEl.value = ''; pinInputEl.focus();
             }
             cleanup();
         };
-        const cancelHandler = () => {
-            pinInputEl.value = '';
-            hideModals();
-            cleanup();
-        };
+        const cancelHandler = () => { pinInputEl.value = ''; hideModals(); cleanup(); };
         const cleanup = () => {
             document.getElementById('confirmPinBtn').removeEventListener('click', confirmHandler);
             document.getElementById('cancelPinBtn').removeEventListener('click', cancelHandler);
@@ -699,70 +562,39 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     }
     let visitInterval;
     function handleArriveLongPress() { playSoundAndVibrate('arrive'); attemptStartVisit(); }
-    
-    function handleDepartLongPress() {
-        playSoundAndVibrate('depart');
-        showReportModal(false); // false = not from an alert
-    }
-    
+    function handleDepartLongPress() { playSoundAndVibrate('depart'); showReportModal(false); }
     function handleExtendLongPress() {
         withPinVerification((isDuress) => {
              if (!state.activeVisit) return; 
-
              state.activeVisit.anticipatedDepartureTime = new Date(state.activeVisit.anticipatedDepartureTime.getTime() + 10 * 60 * 1000);
              state.activeVisit.preWarningSent = false;
-             updateLockedScreen(); 
-             saveState(); 
-
+             updateLockedScreen(); saveState(); 
             if (isDuress) {
-                 sendToGoogleSheet({ 
-                     "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                     "Alarm Status": 'DURESS_CODE_ACTIVATED', 
-                     "Notes": 'Worker activated silent duress alarm during extend action.',
-                     "GPS Timestamp": new Date().toISOString() // Set alert time
-                 });
-                 console.log("Duress PIN entered for Extend. Sent DURESS_CODE_ACTIVATED.");
+                 sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'DURESS_CODE_ACTIVATED', "Notes": 'Worker activated silent duress alarm during extend action.', "GPS Timestamp": new Date().toISOString() });
             } else {
                  playSoundAndVibrate('extend');
-                 sendToGoogleSheet({
-                     "Arrival Time": state.activeVisit.arrivalTimeForSheet,
-                     "Anticipated Departure Time": state.activeVisit.anticipatedDepartureTime.toISOString(),
-                     "Notes": `Extended 10 mins at ${new Date().toISOString()}`,
-                 });
-                 console.log("Normal PIN entered for Extend. Visit extended.");
+                 sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Anticipated Departure Time": state.activeVisit.anticipatedDepartureTime.toISOString(), "Notes": `Extended 10 mins at ${new Date().toISOString()}`, });
             }
         }, true); 
     }
     
-    // --- UPDATED handleSafeLongPress (OTG v1.10) ---
     function handleSafeLongPress() {
         withPinVerification((isDuress) => {
-            if (isDuress) {
-                iamSafe(true); // Call iamSafe with duress flag, no report
-            } else {
-                // --- MODIFIED: Check ONLY for "No Report" (Removed 'Travelling' hardcode) ---
-                if (!state.activeVisit) return; // Safety check
+            if (isDuress) { iamSafe(true); } 
+            else {
+                if (!state.activeVisit) return; 
                 const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-                
-                // If "No Report Required" is checked, skip the modal
-                if (location && location.noReport) {
-                    console.log("Location marked 'No Report Required', skipping report on 'I Am Safe'.");
-                    iamSafe(false); // Call iamSafe (non-duress) with no report data
-                } else {
-                    // Show the report modal
-                    showReportModal(true); // true = from an alert
-                }
-                // --- END MODIFIED ---
+                if (location && (location.name === 'Travelling' || location.noReport)) {
+                    iamSafe(false); 
+                } else { showReportModal(true); }
             }
         }, true); 
     }
-    // --- END UPDATED handleSafeLongPress ---
-
 
     function attemptStartVisit() {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
-                (position) => { console.log("GPS permission seems to be granted."); executeStartVisit(position); },
+                (position) => { console.log("GPS permission seems to be granted."); executeStartVisit(); },
                 (error) => {
                     console.error("Initial GPS check failed:", error.message);
                     showAlert("GPS Not Available", "Could not access location. Overdue alerts will use the manually entered address. Please check location settings.");
@@ -775,11 +607,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             executeStartVisit();
         }
     }
-    async function executeStartVisit(position) {
+    async function executeStartVisit() {
         if (!navigator.onLine) { showAlert("No Network", "A network connection is required to start a visit."); return; }
-        // --- NEW: Request Wake Lock ---
         requestWakeLock();
-        
         lastBatteryReportTime = 0; 
         let initialBatteryNote = "";
         if (navigator.getBattery) {
@@ -800,7 +630,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         state.activeVisit = {
             locationId: location.id,
             startTime: now,
-            startCoords: position ? { lat: position.coords.latitude, lng: position.coords.longitude } : null, // Save start coords for ORS
             anticipatedDepartureTime: anticipatedDepartureTime,
             arrivalTimeForSheet: now.toISOString(),
             alertState: 0,
@@ -825,7 +654,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             "Date": now.toLocaleDateString('en-CA'),
             "Location Name": location.name,
             "Location Address": location.address,
-            "Company Name": location.companyName || "", // WSA: Send Company Name
+            "Company Name": location.companyName || "", 
             "Arrival Time": state.activeVisit.arrivalTimeForSheet,
             "Anticipated Departure Time": anticipatedDepartureTime.toISOString(),
             "Alarm Status": 'ON SITE', 
@@ -862,42 +691,26 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         document.getElementById('lockedAnticipatedTime').textContent = new Date(state.activeVisit.anticipatedDepartureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
     }
     
-    // --- UPDATED: Add battery note to depart/iamSafe ---
     async function getBatteryNote() {
-        if (!navigator.getBattery) {
-            return "";
-        }
+        if (!navigator.getBattery) return "";
         try {
             const battery = await navigator.getBattery();
             const level = Math.floor(battery.level * 100);
             let note = `Battery: ${level}%`;
-            if (level < 15 && !battery.charging) {
-                note += " (LOW - WARNING)";
-            }
+            if (level < 15 && !battery.charging) note += " (LOW - WARNING)";
             return note;
-        } catch (e) {
-            console.warn("Could not check battery:", e);
-            return "";
-        }
+        } catch (e) { console.warn("Could not check battery:", e); return ""; }
     }
 
     async function depart(reportData = {}) {
         if (!state.activeVisit) return; 
         const now = new Date();
-        const batteryNote = await getBatteryNote(); // Get current battery
-        
+        const batteryNote = await getBatteryNote(); 
         const dataToSend = {
-            ...reportData, 
-            "Arrival Time": state.activeVisit.arrivalTimeForSheet,
-            "Actual Departure Time": now.toISOString(),
-            "Alarm Status": 'DEPARTED',
-            "Notes": batteryNote // Add battery note on depart
+            ...reportData, "Arrival Time": state.activeVisit.arrivalTimeForSheet,
+            "Actual Departure Time": now.toISOString(), "Alarm Status": 'DEPARTED', "Notes": batteryNote 
         };
-
-        sendToGoogleSheet(dataToSend); // This will now queue if offline
-        // --- NEW: Release Wake Lock ---
-        releaseWakeLock();
-        endVisit();
+        sendToGoogleSheet(dataToSend); releaseWakeLock(); endVisit();
     }
 
     function extendVisit() {
@@ -908,51 +721,33 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     async function iamSafe(isDuress, reportData = {}) { 
         if (!state.activeVisit) return; 
         const now = new Date();
-        const batteryNote = await getBatteryNote(); // Get current battery
-        
+        const batteryNote = await getBatteryNote(); 
         if (isDuress) {
             sendToGoogleSheet({ 
-                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                "Alarm Status": 'DURESS_CODE_ACTIVATED', 
-                "Notes": `Worker activated silent duress alarm via I AM SAFE button. ${batteryNote}`.trim(),
-                "GPS Timestamp": new Date().toISOString() // Set alert time
+                "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'DURESS_CODE_ACTIVATED', 
+                "Notes": `Worker activated silent duress alarm via I AM SAFE button. ${batteryNote}`.trim(), "GPS Timestamp": new Date().toISOString() 
             }); 
         } else {
             playSoundAndVibrate('safe');
             const dataToSend = {
-                 ...reportData,
-                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                "Actual Departure Time": now.toISOString(), 
-                "Alarm Status": 'SAFE - MANUALLY CLEARED', 
+                 ...reportData, "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
+                "Actual Departure Time": now.toISOString(), "Alarm Status": 'SAFE - MANUALLY CLEARED', 
                 "Notes": `Worker confirmed they are safe after an alert was triggered. ${batteryNote}`.trim()
             };
-            sendToGoogleSheet(dataToSend); // This will queue if offline
-            showAlert("Confirmation", "Your status has been updated to SAFE.");
+            sendToGoogleSheet(dataToSend); showAlert("Confirmation", "Your status has been updated to SAFE.");
         }
-        // --- NEW: Release Wake Lock ---
-        releaseWakeLock();
-        endVisit(); 
+        releaseWakeLock(); endVisit(); 
     }
-    // --- END UPDATED depart/iamSafe ---
 
     function endVisit() {
-        clearInterval(visitInterval);
-        visitInterval = null;
-        if (checkinCountdownInterval) clearInterval(checkinCountdownInterval); 
-        checkinCountdownInterval = null;
-        state.activeVisit = null;
-        state.selectedLocationId = null;
-        state.visitDurationMinutes = 0;
-        durationSlider.value = 0;
-        durationDisplay.textContent = formatDuration(0);
-        saveState();
-        navigate('main');
-        renderLocations();
-        updateHomeScreenButtons();
+        clearInterval(visitInterval); visitInterval = null;
+        if (checkinCountdownInterval) clearInterval(checkinCountdownInterval); checkinCountdownInterval = null;
+        state.activeVisit = null; state.selectedLocationId = null; state.visitDurationMinutes = 0;
+        durationSlider.value = 0; durationDisplay.textContent = formatDuration(0);
+        saveState(); navigate('main'); renderLocations(); updateHomeScreenButtons();
         document.getElementById('alertActiveContainer').classList.add('hidden');
         document.getElementById('normalButtonsContainer').classList.remove('hidden');
-        if(synth) synth.volume.value = 0; 
-        lastBatteryReportTime = 0; 
+        if(synth) synth.volume.value = 0; lastBatteryReportTime = 0; 
     }
     function tryGetGps(notePrefix = "Overdue GPS") {
         if (!state.activeVisit) return; 
@@ -961,19 +756,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             (position) => {
                  if (!state.activeVisit) return; 
                 const { latitude, longitude } = position.coords;
-                // --- === BUG FIX: Use gpsData.longitude === ---
                 sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Last Known GPS": `${latitude},${longitude}`, "GPS Timestamp": new Date().toISOString(), "Notes": `${notePrefix}: Successfully retrieved GPS.` });
             },
             (error) => {
-                 if (!state.activeVisit) return; 
-                console.error("GPS Error:", error);
+                 if (!state.activeVisit) return; console.error("GPS Error:", error);
                 sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Notes": `${notePrefix}: Failed to retrieve GPS.` });
-            },
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+            }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
     }
     
-    // --- UPDATED tick function (Battery Fix) ---
     async function tick() {
         if (!state.activeVisit) { clearInterval(visitInterval); visitInterval = null; return; }
         updateLockedScreen();
@@ -982,162 +773,86 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         const remainingMinutes = (departureTime - now) / 60000;
         
         if (remainingMinutes <= PRE_ALERT_OFFSET && remainingMinutes > 0 && !state.activeVisit.preWarningSent) {
-            state.activeVisit.preWarningSent = true;
-            playSoundAndVibrate('warning');
+            state.activeVisit.preWarningSent = true; playSoundAndVibrate('warning');
         }
-
         const location = state.locations.find(l => l.id === state.activeVisit.locationId);
         if (location && location.name === 'Travelling') {
             const fifteenMinutes = 15 * 60 * 1000;
             if (!state.activeVisit.lastTravelGpsTime || (now - state.activeVisit.lastTravelGpsTime) >= fifteenMinutes) {
-                tryGetGps("15 minute travelling update");
-                state.activeVisit.lastTravelGpsTime = now;
+                tryGetGps("15 minute travelling update"); state.activeVisit.lastTravelGpsTime = now;
             }
         }
-
         const overdueMinutes = (now - departureTime) / 60000;
         if (overdueMinutes > 0) {
-            // First alert trigger
             if (overdueMinutes >= (parseInt(FIRST_ALERT_MINUTES) || 15) && state.activeVisit.alertState < 2) {
                 state.activeVisit.alertState = 2;
-                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'ALERT SENT', "GPS Timestamp": new Date().toISOString() }); // Set alert timestamp
+                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'ALERT SENT', "GPS Timestamp": new Date().toISOString() }); 
                 document.getElementById('alertActiveContainer').classList.remove('hidden');
                 document.getElementById('normalButtonsContainer').classList.add('hidden');
                 tryGetGps("First overdue alert GPS");
             }
-            // Recurring GPS check (e.g., every 20 mins)
             if (state.activeVisit.lastGpsAttemptTime && (now - state.activeVisit.lastGpsAttemptTime) > 20 * 60 * 1000) {
                 tryGetGps("Recurring overdue check");
             }
         }
-
         if (String(CHECKIN_ENABLED) === 'true' && state.activeVisit.nextCheckinTime && now >= state.activeVisit.nextCheckinTime) {
-            triggerCheckin();
-            state.activeVisit.nextCheckinTime = null; 
+            triggerCheckin(); state.activeVisit.nextCheckinTime = null; 
         }
-
-        // --- Battery Check Logic Updated ---
         const BATTERY_REPORT_INTERVAL = 15 * 60 * 1000; // 15 minutes
         if (navigator.getBattery && (now - lastBatteryReportTime) > BATTERY_REPORT_INTERVAL) {
              lastBatteryReportTime = now; 
             try {
-                const battery = await navigator.getBattery();
-                const level = Math.floor(battery.level * 100);
-                let batteryNote = `Battery: ${level}%`;
-                let batteryStatusChanged = false; 
-                
+                const battery = await navigator.getBattery(); const level = Math.floor(battery.level * 100);
+                let batteryNote = `Battery: ${level}%`; let batteryStatusChanged = false; 
                 if (level < 15 && !battery.charging) {
                     batteryNote += " (LOW - WARNING)";
-                    if (!state.activeVisit.batteryAlertSent) {
-                         state.activeVisit.batteryAlertSent = true; 
-                         batteryStatusChanged = true;
-                    }
+                    if (!state.activeVisit.batteryAlertSent) { state.activeVisit.batteryAlertSent = true; batteryStatusChanged = true; }
                 } 
-
-                // --- ALWAYS SEND THE UPDATE ---
-                sendToGoogleSheet({ 
-                    "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                    "Notes": batteryNote 
-                });
-                // --- END FIX ---
-                
-                if (batteryStatusChanged) {
-                     saveState(); 
-                }
-
+                sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Notes": batteryNote });
+                if (batteryStatusChanged) { saveState(); }
             } catch(e) { console.warn("Could not check battery:", e); }
         }
     }
-    // --- END UPDATED tick ---
 
-    // --- UPDATED triggerPanicAlert (OTG v1.5 - BUG FIX) ---
     function triggerPanicAlert() {
         if (!state.activeVisit) return; 
         playSoundAndVibrate('panic');
         showAlert("PANIC ALERT SENT", "An immediate alert has been sent to your emergency contact.");
         const sendPanic = (gpsData) => {
              if (!state.activeVisit) return; 
-            const data = { 
-                "Arrival Time": state.activeVisit.arrivalTimeForSheet, 
-                "Alarm Status": 'EMERGENCY - PANIC BUTTON', 
-                "Notes": 'Panic button activated by worker.',
-                "GPS Timestamp": new Date().toISOString() // --- === ADD THIS LINE === ---
-            };
+            const data = { "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'EMERGENCY - PANIC BUTTON', "Notes": 'Panic button activated by worker.', "GPS Timestamp": new Date().toISOString() };
             if (gpsData) {
-                // --- === BUG FIX: Was `longitude`, changed to `gpsData.longitude` === ---
                 data["Last Known GPS"] = `${gpsData.latitude},${gpsData.longitude}`;
-                data["GPS Timestamp"] = new Date().toISOString();
-                data.Notes += ' GPS successfully retrieved.';
-            } else {
-                data.Notes += ' Failed to retrieve GPS on panic.';
-            }
+                data["GPS Timestamp"] = new Date().toISOString(); data.Notes += ' GPS successfully retrieved.';
+            } else { data.Notes += ' Failed to retrieve GPS on panic.'; }
             sendToGoogleSheet(data);
             document.getElementById('alertActiveContainer').classList.remove('hidden');
             document.getElementById('normalButtonsContainer').classList.add('hidden');
         };
         if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => sendPanic(position.coords),
-                () => sendPanic(null),
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        } else {
-            sendPanic(null);
-        }
+            navigator.geolocation.getCurrentPosition( (position) => sendPanic(position.coords), () => sendPanic(null), { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        } else { sendPanic(null); }
     }
-    // --- END UPDATED triggerPanicAlert ---
     
     function triggerCheckin() {
-        showModal('checkin');
-        let remaining = 120; 
-        const totalDuration = 120; 
-        const countdownEl = document.getElementById('checkinCountdown');
-        countdownEl.textContent = '2:00';
-
+        showModal('checkin'); let remaining = 120; const totalDuration = 120; 
+        const countdownEl = document.getElementById('checkinCountdown'); countdownEl.textContent = '2:00';
         if (checkinCountdownInterval) clearInterval(checkinCountdownInterval);
-
-        initAudio().then(() => {
-            if (!synth) synth = new Tone.Synth().toDestination();
-            synth.volume.value = -20; 
-        });
-        
+        initAudio().then(() => { if (!synth) synth = new Tone.Synth().toDestination(); synth.volume.value = -20; });
         if ('vibrate' in navigator) navigator.vibrate(200); 
-
         checkinCountdownInterval = setInterval(() => {
-            remaining--;
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
+            remaining--; const minutes = Math.floor(remaining / 60); const seconds = remaining % 60;
             countdownEl.textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
-
-            // --- Escalation Logic ---
             const elapsedRatio = (totalDuration - remaining) / totalDuration; 
-            
             if (synth && elapsedRatio >= 0.5) {
-                const volumeRatio = (elapsedRatio - 0.5) * 2; 
-                const gain = volumeRatio * 0.9 + 0.1; 
-                synth.volume.value = Tone.gainToDb(gain); 
-            } else if (synth) {
-                 synth.volume.value = -20; 
-            }
-
-            if (remaining <= 30 && remaining % 2 === 0 && 'vibrate' in navigator) {
-                 navigator.vibrate([300, 100, 300]); 
-            } else if (remaining > 30 && remaining % 5 === 0 && 'vibrate' in navigator) {
-                 navigator.vibrate(200); 
-            }
-            
-             if (remaining <= 60 && remaining % 3 === 0) { 
-                 playSoundAndVibrate('checkin'); 
-             } else if (remaining > 60 && remaining % 10 === 0) { 
-                  playSoundAndVibrate('checkin');
-             }
-            // --- End Escalation Logic ---
-
-
+                const volumeRatio = (elapsedRatio - 0.5) * 2; const gain = volumeRatio * 0.9 + 0.1; synth.volume.value = Tone.gainToDb(gain); 
+            } else if (synth) { synth.volume.value = -20; }
+            if (remaining <= 30 && remaining % 2 === 0 && 'vibrate' in navigator) { navigator.vibrate([300, 100, 300]); } 
+            else if (remaining > 30 && remaining % 5 === 0 && 'vibrate' in navigator) { navigator.vibrate(200); }
+             if (remaining <= 60 && remaining % 3 === 0) { playSoundAndVibrate('checkin'); } 
+             else if (remaining > 60 && remaining % 10 === 0) { playSoundAndVibrate('checkin'); }
             if (remaining <= 0) {
-                clearInterval(checkinCountdownInterval);
-                checkinCountdownInterval = null;
-                hideModals();
+                clearInterval(checkinCountdownInterval); checkinCountdownInterval = null; hideModals();
                  if (!state.activeVisit) return; 
                 sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alarm Status": 'MISSED_CHECKIN', "Notes": 'Worker missed a scheduled check-in.', "GPS Timestamp": new Date().toISOString() });
                 document.getElementById('alertActiveContainer').classList.remove('hidden');
@@ -1148,442 +863,200 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     }
 
     function handleCheckinOK() {
-        clearInterval(checkinCountdownInterval);
-        checkinCountdownInterval = null; 
-        hideModals();
-        
-        if ('vibrate' in navigator) {
-            navigator.vibrate([50, 50, 50]); 
-        }
-
+        clearInterval(checkinCountdownInterval); checkinCountdownInterval = null; hideModals();
+        if ('vibrate' in navigator) { navigator.vibrate([50, 50, 50]); }
          if (!state.activeVisit) return; 
         state.activeVisit.nextCheckinTime = new Date().getTime() + (parseInt(CHECKIN_INTERVAL) * 60 * 1000); 
-        saveState();
-        if(synth) synth.volume.value = 0; 
+        saveState(); if(synth) synth.volume.value = 0; 
     }
 
     // --- WSA: NEW FUNCTIONS ---
-
-    /**
-     * Shows the report modal, building the form dynamically.
-     */
-    // --- UPDATED showReportModal (OTG v1.10) ---
     function showReportModal(isFromAlert = false) {
         if (!state.activeVisit) return;
-
         const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-        if (!location) {
-            showAlert("Error", "Could not find location data.");
-            return;
+        if (!location) { showAlert("Error", "Could not find location data."); return; }
+        if (location.name === 'Travelling' || location.noReport) {
+            console.log("Location is 'Travelling' or 'No Report', skipping report.");
+            if (isFromAlert) { iamSafe(false); } else { depart(); }
+            return; 
         }
-
-        // --- MODIFIED: Check ONLY for "No Report" (Removed 'Travelling' hardcode) ---
-        if (location.noReport) {
-            console.log("Location marked 'No Report Required', skipping report.");
-            if (isFromAlert) {
-                iamSafe(false); // Call iamSafe with no report
-            } else {
-                depart(); // Call depart with no report
-            }
-            return; // Stop here, don't show modal
-        }
-        // --- END MODIFIED ---
-
-        // Store if this modal was triggered from an "I AM SAFE" button
         reportModal.dataset.isFromAlert = isFromAlert;
-        reportModal.dataset.isQuickStat = 'false'; // --- NEW: Set QuickStat to false ---
-
-        // Show the modal
+        reportModal.dataset.isQuickStat = 'false'; 
         showModal('report');
         reportModalTitle.textContent = `Visit Report for: ${location.name}`;
-        reportFormContainer.classList.add('hidden');
-        reportLoading.classList.add('hidden');
-        reportNotes.value = ''; // Clear notes
-        reportFormChecklists.innerHTML = ''; // Clear old checklist
-        submitReportBtn.textContent = "Submit Report & Depart"; // Set default button text
+        reportFormContainer.classList.add('hidden'); reportLoading.classList.add('hidden');
+        reportNotes.value = ''; reportFormChecklists.innerHTML = ''; 
+        submitReportBtn.textContent = "Submit Report & Depart"; 
 
-        // --- MODIFIED: Form Loading Logic ---
-        let checklistItems;
-        let formToLoad = location.templateName || "(Standard)"; // Get template name, or default to (Standard)
-
+        let checklistItems; let formToLoad = location.templateName || "(Standard)"; 
         console.log(`Loading form: '${formToLoad}'`);
         const cachedForm = state.cachedForms[formToLoad];
-
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
-            // Found the specified form in cache
-            checklistItems = cachedForm;
-        } else if (cachedForm) {
-            // Form is cached but empty. This is fine.
-            checklistItems = [];
-        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
-            // Specified custom form *not found*, but (Standard) *is* found
+        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) { checklistItems = cachedForm; } 
+        else if (cachedForm) { checklistItems = []; } 
+        else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
             console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
             checklistItems = state.cachedForms["(Standard)"];
         } else {
-            // Specified form OR (Standard) not found. Use hardcoded fallback.
             console.warn(`No forms found in cache. Using hardcoded fallback.`);
             checklistItems = STANDARD_CHECKLIST_FALLBACK;
         }
-        
-        // If we're here, we have a list (even if empty). Build the form.
         buildReportForm(checklistItems);
-        // --- END MODIFIED ---
     }
     
-    // --- NEW: showQuickStatModal ---
     function showQuickStatModal() {
-        if (!state.selectedLocationId) {
-            showAlert("No Location", "Please select a location from the list first.");
-            return;
-        }
-
+        if (!state.selectedLocationId) { showAlert("No Location", "Please select a location from the list first."); return; }
         const location = state.locations.find(l => l.id === state.selectedLocationId);
-        if (!location) {
-            showAlert("Error", "Could not find location data.");
-            return;
+        if (!location) { showAlert("Error", "Could not find location data."); return; }
+        if (location.name === 'Travelling' || location.noReport) {
+            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'."); return;
         }
-
-        // --- MODIFIED: Check ONLY for "No Report" (Removed 'Travelling' hardcode) ---
-        if (location.noReport) {
-            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'.");
-            return;
-        }
-        // --- END MODIFIED ---
-
-        // Set flags for submission
-        reportModal.dataset.isFromAlert = 'false';
-        reportModal.dataset.isQuickStat = 'true';
-
-        // Show the modal
+        reportModal.dataset.isFromAlert = 'false'; reportModal.dataset.isQuickStat = 'true';
         showModal('report');
         reportModalTitle.textContent = `Quick Stat for: ${location.name}`;
-        reportFormContainer.classList.add('hidden');
-        reportLoading.classList.add('hidden');
-        reportNotes.value = ''; // Clear notes
-        reportFormChecklists.innerHTML = ''; // Clear old checklist
-        submitReportBtn.textContent = "Submit Report"; // Change button text
+        reportFormContainer.classList.add('hidden'); reportLoading.classList.add('hidden');
+        reportNotes.value = ''; reportFormChecklists.innerHTML = ''; 
+        submitReportBtn.textContent = "Submit Report"; 
 
-        // --- Form Loading Logic (copied from showReportModal) ---
-        let checklistItems;
-        let formToLoad = location.templateName || "(Standard)"; 
+        let checklistItems; let formToLoad = location.templateName || "(Standard)"; 
         const cachedForm = state.cachedForms[formToLoad];
-
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
-            checklistItems = cachedForm;
-        } else if (cachedForm) {
-            checklistItems = [];
-        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
-            console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
+        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) { checklistItems = cachedForm; } 
+        else if (cachedForm) { checklistItems = []; } 
+        else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
             checklistItems = state.cachedForms["(Standard)"];
-        } else {
-            console.warn(`No forms found in cache. Using hardcoded fallback.`);
-            checklistItems = STANDARD_CHECKLIST_FALLBACK;
-        }
-        
+        } else { checklistItems = STANDARD_CHECKLIST_FALLBACK; }
         buildReportForm(checklistItems);
     }
     
-    /**
-     * Helper to build the checklist HTML from an array of objects.
-     */
-    // --- UPDATED buildReportForm (OTG v1.8 - with '$') ---
     function buildReportForm(items) {
          reportFormChecklists.innerHTML = items.map((item, index) => {
-            if (!item || typeof item.text === 'undefined') {
-                 console.warn("Invalid checklist item:", item);
-                 return ''; // Skip this item
-            }
-
-            if (item.type === 'header') {
-                return `<h3 class="text-lg font-semibold text-blue-300 mt-4 mb-2">${item.text}</h3>`;
-            
-            } else if (item.type === 'textarea') {
-                return `
-                <div class="mt-4">
-                    <label for="wsa-note-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
-                    <textarea id="wsa-note-${index}" data-header="${item.text}" class="wsa-custom-note mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
-                </div>
-                `;
-            // --- === NEW: Added 'number' type === ---
+            if (!item || typeof item.text === 'undefined') { console.warn("Invalid checklist item:", item); return ''; }
+            if (item.type === 'header') { return `<h3 class="text-lg font-semibold text-blue-300 mt-4 mb-2">${item.text}</h3>`; } 
+            else if (item.type === 'textarea') {
+                return `<div class="mt-4"><label for="wsa-note-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label><textarea id="wsa-note-${index}" data-header="${item.text}" class="wsa-custom-note mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea></div>`;
             } else if (item.type === 'number') { 
-                return `
-                <div class="mt-4">
-                    <label for="wsa-num-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
-                    <input type="number" id="wsa-num-${index}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="numeric" pattern="[0-9]*">
-                </div>
-                `;
-            // --- === END NEW === ---
-            } else { // Default to checkbox (item.type === 'checkbox')
-                return `<label for="check-${index}" class="flex items-center p-2 bg-gray-900 rounded-md cursor-pointer">
-                    <input id="check-${index}" name="${item.text}" type="checkbox" class="h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                    <span class="ml-3 text-gray-300">${item.text}</span>
-                </label>`;
+                return `<div class="mt-4"><label for="wsa-num-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label><input type="number" id="wsa-num-${index}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="numeric" pattern="[0-9]*"></div>`;
+            } else { 
+                return `<label for="check-${index}" class="flex items-center p-2 bg-gray-900 rounded-md cursor-pointer"><input id="check-${index}" name="${item.text}" type="checkbox" class="h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"><span class="ml-3 text-gray-300">${item.text}</span></label>`;
             }
          }).join('');
-        reportFormContainer.classList.remove('hidden');
-        submitReportBtn.disabled = false;
-        
-        // --- NEW: Auto-fill ORS Distance ---
-        if (window.autoFillDistance) {
-            autoFillDistance();
-        }
+        reportFormContainer.classList.remove('hidden'); submitReportBtn.disabled = false;
     }
 
-    // --- NEW: Auto-Fill Distance Function ---
-    async function autoFillDistance() {
-        if (!state.activeVisit || !state.activeVisit.startCoords) return;
-
-        // 1. Find the "$" field (if any)
-        const numberInput = document.querySelector('.wsa-custom-number');
-        if (!numberInput) return; // No number field in this form
-
-        const label = numberInput.previousElementSibling.textContent;
-        // Check if label starts with $ (it should, based on backend parsing)
-        // But in the UI, we strip the $. So just check if it's a number field.
-
-        // 2. Get Current Position (End)
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const endCoords = { lng: position.coords.longitude, lat: position.coords.latitude };
-            const startCoords = state.activeVisit.startCoords;
-
-            // 3. Call ORS API
-            const distanceKm = await calculateDistance(startCoords, endCoords);
-            
-            if (distanceKm) {
-                 // 4. Fill the input
-                 numberInput.value = distanceKm;
-                 // 5. Add note if modified (store original)
-                 numberInput.dataset.originalValue = distanceKm;
-                 console.log(`Auto-filled distance: ${distanceKm} km`);
-            }
-        }, (err) => {
-            console.warn("Could not get location for distance calc", err);
-        });
-    }
-
-    /**
-     * Gathers report data and calls depart() or iamSafe()
-     */
-    // --- UPDATED submitReport (OTG v1.8 - with '$' and 'QuickStat') ---
     function submitReport() {
         const isFromAlert = reportModal.dataset.isFromAlert === 'true';
         const isQuickStat = reportModal.dataset.isQuickStat === 'true';
-
-        if (isQuickStat) {
-            submitQuickStatReport(); // Call new function
-        } else {
-            // This is a normal visit (depart or safe)
+        if (isQuickStat) { submitQuickStatReport(); } 
+        else {
             if (!state.activeVisit) return; 
             const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-            const finalData = gatherFormData(location); // Get form data
-            
-            if (isFromAlert) {
-                iamSafe(false, finalData); // Call iamSafe with the report data
-            } else {
-                depart(finalData); // Call depart with the report data
-            }
+            const finalData = gatherFormData(location); 
+            if (isFromAlert) { iamSafe(false, finalData); } else { depart(finalData); }
         }
-        
         hideModals();
     }
     
-    // --- NEW: Gathers all form data ---
     function gatherFormData(location) {
-        // 1. Gather checklist data
         const checklistData = {};
         const checkboxes = reportFormChecklists.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-            checklistData[cb.name] = cb.checked;
-        });
+        checkboxes.forEach(cb => { checklistData[cb.name] = cb.checked; });
 
-        // 2. Gather main note
-        let notes = reportNotes.value;
+        const notes = reportNotes.value;
         
-        // 3. Gather custom notes
         const customNotesData = {};
         const customTextareas = reportFormChecklists.querySelectorAll('.wsa-custom-note');
-        customTextareas.forEach(ta => {
-            const header = ta.dataset.header; 
-            customNotesData[header] = ta.value; 
-        });
+        customTextareas.forEach(ta => { const header = ta.dataset.header; customNotesData[header] = ta.value; });
 
-        // 4. Gather numeric entries & check for modification
         const numericEntriesData = {};
         const customNumberFields = reportFormChecklists.querySelectorAll('.wsa-custom-number');
-        customNumberFields.forEach(nf => {
-            const header = nf.dataset.header;
-            let value = nf.value;
-            numericEntriesData[header] = value;
-            
-            // Check modification
-            if (nf.dataset.originalValue && value !== nf.dataset.originalValue) {
-                notes += `\n[Note: Distance modified by user. Calc: ${nf.dataset.originalValue}km, Entered: ${value}km]`;
-            }
-        });
+        customNumberFields.forEach(nf => { const header = nf.dataset.header; numericEntriesData[header] = nf.value; });
 
-        // 5. Combine payload
-        const reportDataPayload = {
-            checklist: checklistData,
-            notes: notes,
-            custom_notes: customNotesData,
-            numeric_entries: numericEntriesData
-        };
-
-        return {
-            "Company Name": location.companyName || "",
-            "Visit Report Data": JSON.stringify(reportDataPayload)
-        };
+        const reportDataPayload = { checklist: checklistData, notes: notes, custom_notes: customNotesData, numeric_entries: numericEntriesData };
+        return { "Company Name": location.companyName || "", "Visit Report Data": JSON.stringify(reportDataPayload) };
     }
 
-    // --- NEW: Handles Quick Stat submission ---
     async function submitQuickStatReport() {
         if (!state.selectedLocationId) return;
         const location = state.locations.find(l => l.id === state.selectedLocationId);
         if (!location) return;
-
-        const now = new Date();
-        const timestamp = now.toISOString();
+        const now = new Date(); const timestamp = now.toISOString();
         const batteryNote = await getBatteryNote();
-        const reportData = gatherFormData(location); // Get all form data
-
-        const finalData = {
-            ...reportData,
-            "Date": now.toLocaleDateString('en-CA'),
-            "Location Name": location.name,
-            "Location Address": location.address,
-            "Arrival Time": timestamp,
-            "Actual Departure Time": timestamp,
-            "Alarm Status": 'DATA_ENTRY_ONLY',
-            "Notes": `Quick Stat Entry. ${batteryNote}`.trim()
-        };
-
-        sendToGoogleSheet(finalData); // This will queue if offline
-        showAlert("Success", "Quick Stat submitted.");
-        
-        // Reset selection
-        state.selectedLocationId = null;
-        renderLocations();
-        updateHomeScreenButtons();
+        const reportData = gatherFormData(location); 
+        const finalData = { ...reportData, "Date": now.toLocaleDateString('en-CA'), "Location Name": location.name, "Location Address": location.address, "Arrival Time": timestamp, "Actual Departure Time": timestamp, "Alarm Status": 'DATA_ENTRY_ONLY', "Notes": `Quick Stat Entry. ${batteryNote}`.trim() };
+        sendToGoogleSheet(finalData); showAlert("Success", "Quick Stat submitted.");
+        state.selectedLocationId = null; renderLocations(); updateHomeScreenButtons();
     }
 
-    /**
-     * Fetches a single custom form from the backend (if not in cache).
-     */
     async function fetchForm(companyName) {
-         if (!companyName || state.cachedForms[companyName] !== undefined || !navigator.onLine || !state.settings.googleSheetUrl) {
-             return; 
-         }
+         if (!companyName || state.cachedForms[companyName] !== undefined || !navigator.onLine || !state.settings.googleSheetUrl) { return; }
          console.log(`Fetching custom form for: ${companyName}`);
          try {
              const url = new URL(state.settings.googleSheetUrl);
-             url.searchParams.append('action', 'getForms');
-             url.searchParams.append('companyName', companyName);
-             
+             url.searchParams.append('action', 'getForms'); url.searchParams.append('companyName', companyName);
              const response = await fetch(url.href); 
-             if (!response.ok) {
-                 throw new Error(`Server responded with ${response.status}`);
-             }
+             if (!response.ok) { throw new Error(`Server responded with ${response.status}`); }
              const items = await response.json();
              if (items && Array.isArray(items)) { 
                  console.log(`Successfully fetched and cached form for ${companyName}`);
-                 state.cachedForms[companyName] = items; // Cache result (even if empty [])
-                 saveState();
+                 state.cachedForms[companyName] = items; saveState();
              } else {
                  console.warn(`No custom form found in sheet for ${companyName}`);
-                 state.cachedForms[companyName] = []; // Cache empty result
-                 saveState();
+                 state.cachedForms[companyName] = []; saveState();
              }
-         } catch (error) {
-             console.error(`Failed to fetch form for ${companyName}:`, error);
-         }
+         } catch (error) { console.error(`Failed to fetch form for ${companyName}:`, error); }
     }
 
-    /**
-     * Loops through all locations and proactively fetches/caches custom forms.
-     * Also fetches the (Standard) form.
-     */
-    // --- MODIFIED: syncAllForms ---
     async function syncAllForms() {
          if (isSyncing || !navigator.onLine || !state.settings.googleSheetUrl) return;
-         isSyncing = true;
-         console.log("Starting custom form sync...");
-
-         // 1. Always fetch (Standard) form (if not cached)
-         if (state.cachedForms["(Standard)"] === undefined) {
-            await fetchForm("(Standard)");
-         }
-         
-         // 2. Fetch all unique custom forms from locations
-         const companiesToSync = [...new Set(
-             state.locations
-                 .filter(loc => loc.templateName) // Filter for locations that have a templateName
-                 .map(loc => loc.templateName)
-         )];
-
+         isSyncing = true; console.log("Starting custom form sync...");
+         if (state.cachedForms["(Standard)"] === undefined) { await fetchForm("(Standard)"); }
+         const companiesToSync = [...new Set(state.locations.filter(loc => loc.templateName).map(loc => loc.templateName))];
          for (const companyName of companiesToSync) {
-             if (state.cachedForms[companyName] === undefined) { 
-                 await fetchForm(companyName);
-             }
+             if (state.cachedForms[companyName] === undefined) { await fetchForm(companyName); }
          }
-         isSyncing = false;
-         console.log("Custom form sync complete.");
+         isSyncing = false; console.log("Custom form sync complete.");
     }
     
-    /**
-     * Tries to upload any pending reports from the offline queue.
-     */
     async function processUploadQueue() {
-        if (isSyncing || !navigator.onLine || state.pendingUploads.length === 0 || !state.settings.googleSheetUrl) {
-            return; 
-        }
-        isSyncing = true;
-        uploadQueueBanner.classList.remove('hidden');
+        if (isSyncing || !navigator.onLine || state.pendingUploads.length === 0 || !state.settings.googleSheetUrl) { return; }
+        isSyncing = true; uploadQueueBanner.classList.remove('hidden');
         console.log(`Processing upload queue: ${state.pendingUploads.length} item(s)`);
-
         const remainingUploads = [];
         for (const uploadData of state.pendingUploads) {
             try {
-                await sendToGoogleSheet(uploadData, true); // true = isRetry
+                await sendToGoogleSheet(uploadData, true); 
                 console.log("Successfully uploaded queued report for:", uploadData["Arrival Time"]);
             } catch (error) {
                 console.warn("Failed to upload queued report, will retry later:", error);
-                remainingUploads.push(uploadData); // Put it back in the queue
+                remainingUploads.push(uploadData); 
             }
         }
-        
-        state.pendingUploads = remainingUploads;
-        saveState();
-        isSyncing = false;
-        if (state.pendingUploads.length === 0) {
-             console.log("Upload queue cleared.");
-             uploadQueueBanner.classList.add('hidden');
-        } else {
-             console.log(`${state.pendingUploads.length} items remain in queue.`);
-             uploadQueueBanner.classList.add('hidden'); 
-        }
+        state.pendingUploads = remainingUploads; saveState(); isSyncing = false;
+        if (state.pendingUploads.length === 0) { uploadQueueBanner.classList.add('hidden'); } 
+        else { uploadQueueBanner.classList.add('hidden'); }
     }
-    // --- END NEW WSA FUNCTIONS ---
 
+    // --- NEW HELPER: Populate Settings Inputs (Fixes URL Issue) ---
+    function populateSettingsUI() {
+        Object.keys(state.settings).forEach(key => {
+            const input = document.getElementById(key);
+            if (input) { 
+                input.value = state.settings[key];
+                if (key === 'googleSheetUrl') {
+                    if (input.value && input.value.startsWith('http')) {
+                        input.disabled = true; input.classList.add('bg-gray-800', 'text-gray-500');
+                    } else {
+                        input.disabled = false; input.classList.remove('bg-gray-800', 'text-gray-500');
+                    }
+                }
+            }
+        });
+    }
 
     function initEventListeners() {
         document.body.addEventListener('pointerdown', initAudio, { once: true });
+        
         settingsBtn.addEventListener('click', () => {
-            Object.keys(state.settings).forEach(key => {
-                const input = document.getElementById(key);
-                if (input) { 
-                    input.value = state.settings[key];
-                    if (key === 'googleSheetUrl' && input.value) {
-                         input.disabled = true;
-                         input.classList.add('bg-gray-800', 'text-gray-500');
-                    } else if (key === 'googleSheetUrl') {
-                        input.disabled = false;
-                        input.classList.remove('bg-gray-800', 'text-gray-500');
-                    }
-                }
-            });
-            // --- FIX 1: Ensure Close button is active when opening manually ---
-            closeSettingsBtn.style.opacity = '1';
-            closeSettingsBtn.style.pointerEvents = 'auto';
+            populateSettingsUI(); // Use the new helper
             navigate('settings');
         });
 
@@ -1593,20 +1066,15 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         alertModalOkBtn.addEventListener('click', hideModals);
         checkinOkBtn.addEventListener('click', handleCheckinOK);
         
-        // --- NEW: Confirm Modal Listeners ---
         confirmModalCancelBtn.addEventListener('click', hideModals);
         confirmModalOkBtn.addEventListener('click', () => {
-            if (typeof confirmCallback === 'function') {
-                confirmCallback();
-            }
+            if (typeof confirmCallback === 'function') { confirmCallback(); }
             hideModals();
         });
 
-        // --- WSA: Add listeners for report modal ---
         cancelReportBtn.addEventListener('click', hideModals);
-        submitReportBtn.addEventListener('click', submitReport); // This now branches
+        submitReportBtn.addEventListener('click', submitReport);
         
-        // --- NEW: Add listener for Quick Stat button ---
         quickStatBtn.addEventListener('click', showQuickStatModal);
 
         saveSettingsBtn.addEventListener('click', () => {
@@ -1614,40 +1082,32 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 const input = document.getElementById(key);
                 if (input && !input.disabled) state.settings[key] = input.value;
             });
-            
-            // --- NEW: Mandatory PIN Check ---
+
             if (!state.settings.pinCode || state.settings.pinCode.length !== 4 || !state.settings.duressPin || state.settings.duressPin.length !== 4) {
                showAlert("Setup Required", "Please enter a valid 4-digit Normal PIN and 4-digit Duress PIN.");
-               return; // Do not save or exit
+               return; 
             }
-            // --- END NEW ---
 
-            saveState();
-            showAlert("Success", "Settings have been saved.");
+            saveState(); showAlert("Success", "Settings have been saved.");
             
-            // --- FIX 2: Re-enable Close button and Render Tiles ---
-            closeSettingsBtn.style.opacity = '1';
-            closeSettingsBtn.style.pointerEvents = 'auto';
-            renderLocations(); // Shows the "Travelling" tile immediately
-            updateHomeScreenButtons();
-            // --- END FIX ---
-
-            navigate('main'); // This will trigger syncs
+            closeSettingsBtn.style.opacity = '1'; closeSettingsBtn.style.pointerEvents = 'auto';
+            renderLocations(); updateHomeScreenButtons();
+            navigate('main'); 
         });
+
         addLocationBtn.addEventListener('click', () => {
             showModal('location', () => {
                 document.getElementById('locationModalTitle').textContent = 'Add New Location';
                 document.getElementById('locationName').value = '';
                 document.getElementById('locationAddress').value = '';
-                // --- MODIFIED: Clear new location fields ---
                 document.getElementById('companyName').value = '';
                 document.getElementById('templateName').value = '';
                 document.getElementById('noReportRequired').checked = false;
-                // --- End MODIFIED ---
                 document.getElementById('deleteLocationBtn').classList.add('hidden');
                 document.querySelector('#saveLocationBtn').dataset.id = '';
             });
         });
+
         locationList.addEventListener('click', e => { 
             const editBtn = e.target.closest('.edit-location-btn'); 
             if (editBtn) { 
@@ -1658,18 +1118,14 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     document.getElementById('locationModalTitle').textContent = 'Edit Location'; 
                     document.getElementById('locationName').value = location.name; 
                     document.getElementById('locationAddress').value = location.address; 
-                    // --- MODIFIED: Populate new location fields ---
                     document.getElementById('companyName').value = location.companyName || '';
                     document.getElementById('templateName').value = location.templateName || '';
                     document.getElementById('noReportRequired').checked = location.noReport || false;
-                    // --- End MODIFIED ---
-                    
                     if (locId === 'loc_travelling_default') {
                         document.getElementById('deleteLocationBtn').classList.add('hidden');
                     } else {
                         document.getElementById('deleteLocationBtn').classList.remove('hidden'); 
                     }
-                    
                     document.querySelector('#saveLocationBtn').dataset.id = locId; 
                     document.querySelector('#deleteLocationBtn').dataset.id = locId; 
                 }); 
@@ -1679,49 +1135,41 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     const locId = item.querySelector('.edit-location-btn').dataset.id;
                     state.selectedLocationId = locId; 
                     if('vibrate' in navigator) navigator.vibrate(20);
-                    renderLocations(); 
-                    updateHomeScreenButtons(); // --- RENAMED ---
+                    renderLocations(); updateHomeScreenButtons();
                 }
             }
         });
+
         cancelLocationBtn.addEventListener('click', hideModals);
+        
         saveLocationBtn.addEventListener('click', () => {
             const id = document.querySelector('#saveLocationBtn').dataset.id;
             const name = document.getElementById('locationName').value.trim();
             const address = document.getElementById('locationAddress').value.trim();
-            // --- MODIFIED: Get new location fields ---
             const companyName = document.getElementById('companyName').value.trim();
             const templateName = document.getElementById('templateName').value.trim();
             const noReport = document.getElementById('noReportRequired').checked;
-            // --- End MODIFIED ---
 
             if (!name || !address) { showAlert("Missing Info", "Please provide both a name and an address for the location."); return; }
+            
             if (id) {
                 const index = state.locations.findIndex(l => l.id === id);
-                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName, noReport }; // MODIFIED
+                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName, noReport };
             } else {
-                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName, noReport }); // MODIFIED
+                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName, noReport });
             }
-            saveState();
-            renderLocations();
-            updateHomeScreenButtons();
-            hideModals();
-
-            // --- MODIFIED: If new/edited location uses custom form, fetch it now ---
-            if (templateName) {
-                fetchForm(templateName);
-            }
+            saveState(); renderLocations(); updateHomeScreenButtons(); hideModals();
+            if (templateName) { fetchForm(templateName); }
         });
+
         deleteLocationBtn.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
             if (id === 'loc_travelling_default') { showAlert('Cannot Delete', 'The "Travelling" location cannot be deleted.'); return; }
             state.locations = state.locations.filter(l => l.id !== id);
             if (state.selectedLocationId === id) { state.selectedLocationId = null; }
-            saveState();
-            renderLocations();
-            updateHomeScreenButtons(); // --- RENAMED ---
-            hideModals();
+            saveState(); renderLocations(); updateHomeScreenButtons(); hideModals();
         });
+
         useCurrentLocationBtn.addEventListener('click', () => {
             if (!navigator.geolocation) { showAlert("Not Supported", "Geolocation is not supported by your browser."); return; }
             useCurrentLocationBtn.textContent = "Getting location...";
@@ -1731,57 +1179,38 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     const { latitude, longitude } = position.coords;
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
                         .then(res => res.json())
-                        .then(data => {
-                            document.getElementById('locationAddress').value = data.display_name || `${latitude}, ${longitude}`;
-                        }).catch(() => {
-                            showAlert("Error", "Could not fetch address. Using coordinates instead.");
-                            document.getElementById('locationAddress').value = `${latitude}, ${longitude}`;
-                        }).finally(() => {
-                            useCurrentLocationBtn.textContent = "Use Current Location";
-                            useCurrentLocationBtn.disabled = false;
-                        });
+                        .then(data => { document.getElementById('locationAddress').value = data.display_name || `${latitude}, ${longitude}`; })
+                        .catch(() => { showAlert("Error", "Could not fetch address. Using coordinates instead."); document.getElementById('locationAddress').value = `${latitude}, ${longitude}`; })
+                        .finally(() => { useCurrentLocationBtn.textContent = "Use Current Location"; useCurrentLocationBtn.disabled = false; });
                 },
-                () => {
-                    showAlert("Error", "Unable to retrieve your location.");
-                    useCurrentLocationBtn.textContent = "Use Current Location";
-                    useCurrentLocationBtn.disabled = false;
-                },
+                () => { showAlert("Error", "Unable to retrieve your location."); useCurrentLocationBtn.textContent = "Use Current Location"; useCurrentLocationBtn.disabled = false; },
                  { timeout: 10000 } 
             );
         });
+
         durationSlider.addEventListener('input', (e) => {
             state.visitDurationMinutes = DURATION_STEPS[parseInt(e.target.value)];
             durationDisplay.textContent = formatDuration(state.visitDurationMinutes);
-            updateHomeScreenButtons(); // --- RENAMED ---
+            updateHomeScreenButtons();
         });
-        let tapCount = 0;
-        let tapTimer = null;
+
+        let tapCount = 0; let tapTimer = null;
         panicBtn.addEventListener('click', () => {
             tapCount++;
-            if (tapCount === 1) {
-                tapTimer = setTimeout(() => { tapCount = 0; }, 1500);
-            }
-            if (tapCount === 3) {
-                clearTimeout(tapTimer);
-                tapCount = 0;
-                triggerPanicAlert();
-            }
+            if (tapCount === 1) { tapTimer = setTimeout(() => { tapCount = 0; }, 1500); }
+            if (tapCount === 3) { clearTimeout(tapTimer); tapCount = 0; triggerPanicAlert(); }
         });
-        // --- MODIFIED: clearCacheBtn listener ---
+        
         clearCacheBtn.addEventListener('click', () => {
             showConfirm("Clear All Data?", "Are you sure? This will log you out and clear all saved locations and pending reports. This cannot be undone.", () => {
-                localStorage.clear(); // Clear all
-                state = {}; // Reset state
+                localStorage.clear(); state = {}; 
                 showAlert("Cache Cleared", "All app data has been cleared. The app will now reload.");
-                setTimeout(() => location.reload(), 2000); // Reload to re-trigger loadState
+                setTimeout(() => location.reload(), 2000); 
             });
         });
 
         const applyLongPress = (element, callback, duration = 1500) => {
-            let timer;
-            let startX, startY;
-            const tolerance = 10; 
-            
+            let timer; let startX, startY; const tolerance = 10; 
              const styleId = `pseudo-style-${element.id}`;
              let pseudoElementStyle = document.getElementById(styleId);
              if (!pseudoElementStyle) {
@@ -1791,172 +1220,94 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
              }
              pseudoElementStyle.textContent = `#${element.id}::after { transition-duration: ${duration / 1000}s; }`;
 
-
             const start = (e) => {
                 if (element.disabled) return;
                 e.preventDefault(); 
-                if (e.type === 'touchstart' && e.touches.length > 0) {
-                    startX = e.touches[0].clientX;
-                    startY = e.touches[0].clientY;
-                } else if (e.type === 'mousedown') {
-                     startX = e.clientX;
-                     startY = e.clientY;
-                }
+                if (e.type === 'touchstart' && e.touches.length > 0) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; } 
+                else if (e.type === 'mousedown') { startX = e.clientX; startY = e.clientY; }
                 element.classList.add('pressing');
                 clearTimeout(timer); 
                 timer = setTimeout(() => {
-                    if (element.classList.contains('pressing')) {
-                         callback(); 
-                    }
-                    clearTimeout(timer); 
-                    timer = null;
-                    element.classList.remove('pressing');
+                    if (element.classList.contains('pressing')) { callback(); }
+                    clearTimeout(timer); timer = null; element.classList.remove('pressing');
                 }, duration);
             };
-            const cancel = () => {
-                clearTimeout(timer);
-                timer = null;
-                element.classList.remove('pressing');
-            };
+            const cancel = () => { clearTimeout(timer); timer = null; element.classList.remove('pressing'); };
             const move = (e) => {
                 if (!timer) return; 
                 let currentX, currentY;
-                 if (e.type === 'touchmove' && e.touches.length > 0) {
-                    currentX = e.touches[0].clientX;
-                    currentY = e.touches[0].clientY;
-                 } else if (e.type === 'mousemove') {
-                     currentX = e.clientX;
-                     currentY = e.clientY;
-                 } else { return; }
-
-                const deltaX = Math.abs(currentX - startX);
-                const deltaY = Math.abs(currentY - startY);
+                 if (e.type === 'touchmove' && e.touches.length > 0) { currentX = e.touches[0].clientX; currentY = e.touches[0].clientY; } 
+                 else if (e.type === 'mousemove') { currentX = e.clientX; currentY = e.clientY; } else { return; }
+                const deltaX = Math.abs(currentX - startX); const deltaY = Math.abs(currentY - startY);
                 if (deltaX > tolerance || deltaY > tolerance) { cancel(); }
             };
-            // Clean up old listeners first to avoid duplicates
-            element.removeEventListener('mousedown', start);
-            element.removeEventListener('mouseup', cancel);
-            element.removeEventListener('mouseleave', cancel);
-            element.removeEventListener('touchstart', start);
-            element.removeEventListener('touchend', cancel);
-            element.removeEventListener('touchcancel', cancel);
-            element.removeEventListener('touchmove', move);
-            element.removeEventListener('mousemove', move);
+            element.removeEventListener('mousedown', start); element.removeEventListener('mouseup', cancel); element.removeEventListener('mouseleave', cancel);
+            element.removeEventListener('touchstart', start); element.removeEventListener('touchend', cancel); element.removeEventListener('touchcancel', cancel);
+            element.removeEventListener('touchmove', move); element.removeEventListener('mousemove', move);
 
-            // Add new listeners
-            element.addEventListener('mousedown', start);
-            element.addEventListener('mouseup', cancel);
-            element.addEventListener('mouseleave', cancel);
-            element.addEventListener('touchstart', start, { passive: false });
-            element.addEventListener('touchend', cancel);
-            element.addEventListener('touchcancel', cancel);
-            element.addEventListener('touchmove', move, { passive: false });
-            element.addEventListener('mousemove', move); 
+            element.addEventListener('mousedown', start); element.addEventListener('mouseup', cancel); element.addEventListener('mouseleave', cancel);
+            element.addEventListener('touchstart', start, { passive: false }); element.addEventListener('touchend', cancel); element.addEventListener('touchcancel', cancel);
+            element.addEventListener('touchmove', move, { passive: false }); element.addEventListener('mousemove', move); 
         };
 
-        // Apply durations
-        applyLongPress(arrivedBtn, handleArriveLongPress, 1500); // 1.5s - No PIN
-        applyLongPress(departBtn, handleDepartLongPress, 1500);   // 1.5s - No PIN
-        applyLongPress(extendBtn, handleExtendLongPress, 1000);   // 1s - Needs PIN
-        applyLongPress(iamSafeBtn, handleSafeLongPress, 1000);     // 1s - Needs PIN
+        applyLongPress(arrivedBtn, handleArriveLongPress, 1500); 
+        applyLongPress(departBtn, handleDepartLongPress, 1500); 
+        applyLongPress(extendBtn, handleExtendLongPress, 1000); 
+        applyLongPress(iamSafeBtn, handleSafeLongPress, 1000); 
     }
     
     function init() {
         pages = { main: document.getElementById('mainPage'), locked: document.getElementById('lockedPage'), settings: document.getElementById('settingsPage') };
         modals = { 
-            backdrop: document.getElementById('modalBackdrop'), 
-            location: document.getElementById('locationModal'), 
-            info: document.getElementById('infoModal'), 
-            pin: document.getElementById('pinModal'), 
-            alert: document.getElementById('alertModal'), 
-            checkin: document.getElementById('checkinModal'),
-            report: document.getElementById('reportModal'),
-            confirm: document.getElementById('confirmModal')
+            backdrop: document.getElementById('modalBackdrop'), location: document.getElementById('locationModal'), 
+            info: document.getElementById('infoModal'), pin: document.getElementById('pinModal'), 
+            alert: document.getElementById('alertModal'), checkin: document.getElementById('checkinModal'),
+            report: document.getElementById('reportModal'), confirm: document.getElementById('confirmModal')
         };
-        locationList = document.getElementById('locationList');
-        arrivedBtn = document.getElementById('arrivedBtn');
-        quickStatBtn = document.getElementById('quickStatBtn'); 
-        durationSlider = document.getElementById('durationSlider');
-        durationDisplay = document.getElementById('durationDisplay');
-        infoBtn = document.getElementById('infoBtn');
-        settingsBtn = document.getElementById('settingsBtn');
-        closeSettingsBtn = document.getElementById('closeSettingsBtn');
-        addLocationBtn = document.getElementById('addLocationBtn');
-        saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        closeInfoModalBtn = document.getElementById('closeInfoModalBtn');
-        cancelLocationBtn = document.getElementById('cancelLocationBtn');
-        saveLocationBtn = document.getElementById('saveLocationBtn');
-        deleteLocationBtn = document.getElementById('deleteLocationBtn');
-        useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
-        panicBtn = document.getElementById('panicBtn');
-        iamSafeBtn = document.getElementById('iamSafeBtn');
-        departBtn = document.getElementById('departBtn');
-        extendBtn = document.getElementById('extendBtn');
-        alertModalOkBtn = document.getElementById('alertModalOkBtn');
-        checkinOkBtn = document.getElementById('checkinOkBtn');
-        startReminderBanner = document.getElementById('startReminderBanner');
-        clearCacheBtn = document.getElementById('clearCacheBtn'); 
+        locationList = document.getElementById('locationList'); arrivedBtn = document.getElementById('arrivedBtn'); quickStatBtn = document.getElementById('quickStatBtn'); 
+        durationSlider = document.getElementById('durationSlider'); durationDisplay = document.getElementById('durationDisplay');
+        infoBtn = document.getElementById('infoBtn'); settingsBtn = document.getElementById('settingsBtn'); closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        addLocationBtn = document.getElementById('addLocationBtn'); saveSettingsBtn = document.getElementById('saveSettingsBtn'); closeInfoModalBtn = document.getElementById('closeInfoModalBtn');
+        cancelLocationBtn = document.getElementById('cancelLocationBtn'); saveLocationBtn = document.getElementById('saveLocationBtn'); deleteLocationBtn = document.getElementById('deleteLocationBtn');
+        useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn'); panicBtn = document.getElementById('panicBtn'); iamSafeBtn = document.getElementById('iamSafeBtn');
+        departBtn = document.getElementById('departBtn'); extendBtn = document.getElementById('extendBtn'); alertModalOkBtn = document.getElementById('alertModalOkBtn');
+        checkinOkBtn = document.getElementById('checkinOkBtn'); startReminderBanner = document.getElementById('startReminderBanner'); clearCacheBtn = document.getElementById('clearCacheBtn'); 
         
-        // Find new elements
-        reportModal = document.getElementById('reportModal');
-        reportModalTitle = document.getElementById('reportModalTitle');
-        reportFormContainer = document.getElementById('reportFormContainer');
-        reportFormChecklists = document.getElementById('reportFormChecklists');
-        reportNotes = document.getElementById('reportNotes');
-        reportLoading = document.getElementById('reportLoading');
-        cancelReportBtn = document.getElementById('cancelReportBtn');
-        submitReportBtn = document.getElementById('submitReportBtn');
-        uploadQueueBanner = document.getElementById('uploadQueueBanner');
+        reportModal = document.getElementById('reportModal'); reportModalTitle = document.getElementById('reportModalTitle'); reportFormContainer = document.getElementById('reportFormContainer');
+        reportFormChecklists = document.getElementById('reportFormChecklists'); reportNotes = document.getElementById('reportNotes'); reportLoading = document.getElementById('reportLoading');
+        cancelReportBtn = document.getElementById('cancelReportBtn'); submitReportBtn = document.getElementById('submitReportBtn'); uploadQueueBanner = document.getElementById('uploadQueueBanner');
         
-        // Find Confirm Modal elements
-        confirmModal = document.getElementById('confirmModal');
-        confirmModalTitle = document.getElementById('confirmModalTitle');
-        confirmModalMessage = document.getElementById('confirmModalMessage');
-        confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
-        confirmModalOkBtn = document.getElementById('confirmModalOkBtn');
+        confirmModal = document.getElementById('confirmModal'); confirmModalTitle = document.getElementById('confirmModalTitle'); confirmModalMessage = document.getElementById('confirmModalMessage');
+        confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn'); confirmModalOkBtn = document.getElementById('confirmModalOkBtn');
         
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW registered.', reg)).catch(err => console.log('SW reg failed:', err));
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW registered.', reg)).catch(err => console.log('SW reg failed:', err)); });
         } 
         
         loadState(); 
         
-        // Mandatory PIN Check
         const pinInvalid = !state.settings.pinCode || state.settings.pinCode.length !== 4;
         const duressInvalid = !state.settings.duressPin || state.settings.duressPin.length !== 4;
 
         if (pinInvalid || duressInvalid) {
+            populateSettingsUI(); 
             navigate('settings');
-            closeSettingsBtn.style.opacity = '0.5';
-            closeSettingsBtn.style.pointerEvents = 'none';
-            
-            setTimeout(() => {
-                showAlert("Welcome / Setup Required", "To ensure your safety, please set your Name, Phone, and Security PINs before using the app.");
-            }, 500);
+            closeSettingsBtn.style.opacity = '0.5'; closeSettingsBtn.style.pointerEvents = 'none';
+            setTimeout(() => { showAlert("Welcome / Setup Required", "To ensure your safety, please set your Name, Phone, and Security PINs before using the app."); }, 500);
         } else {
             updateHomeScreenButtons();
-            if (state.activeVisit) {
-                enterLockedScreen();
-            } else {
-                navigate('main'); 
-                renderLocations();
-                syncAllForms();
-                processUploadQueue();
-            } 
+            if (state.activeVisit) { enterLockedScreen(); } 
+            else { navigate('main'); renderLocations(); syncAllForms(); processUploadQueue(); } 
         }
 
         initEventListeners(); 
         
         Object.keys(pages).forEach(key => { 
             if (key === 'settings' && (pinInvalid || duressInvalid)) return; 
-            if (pages[key] && !pages[key].classList.contains('active')) { 
-                pages[key].classList.add('hidden'); 
-            } 
+            if (pages[key] && !pages[key].classList.contains('active')) { pages[key].classList.add('hidden'); } 
         });
     }
-    window.addEventListener('load', init);
+    window.addEventListener('load', init); 
     </script>
 </body>
 </html>
