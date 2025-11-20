@@ -617,20 +617,22 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         }, true); 
     }
     
-    // --- UPDATED handleSafeLongPress (OTG v1.8) ---
+    // --- UPDATED handleSafeLongPress (OTG v1.10) ---
     function handleSafeLongPress() {
         withPinVerification((isDuress) => {
             if (isDuress) {
                 iamSafe(true); // Call iamSafe with duress flag, no report
             } else {
-                // --- MODIFIED: Check for "Travelling" or "No Report" before showing report ---
+                // --- MODIFIED: Check ONLY for "No Report" (Removed 'Travelling' hardcode) ---
                 if (!state.activeVisit) return; // Safety check
                 const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-                if (location && (location.name === 'Travelling' || location.noReport)) {
-                    console.log("Location is 'Travelling' or 'No Report', skipping report on 'I Am Safe'.");
+                
+                // If "No Report Required" is checked, skip the modal
+                if (location && location.noReport) {
+                    console.log("Location marked 'No Report Required', skipping report on 'I Am Safe'.");
                     iamSafe(false); // Call iamSafe (non-duress) with no report data
                 } else {
-                    // Not duress, not travelling. Show the report modal.
+                    // Show the report modal
                     showReportModal(true); // true = from an alert
                 }
                 // --- END MODIFIED ---
@@ -1047,7 +1049,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     /**
      * Shows the report modal, building the form dynamically.
      */
-    // --- UPDATED showReportModal (OTG v1.8) ---
+    // --- UPDATED showReportModal (OTG v1.10) ---
     function showReportModal(isFromAlert = false) {
         if (!state.activeVisit) return;
 
@@ -1057,9 +1059,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             return;
         }
 
-        // --- NEW: Check for "Travelling" or "No Report" ---
-        if (location.name === 'Travelling' || location.noReport) {
-            console.log("Location is 'Travelling' or 'No Report', skipping report.");
+        // --- MODIFIED: Check ONLY for "No Report" (Removed 'Travelling' hardcode) ---
+        if (location.noReport) {
+            console.log("Location marked 'No Report Required', skipping report.");
             if (isFromAlert) {
                 iamSafe(false); // Call iamSafe with no report
             } else {
@@ -1067,11 +1069,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }
             return; // Stop here, don't show modal
         }
-        // --- END NEW ---
+        // --- END MODIFIED ---
 
         // Store if this modal was triggered from an "I AM SAFE" button
         reportModal.dataset.isFromAlert = isFromAlert;
-        reportModal.dataset.isQuickStat = 'false'; // --- NEW: Set QuickStat to false ---
+        reportModal.dataset.isQuickStat = 'false'; 
 
         // Show the modal
         showModal('report');
@@ -1080,34 +1082,28 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         reportLoading.classList.add('hidden');
         reportNotes.value = ''; // Clear notes
         reportFormChecklists.innerHTML = ''; // Clear old checklist
-        submitReportBtn.textContent = "Submit Report & Depart"; // Set default button text
+        submitReportBtn.textContent = "Submit Report & Depart"; 
 
-        // --- MODIFIED: Form Loading Logic ---
+        // --- Form Loading Logic ---
         let checklistItems;
-        let formToLoad = location.templateName || "(Standard)"; // Get template name, or default to (Standard)
+        let formToLoad = location.templateName || "(Standard)"; 
 
         console.log(`Loading form: '${formToLoad}'`);
         const cachedForm = state.cachedForms[formToLoad];
 
         if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
-            // Found the specified form in cache
             checklistItems = cachedForm;
         } else if (cachedForm) {
-            // Form is cached but empty. This is fine.
             checklistItems = [];
         } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
-            // Specified custom form *not found*, but (Standard) *is* found
             console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
             checklistItems = state.cachedForms["(Standard)"];
         } else {
-            // Specified form OR (Standard) not found. Use hardcoded fallback.
             console.warn(`No forms found in cache. Using hardcoded fallback.`);
             checklistItems = STANDARD_CHECKLIST_FALLBACK;
         }
         
-        // If we're here, we have a list (even if empty). Build the form.
         buildReportForm(checklistItems);
-        // --- END MODIFIED ---
     }
     
     // --- NEW: showQuickStatModal ---
@@ -1123,10 +1119,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             return;
         }
 
-        if (location.name === 'Travelling' || location.noReport) {
+        // --- MODIFIED: Check ONLY for "No Report" (Removed 'Travelling' hardcode) ---
+        if (location.noReport) {
             showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'.");
             return;
         }
+        // --- END MODIFIED ---
 
         // Set flags for submission
         reportModal.dataset.isFromAlert = 'false';
@@ -1139,9 +1137,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         reportLoading.classList.add('hidden');
         reportNotes.value = ''; // Clear notes
         reportFormChecklists.innerHTML = ''; // Clear old checklist
-        submitReportBtn.textContent = "Submit Report"; // Change button text
+        submitReportBtn.textContent = "Submit Report"; 
 
-        // --- Form Loading Logic (copied from showReportModal) ---
+        // --- Form Loading Logic ---
         let checklistItems;
         let formToLoad = location.templateName || "(Standard)"; 
         const cachedForm = state.cachedForms[formToLoad];
@@ -1160,7 +1158,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         
         buildReportForm(checklistItems);
     }
-    
     /**
      * Helper to build the checklist HTML from an array of objects.
      */
