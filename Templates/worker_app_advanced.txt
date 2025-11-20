@@ -578,19 +578,25 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         }, true); 
     }
     
-    function handleSafeLongPress() {
+   function handleSafeLongPress() {
         withPinVerification((isDuress) => {
-            if (isDuress) { iamSafe(true); } 
-            else {
+            if (isDuress) {
+                iamSafe(true); 
+            } else {
                 if (!state.activeVisit) return; 
                 const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-                if (location && (location.name === 'Travelling' || location.noReport)) {
+                
+                // --- FIX: Removed hardcoded 'Travelling' check ---
+                if (location && location.noReport) {
+                    console.log("Location marked 'No Report Required', skipping report.");
                     iamSafe(false); 
-                } else { showReportModal(true); }
+                } else {
+                    showReportModal(true); 
+                }
+                // --- END FIX ---
             }
         }, true); 
     }
-
     function attemptStartVisit() {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -873,57 +879,102 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     // --- WSA: NEW FUNCTIONS ---
     function showReportModal(isFromAlert = false) {
         if (!state.activeVisit) return;
+
         const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-        if (!location) { showAlert("Error", "Could not find location data."); return; }
-        if (location.name === 'Travelling' || location.noReport) {
-            console.log("Location is 'Travelling' or 'No Report', skipping report.");
-            if (isFromAlert) { iamSafe(false); } else { depart(); }
+        if (!location) {
+            showAlert("Error", "Could not find location data.");
+            return;
+        }
+
+        // --- FIX: Removed hardcoded 'Travelling' check ---
+        if (location.noReport) {
+            console.log("Location marked 'No Report Required', skipping report.");
+            if (isFromAlert) {
+                iamSafe(false); 
+            } else {
+                depart(); 
+            }
             return; 
         }
+        // --- END FIX ---
+
         reportModal.dataset.isFromAlert = isFromAlert;
         reportModal.dataset.isQuickStat = 'false'; 
         showModal('report');
         reportModalTitle.textContent = `Visit Report for: ${location.name}`;
-        reportFormContainer.classList.add('hidden'); reportLoading.classList.add('hidden');
-        reportNotes.value = ''; reportFormChecklists.innerHTML = ''; 
+        reportFormContainer.classList.add('hidden');
+        reportLoading.classList.add('hidden');
+        reportNotes.value = ''; 
+        reportFormChecklists.innerHTML = ''; 
         submitReportBtn.textContent = "Submit Report & Depart"; 
 
-        let checklistItems; let formToLoad = location.templateName || "(Standard)"; 
+        let checklistItems;
+        let formToLoad = location.templateName || "(Standard)"; 
+
         console.log(`Loading form: '${formToLoad}'`);
         const cachedForm = state.cachedForms[formToLoad];
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) { checklistItems = cachedForm; } 
-        else if (cachedForm) { checklistItems = []; } 
-        else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
+
+        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
+            checklistItems = cachedForm;
+        } else if (cachedForm) {
+            checklistItems = [];
+        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
             console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
             checklistItems = state.cachedForms["(Standard)"];
         } else {
             console.warn(`No forms found in cache. Using hardcoded fallback.`);
             checklistItems = STANDARD_CHECKLIST_FALLBACK;
         }
+        
         buildReportForm(checklistItems);
     }
     
-    function showQuickStatModal() {
-        if (!state.selectedLocationId) { showAlert("No Location", "Please select a location from the list first."); return; }
-        const location = state.locations.find(l => l.id === state.selectedLocationId);
-        if (!location) { showAlert("Error", "Could not find location data."); return; }
-        if (location.name === 'Travelling' || location.noReport) {
-            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'."); return;
+function showQuickStatModal() {
+        if (!state.selectedLocationId) {
+            showAlert("No Location", "Please select a location from the list first.");
+            return;
         }
-        reportModal.dataset.isFromAlert = 'false'; reportModal.dataset.isQuickStat = 'true';
+
+        const location = state.locations.find(l => l.id === state.selectedLocationId);
+        if (!location) {
+            showAlert("Error", "Could not find location data.");
+            return;
+        }
+
+        // --- FIX: Removed hardcoded 'Travelling' check ---
+        if (location.noReport) {
+            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'.");
+            return;
+        }
+        // --- END FIX ---
+
+        reportModal.dataset.isFromAlert = 'false';
+        reportModal.dataset.isQuickStat = 'true';
+
         showModal('report');
         reportModalTitle.textContent = `Quick Stat for: ${location.name}`;
-        reportFormContainer.classList.add('hidden'); reportLoading.classList.add('hidden');
-        reportNotes.value = ''; reportFormChecklists.innerHTML = ''; 
+        reportFormContainer.classList.add('hidden');
+        reportLoading.classList.add('hidden');
+        reportNotes.value = ''; 
+        reportFormChecklists.innerHTML = ''; 
         submitReportBtn.textContent = "Submit Report"; 
 
-        let checklistItems; let formToLoad = location.templateName || "(Standard)"; 
+        let checklistItems;
+        let formToLoad = location.templateName || "(Standard)"; 
         const cachedForm = state.cachedForms[formToLoad];
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) { checklistItems = cachedForm; } 
-        else if (cachedForm) { checklistItems = []; } 
-        else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
+
+        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
+            checklistItems = cachedForm;
+        } else if (cachedForm) {
+            checklistItems = [];
+        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
+            console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
             checklistItems = state.cachedForms["(Standard)"];
-        } else { checklistItems = STANDARD_CHECKLIST_FALLBACK; }
+        } else {
+            console.warn(`No forms found in cache. Using hardcoded fallback.`);
+            checklistItems = STANDARD_CHECKLIST_FALLBACK;
+        }
+        
         buildReportForm(checklistItems);
     }
     
