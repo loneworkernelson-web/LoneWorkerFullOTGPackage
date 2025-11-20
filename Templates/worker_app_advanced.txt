@@ -1412,18 +1412,36 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         });
     }
 
-    function initEventListeners() {
+function initEventListeners() {
         document.body.addEventListener('pointerdown', initAudio, { once: true });
+        
         settingsBtn.addEventListener('click', () => {
-            populateSettingsInputs();
+            Object.keys(state.settings).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) { 
+                    input.value = state.settings[key];
+                    if (key === 'googleSheetUrl' && input.value) {
+                         input.disabled = true;
+                         input.classList.add('bg-gray-800', 'text-gray-500');
+                    } else if (key === 'googleSheetUrl') {
+                        input.disabled = false;
+                        input.classList.remove('bg-gray-800', 'text-gray-500');
+                    }
+                }
+            });
+            // --- FIX 1: Ensure Close button is active when opening manually ---
+            closeSettingsBtn.style.opacity = '1';
+            closeSettingsBtn.style.pointerEvents = 'auto';
+            // --- END FIX ---
             navigate('settings');
         });
+
         closeSettingsBtn.addEventListener('click', () => navigate('main'));
         infoBtn.addEventListener('click', () => showModal('info'));
         closeInfoModalBtn.addEventListener('click', hideModals);
         alertModalOkBtn.addEventListener('click', hideModals);
         checkinOkBtn.addEventListener('click', handleCheckinOK);
-        // --- NEW: Confirm Modal Listeners ---
+        
         confirmModalCancelBtn.addEventListener('click', hideModals);
         confirmModalOkBtn.addEventListener('click', () => {
             if (typeof confirmCallback === 'function') {
@@ -1431,11 +1449,10 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }
             hideModals();
         });
-        // --- WSA: Add listeners for report modal ---
+
         cancelReportBtn.addEventListener('click', hideModals);
-        submitReportBtn.addEventListener('click', submitReport); // This now branches
+        submitReportBtn.addEventListener('click', submitReport);
         
-        // --- NEW: Add listener for Quick Stat button ---
         quickStatBtn.addEventListener('click', showQuickStatModal);
 
         saveSettingsBtn.addEventListener('click', () => {
@@ -1443,32 +1460,38 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 const input = document.getElementById(key);
                 if (input && !input.disabled) state.settings[key] = input.value;
             });
-            
-            // --- NEW: Mandatory PIN Check ---
+
             if (!state.settings.pinCode || state.settings.pinCode.length !== 4 || !state.settings.duressPin || state.settings.duressPin.length !== 4) {
                showAlert("Setup Required", "Please enter a valid 4-digit Normal PIN and 4-digit Duress PIN.");
-               return; // Do not save or exit
+               return; 
             }
-            // --- END NEW ---
 
             saveState();
             showAlert("Success", "Settings have been saved.");
-            navigate('main'); // This will trigger syncs
+            
+            // --- FIX 2: Re-enable Close button and Render Tiles ---
+            closeSettingsBtn.style.opacity = '1';
+            closeSettingsBtn.style.pointerEvents = 'auto';
+            renderLocations(); // Shows the "Travelling" tile immediately
+            updateHomeScreenButtons();
+            // --- END FIX ---
+            
+            navigate('main'); 
         });
+
         addLocationBtn.addEventListener('click', () => {
             showModal('location', () => {
                 document.getElementById('locationModalTitle').textContent = 'Add New Location';
                 document.getElementById('locationName').value = '';
                 document.getElementById('locationAddress').value = '';
-                // --- MODIFIED: Clear new location fields ---
                 document.getElementById('companyName').value = '';
                 document.getElementById('templateName').value = '';
                 document.getElementById('noReportRequired').checked = false;
-                // --- End MODIFIED ---
                 document.getElementById('deleteLocationBtn').classList.add('hidden');
                 document.querySelector('#saveLocationBtn').dataset.id = '';
             });
         });
+
         locationList.addEventListener('click', e => { 
             const editBtn = e.target.closest('.edit-location-btn'); 
             if (editBtn) { 
@@ -1479,11 +1502,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     document.getElementById('locationModalTitle').textContent = 'Edit Location'; 
                     document.getElementById('locationName').value = location.name; 
                     document.getElementById('locationAddress').value = location.address; 
-                    // --- MODIFIED: Populate new location fields ---
                     document.getElementById('companyName').value = location.companyName || '';
                     document.getElementById('templateName').value = location.templateName || '';
                     document.getElementById('noReportRequired').checked = location.noReport || false;
-                    // --- End MODIFIED ---
                     
                     if (locId === 'loc_travelling_default') {
                         document.getElementById('deleteLocationBtn').classList.add('hidden');
@@ -1501,38 +1522,39 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                     state.selectedLocationId = locId; 
                     if('vibrate' in navigator) navigator.vibrate(20);
                     renderLocations(); 
-                    updateHomeScreenButtons(); // --- RENAMED ---
+                    updateHomeScreenButtons();
                 }
             }
         });
+
         cancelLocationBtn.addEventListener('click', hideModals);
+        
         saveLocationBtn.addEventListener('click', () => {
             const id = document.querySelector('#saveLocationBtn').dataset.id;
             const name = document.getElementById('locationName').value.trim();
             const address = document.getElementById('locationAddress').value.trim();
-            // --- MODIFIED: Get new location fields ---
             const companyName = document.getElementById('companyName').value.trim();
             const templateName = document.getElementById('templateName').value.trim();
             const noReport = document.getElementById('noReportRequired').checked;
-            // --- End MODIFIED ---
 
             if (!name || !address) { showAlert("Missing Info", "Please provide both a name and an address for the location."); return; }
+            
             if (id) {
                 const index = state.locations.findIndex(l => l.id === id);
-                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName, noReport }; // MODIFIED
+                 if (index > -1) state.locations[index] = { ...state.locations[index], name, address, companyName, templateName, noReport };
             } else {
-                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName, noReport }); // MODIFIED
+                state.locations.push({ id: `loc_${Date.now()}`, name, address, companyName, templateName, noReport });
             }
             saveState();
             renderLocations();
             updateHomeScreenButtons();
             hideModals();
 
-            // --- MODIFIED: If new/edited location uses custom form, fetch it now ---
             if (templateName) {
                 fetchForm(templateName);
             }
         });
+
         deleteLocationBtn.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
             if (id === 'loc_travelling_default') { showAlert('Cannot Delete', 'The "Travelling" location cannot be deleted.'); return; }
@@ -1540,9 +1562,10 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             if (state.selectedLocationId === id) { state.selectedLocationId = null; }
             saveState();
             renderLocations();
-            updateHomeScreenButtons(); // --- RENAMED ---
+            updateHomeScreenButtons();
             hideModals();
         });
+
         useCurrentLocationBtn.addEventListener('click', () => {
             if (!navigator.geolocation) { showAlert("Not Supported", "Geolocation is not supported by your browser."); return; }
             useCurrentLocationBtn.textContent = "Getting location...";
@@ -1570,11 +1593,13 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                  { timeout: 10000 } 
             );
         });
+
         durationSlider.addEventListener('input', (e) => {
             state.visitDurationMinutes = DURATION_STEPS[parseInt(e.target.value)];
             durationDisplay.textContent = formatDuration(state.visitDurationMinutes);
-            updateHomeScreenButtons(); // --- RENAMED ---
+            updateHomeScreenButtons();
         });
+
         let tapCount = 0;
         let tapTimer = null;
         panicBtn.addEventListener('click', () => {
@@ -1589,7 +1614,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             }
         });
         
-        // --- MODIFIED: clearCacheBtn listener ---
         clearCacheBtn.addEventListener('click', () => {
             showConfirm("Clear All Data?", "Are you sure? This will log you out and clear all saved locations and pending reports. This cannot be undone.", () => {
                 localStorage.clear(); // Clear all
@@ -1612,7 +1636,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                  document.head.appendChild(pseudoElementStyle); 
              }
              pseudoElementStyle.textContent = `#${element.id}::after { transition-duration: ${duration / 1000}s; }`;
-
 
             const start = (e) => {
                 if (element.disabled) return;
@@ -1655,6 +1678,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 const deltaY = Math.abs(currentY - startY);
                 if (deltaX > tolerance || deltaY > tolerance) { cancel(); }
             };
+            // Clean up old listeners first to avoid duplicates
             element.removeEventListener('mousedown', start);
             element.removeEventListener('mouseup', cancel);
             element.removeEventListener('mouseleave', cancel);
@@ -1664,6 +1688,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             element.removeEventListener('touchmove', move);
             element.removeEventListener('mousemove', move);
 
+            // Add new listeners
             element.addEventListener('mousedown', start);
             element.addEventListener('mouseup', cancel);
             element.addEventListener('mouseleave', cancel);
