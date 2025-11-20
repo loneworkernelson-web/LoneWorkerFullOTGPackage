@@ -463,8 +463,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         showModal('confirm');
     }
 
-    // --- UPDATED loadState (WSA v1.1 FIX) ---
-    function loadState() { 
+    // --- UPDATED loadState (WSA v1.12 FIX) ---
+function loadState() { 
         const savedState = JSON.parse(localStorage.getItem('loneWorkerState')); 
         
         const defaultState = {
@@ -482,7 +482,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         // Deep merge settings object
         state.settings = { ...defaultState.settings, ...(savedState ? savedState.settings : {}) };
 
-        // --- ROBUSTNESS FIX: Ensure arrays/objects are correct type ---
         if (!Array.isArray(state.locations)) {
             console.warn("Locations in localStorage was not an array, resetting.");
             state.locations = [];
@@ -495,14 +494,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
              console.warn("CachedForms in localStorage was not an object, resetting.");
             state.cachedForms = {};
         }
-        // --- END FIX ---
         
-        // --- MODIFIED: Ensure templateName & noReport exists ---
         state.locations = state.locations.map(loc => ({
             ...loc,
             companyName: loc.companyName || "",
-            templateName: loc.templateName || "", // Add new templateName
-            noReport: loc.noReport || false // Add new noReport flag
+            templateName: loc.templateName || "", 
+            noReport: loc.noReport || false 
         }));
 
         if (savedState && savedState.activeVisit) { 
@@ -517,17 +514,23 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 name: 'Travelling', 
                 address: 'GPS updates will be sent every 15 minutes.',
                 companyName: 'Internal', 
-                templateName: "", // Uses (Standard) form
-                noReport: true // --- NEW: Travelling never requires a report
+                templateName: "", 
+                noReport: true 
             }); 
         } 
         
+        // --- FORCE URL UPDATE ---
+        // This ensures the app always points to the backend script defined in the setup tool,
+        // even if the user has old settings in their cache.
         const prefilledUrl = "%%GOOGLE_SHEET_URL%%";
-        if (prefilledUrl.startsWith('http') && !state.settings.googleSheetUrl) {
+        if (prefilledUrl.startsWith('http')) {
             state.settings.googleSheetUrl = prefilledUrl;
         }
-        saveState(); // Save state once after all initialization
+        // --- END FORCE UPDATE ---
+
+        saveState(); 
     }
+
     // --- END UPDATED loadState ---
 
     function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
