@@ -1787,8 +1787,7 @@ sendToGoogleSheet({ "Arrival Time": state.activeVisit.arrivalTimeForSheet, "Alar
         if (pinInvalid || duressInvalid) {
             // --- FIX: Populate the inputs before navigating ---
             populateSettingsUI(); 
-            // --- END FIX ---
-
+            
             navigate('settings');
             closeSettingsBtn.style.opacity = '0.5';
             closeSettingsBtn.style.pointerEvents = 'none';
