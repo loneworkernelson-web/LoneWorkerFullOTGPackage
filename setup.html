@@ -9,20 +9,52 @@
     <style>
         .step { display: none; }
         .step.active { display: block; }
-        .step-nav button { transition: background-color 0.2s, color 0.2s; }
-        .step-nav button.current { background-color: #3b82f6; color: white; font-weight: 600; }
-        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background-color: #4b5563; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
+        .step-nav button {
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .step-nav button.current {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4b5563;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
         .copy-btn:hover { background-color: #6b7280; }
         .copy-btn.copied { background-color: #10b981; }
-        strong { color: #60a5fa; font-weight: 600; }
-        details > summary { cursor: pointer; color: #9ca3af; font-size: 0.75rem; margin-top: 0.25rem; }
-        details > summary:hover { color: #60a5fa; }
-        details ol { margin-top: 0.5rem; padding-left: 1.5rem; list-style-type: decimal; }
+        /* Style for bolding key terms */
+        strong { color: #60a5fa; /* A lighter blue for emphasis */ font-weight: 600; }
+        /* Styling for details dropdown */
+        details > summary {
+            cursor: pointer;
+            color: #9ca3af; /* gray-400 */
+            font-size: 0.75rem; /* text-xs */
+            margin-top: 0.25rem; /* mt-1 */
+        }
+        details > summary:hover {
+            color: #60a5fa; /* blue-400 */
+        }
+        details ol {
+            margin-top: 0.5rem; /* mt-2 */
+            padding-left: 1.5rem; /* pl-6 */
+            list-style-type: decimal;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen p-4 md:p-8">
     <div class="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-xl overflow-hidden">
         
+        <!-- Header / Step Navigation -->
         <div class="bg-gray-900 p-4 border-b border-gray-700">
             <h1 class="text-2xl font-bold text-blue-400 text-center">On-the-Go AppSuite - Setup Tool</h1>
         </div>
@@ -40,7 +72,12 @@
             <div id="step1" class="step active">
                 <h2 class="text-xl font-semibold mb-4 text-blue-300">Welcome to the On-the-Go AppSuite Setup Wizard</h2>
                 <p class="text-gray-300 mb-4">This tool will guide you through creating and customizing your **On-the-Go AppSuite (OTG AppSuite)**.</p>
-                <a href="./Documentation.pdf" download="OTG_AppSuite_Documentation.pdf" class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg text-lg mb-6">Download Full Documentation (PDF)</a>
+                <p class="text-gray-300 mb-6">This wizard will generate a <strong>`.zip`</strong> file containing the final, ready-to-host applications for your workers and monitors. You can choose between a **Simple** (Safety-Only) app or an **Advanced** (Safety + Reporting) app during setup.</p>
+                
+                <a href="./OTG_AppSuite_Documentation.md" target="_blank" class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg text-lg mb-6">
+                    View Documentation
+                </a>
+                
                 <p class="text-gray-300 mb-6">Follow the steps in order. This page will fetch the necessary template files from this repository to build your custom package.</p>
                 <button type="button" onclick="nextStep()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Start Setup</button>
             </div>
@@ -50,9 +87,13 @@
                 <h2 class="text-xl font-semibold mb-4 text-blue-300">Step 2: Set Up Your Google Sheet</h2>
                  <ol class="list-decimal list-inside text-gray-300 space-y-3 mb-6">
                     <li>Go to <a href="https://sheets.new" target="_blank" class="text-blue-400 hover:underline"><strong>sheets.new</strong></a> to create a new, blank Google Sheet. Give it a name (e.g., "OTG AppSuite Data").</li>
+                    
+                    <!-- Instructions for Visits (Simple) -->
                     <li id="visitsInstruction">The first sheet tab (default "Sheet1") will be your safety log. **Rename this tab to `Visits`**.</li>
                     <li>In this <strong>`Visits`</strong> sheet, click <strong>once</strong> on cell <strong>A1</strong>.</li>
                     <li>Click the "Copy Headers" button below and <strong>Paste</strong> the text. The headers will fill row 1.</li>
+                    
+                    <!-- Instructions for Checklists (Advanced) -->
                     <li id="checklistsInstruction" class="hidden mt-4 text-yellow-300"><strong>For Advanced Reporting:</strong>
                         <ul class="list-disc list-inside ml-6 mt-2 p-2 bg-gray-700 rounded-md space-y-1">
                             <li>Click the <strong>`+`</strong> icon at the bottom of the sheet to add a new tab.</li>
@@ -73,15 +114,20 @@
             <!-- Step 3: Deploy Google Apps Script -->
             <div id="step3" class="step">
                 <h2 class="text-xl font-semibold mb-4 text-blue-300">Step 3: Configure & Deploy Script</h2>
+                <p class="text-gray-300 mb-4">First, provide your configuration. This will be injected into the script you deploy.</p>
+                
                 <div class="space-y-4 mb-6 ml-6">
                     <div>
                         <label for="organisationName" class="block text-sm font-medium text-gray-300">Organisation Name</label>
                         <input type="text" id="organisationName" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., ACME Corp">
+                        <p class="text-xs text-gray-400 mt-1">This will be used for app titles and branding.</p>
                     </div>
                     <div> 
                         <label for="secretKeyStep3" class="block text-sm font-medium text-gray-300">Secret Key</label>
                         <input type="password" id="secretKeyStep3" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Enter a strong, private password">
+                        <p class="text-xs text-gray-400 mt-1">Required to secure your Monitoring Dashboard.</p>
                     </div>
+                    <!-- Config Fields -->
                     <div>
                         <label for="firstAlert" class="block text-sm font-medium text-gray-300">First Overdue Alert (Minutes)</label>
                         <input type="number" id="firstAlert" value="15" min="1" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
@@ -98,36 +144,50 @@
                         <label for="checkinInterval" class="block text-sm font-medium text-gray-300">Check-in Interval (Minutes)</label>
                         <input type="number" id="checkinInterval" value="30" min="5" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    <div class="flex items-center">
+                    
+                    <!-- Advanced Toggle -->
+                    <div class="flex items-center border-t border-gray-700 pt-4">
                         <input id="enableReporting" onchange="toggleReporting(this.checked)" type="checkbox" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
                         <label for="enableReporting" class="ml-2 block text-sm font-medium text-gray-300">Enable Advanced Visit Reporting (Optional)</label>
                     </div>
 
                     <div id="advancedReportingOptions" class="hidden ml-6 space-y-4">
-                        <p class="text-xs text-yellow-300">**Advanced Mode:** Enables visit reporting, PDF generation, and AI features.</p>
+                        <p class="text-xs text-yellow-300">**Advanced Mode:** Enables reports, custom checklists, and travel distance calc.</p>
                         <div> 
                             <label for="geminiApiKeyStep3" class="block text-sm font-medium text-gray-300">Gemini API Key (Optional)</label>
                             <input type="password" id="geminiApiKeyStep3" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Paste your API key here">
+                            <p class="text-xs text-gray-400 mt-1">For AI grammar/spelling correction.</p> 
                         </div>
-                        <!-- === NEW: ORS KEY === -->
                         <div> 
-                            <label for="orsApiKey" class="block text-sm font-medium text-gray-300">OpenRouteService API Key (Optional)</label>
-                            <input type="password" id="orsApiKey" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Paste ORS Key here">
-                            <p class="text-xs text-gray-400 mt-1">Required for automatic distance calculation on visit completion. Free from openrouteservice.org.</p>
+                            <label for="orsApiKeyStep3" class="block text-sm font-medium text-gray-300">OpenRouteService API Key (Optional)</label>
+                            <input type="password" id="orsApiKeyStep3" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Paste your API key here">
+                            <p class="text-xs text-gray-400 mt-1">For automatic driving distance calculation.</p> 
                         </div>
-                        <!-- === END NEW === -->
                     </div>
                 </div>
 
                 <ol class="list-decimal list-inside text-gray-300 space-y-3 mb-6" start="1">
                     <li>In your Google Sheet, click <strong>`Extensions`</strong> > <strong>`Apps Script`</strong>.</li>
                     <li>Delete any code in the <strong>`Code.gs`</strong> file.</li>
-                    <li>Click the <strong>"Copy Script"</strong> button below.</li>
-                    <li><strong>Paste</strong> the code into the empty <strong>`Code.gs`</strong> editor and click **Save**.</li>
-                    <li>Click the <strong>`Deploy`</strong> button > <strong>`New deployment`</strong> > Select <strong>`Web app`</strong> > Execute as <strong>`Me`</strong> > Access <strong>`Anyone`</strong> > Click <strong>`Deploy`</strong>.</li>
-                    <li><strong>Authorize</strong> the script.</li>
-                    <li>**Copy the "Web app URL"**.</li>
-                    <li>Set up the <strong>Trigger</strong>: <strong>`checkOverdueWorkers`</strong>, <strong>`Time-driven`</strong>, <strong>`Minutes timer`</strong>, <strong>`Every 5 minutes`</strong>.</li>
+                    <li>Click the <strong>"Copy Script"</strong> button below to copy the correct backend code (with your keys injected).</li>
+                    <li><strong>Paste</strong> the copied code into the empty <strong>`Code.gs`</strong> editor and click **Save**.</li>
+                    <li>Click the <strong>`Deploy`</strong> button (top right), select <strong>`New deployment`</strong>.
+                        <ul class="list-disc list-inside ml-6 mt-2 p-2 bg-gray-700 rounded-md">
+                            <li>Click the Gear icon for "Select type" and choose <strong>`Web app`</strong>.</li>
+                            <li>For "Execute as", select <strong>`Me`</strong>.</li>
+                            <li>For "Who has access", select <strong>`Anyone`</strong>.</li>
+                            <li>Click <strong>`Deploy`</strong>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Authorize</strong> the script permissions.</li>
+                    <li>After deploying, **copy the "Web app URL"**. You will need it in the next step.</li>
+                    <li>Set up the <strong>trigger</strong>:
+                        <ul class="list-disc list-inside ml-6 mt-2 p-2 bg-gray-700 rounded-md">
+                            <li>Click the "Triggers" icon (alarm clock) on the left.</li>
+                            <li>Click <strong>`Add Trigger`</strong>.</li>
+                            <li>Set function to <strong>`checkOverdueWorkers`</strong>, source to <strong>`Time-driven`</strong>, type to <strong>`Minutes timer`</strong>, and interval to <strong>`Every 5 minutes`</strong>. Click <strong>`Save`</strong>.</li>
+                        </ul>
+                    </li>
                 </ol>
 
                 <div class="relative bg-gray-900 rounded-lg mb-4 h-64 overflow-y-auto">
@@ -140,6 +200,7 @@
             <!-- Step 4: Configure Apps -->
             <div id="step4" class="step">
                 <h2 class="text-xl font-semibold mb-4 text-blue-300">Step 4: Configure Apps</h2>
+                <p class="text-gray-300 mb-6">Enter the Web App URL from the previous step and choose your app logo.</p>
                 <div class="space-y-4">
                     <div>
                         <label for="scriptUrl" class="block text-sm font-medium text-gray-300">Web App URL</label>
@@ -148,6 +209,7 @@
                      <div>
                         <label for="logoUrl" class="block text-sm font-medium text-gray-300">Company Logo URL (Optional)</label>
                         <input type="url" id="logoUrl" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="https://your-logo.com/image.png">
+                        <p class="text-xs text-gray-400 mt-1">If provided, this will replace the default icon for the Worker PWA and appear in the Monitor App header.</p> 
                     </div>
                 </div>
                 <button type="button" onclick="testAndProceed()" class="mt-8 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg">Test Connection & Proceed</button>
@@ -157,6 +219,7 @@
             <!-- Step 5: Download Apps -->
             <div id="step5" class="step">
                 <h2 class="text-xl font-semibold mb-4 text-blue-300">Step 5: Download Your Customized Apps</h2>
+                <p class="text-gray-300 mb-6">Your configuration is correct. Click the button below to generate and download a <strong>`.zip`</strong> file containing your customized <strong>`WorkerApp`</strong> and <strong>`MonitorApp`</strong> folders, plus a backup of the script text.</p>
                 <button type="button" id="downloadBtn" onclick="generateZip()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg">Generate & Download App Package (.zip)</button>
                 <div id="zipStatus" class="text-center text-gray-400 mt-4"></div>
                  <button type="button" onclick="nextStep()" class="mt-6 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg">Next Step: Finish</button>
@@ -164,10 +227,9 @@
 
             <!-- Step 6: Documentation -->
             <div id="step6" class="step">
-                <h2 class="text-xl font-semibold mb-4 text-green-400">Setup Complete & Documentation</h2>
-                <a href="./Documentation.pdf" download="OTG_AppSuite_Documentation.pdf" class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg text-lg">
-                    Download Full Documentation (PDF)
-                </a>
+                <h2 class="text-xl font-semibold mb-4 text-green-400">Setup Complete</h2>
+                 <p class="text-gray-300 mb-4">You have successfully generated the application package!</p>
+                <p class="text-gray-300 mb-6">For detailed instructions on how to host the downloaded app folders using GitHub Pages and distribute the links to your team, please refer to the documentation.</p>
             </div>
         </div>
     </div>
@@ -181,7 +243,7 @@
         organisationName: "",
         isAdvanced: false,
         geminiKey: "",
-        orsKey: "", // --- NEW ---
+        orsKey: "",
         deployedUrl: "",
         escalationMinutes: "5",
         firstAlertMinutes: "15",
@@ -197,7 +259,8 @@
         const baseUrl = window.location.href; 
         const fetchTemplate = async (fileName) => {
             const templateUrl = new URL(`Templates/${fileName}?t=${Date.now()}`, baseUrl).href; 
-            const response = await fetch(templateUrl, { cache: "no-store" }); 
+            console.log(`Fetching: ${templateUrl}`); 
+            const response = await fetch(templateUrl, { cache: "no-store" });
             if (!response.ok) {
                 throw new Error(`Failed to load ${fileName} from ${templateUrl} - Status: ${response.status}`);
             }
@@ -218,8 +281,13 @@
             for (const file of templateFiles) {
                 await fetchTemplate(file);
             }
+            console.log('All code templates loaded successfully.');
             templatesLoaded = true; 
-            if (document.getElementById('scriptPreview')) document.getElementById('scriptPreview').textContent = templates['apps_script_simple.txt'];
+            
+            const scriptPreviewEl = document.getElementById('scriptPreview');
+            if (scriptPreviewEl && templates['apps_script_simple.txt']) {
+                scriptPreviewEl.textContent = templates['apps_script_simple.txt'];
+            }
             
             const enableCheckinEl = document.getElementById('enableCheckin');
             const checkinIntervalDivEl = document.getElementById('checkinIntervalDiv');
@@ -235,7 +303,9 @@
 
         } catch (error) {
             console.error("Template Loading Error:", error); 
-            alert(`Error: Could not load template files. ${error.message}. Please ensure your 'Templates' folder (case-sensitive) contains all 7 required files.`);
+            templatesLoaded = false; 
+            alert(`Error: Could not load template files. ${error.message}. Please ensure your 'Templates' folder (case-sensitive) contains all required files. Check the browser console (F12) for more details.`);
+            document.querySelectorAll('button').forEach(btn => btn.disabled = true);
         }
     };
     
@@ -250,26 +320,37 @@
             checklistsInstruction.classList.remove('hidden');
             currentHeaders = headersAdvanced;
             headersDisplayText.textContent = headersAdvanced.replace(/\t/g, ',');
-            if(templates['apps_script_advanced.txt']) scriptPreview.textContent = templates['apps_script_advanced.txt'];
+            if(templates['apps_script_advanced.txt']) {
+                scriptPreview.textContent = templates['apps_script_advanced.txt'];
+            }
         } else {
             advancedOptions.classList.add('hidden');
             checklistsInstruction.classList.add('hidden');
             currentHeaders = headersSimple;
             headersDisplayText.textContent = headersSimple.replace(/\t/g, ',');
-            if(templates['apps_script_simple.txt']) scriptPreview.textContent = templates['apps_script_simple.txt'];
+            if(templates['apps_script_simple.txt']) {
+                scriptPreview.textContent = templates['apps_script_simple.txt'];
+            }
         }
     }
 
     function showStep(step) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-        document.getElementById(`step${step}`).classList.add('active');
+        const stepEl = document.getElementById(`step${step}`);
+        if (stepEl) stepEl.classList.add('active');
+        
         document.querySelectorAll('.step-nav button').forEach(el => el.classList.remove('current'));
-        document.getElementById(`nav${step}`).classList.add('current');
+        const navEl = document.getElementById(`nav${step}`);
+        if (navEl) navEl.classList.add('current');
+        
         currentStep = step;
     }
 
     function nextStep() {
-        if (!templatesLoaded && currentStep > 0) { alert("Templates loading..."); return; }
+        if (!templatesLoaded && currentStep > 0) { 
+             alert("Templates are still loading or failed to load. Please wait.");
+             return;
+        }
 
         if (currentStep === 3) {
             const keyInput = document.getElementById('secretKeyStep3');
@@ -278,19 +359,18 @@
             const firstAlertInput = document.getElementById('firstAlert'); 
             const checkinEnabledInput = document.getElementById('enableCheckin');
             const checkinIntervalInput = document.getElementById('checkinInterval');
-            const geminiInput = document.getElementById('geminiApiKeyStep3');
-            const orsInput = document.getElementById('orsApiKey'); // --- NEW ---
+            const orsKeyInput = document.getElementById('orsApiKeyStep3');
 
-            if (!keyInput.value || !orgNameInput.value || !escalationInput.value || !firstAlertInput.value) {
-                alert("Please fill in all required fields.");
-                return; 
-            }
+            if (!keyInput || !keyInput.value) { alert("Please enter a Secret Key."); return; }
+            if (!orgNameInput || !orgNameInput.value) { alert("Please enter an Organisation Name."); return; }
+            if (!escalationInput || !escalationInput.value) { alert("Please enter an Escalation Time."); return; }
+            if (!firstAlertInput || !firstAlertInput.value) { alert("Please enter a First Alert time."); return; }
             
             config.secretKey = keyInput.value;
             config.organisationName = orgNameInput.value;
             config.isAdvanced = document.getElementById('enableReporting').checked;
-            config.geminiKey = geminiInput.value;
-            config.orsKey = orsInput.value; // --- NEW ---
+            config.geminiKey = document.getElementById('geminiApiKeyStep3').value;
+            config.orsKey = orsKeyInput ? orsKeyInput.value : "";
             config.escalationMinutes = escalationInput.value; 
             config.firstAlertMinutes = firstAlertInput.value; 
             config.checkinEnabled = checkinEnabledInput.checked;
@@ -299,89 +379,136 @@
         
         if (currentStep === 4) {
              const scriptUrlInput = document.getElementById('scriptUrl');
-             if (!scriptUrlInput.value.includes('/exec')) { alert("Invalid Web App URL"); return; }
+             if (!scriptUrlInput || !scriptUrlInput.value.includes('/exec')) {
+                 alert("Please paste the 'Web app URL' from Step 3.");
+                 return;
+             }
              config.deployedUrl = scriptUrlInput.value;
         }
         
-        if (currentStep < 6) showStep(currentStep + 1);
+        const maxSteps = 6;
+        if (currentStep < maxSteps) {
+            const nextNav = document.getElementById(`nav${currentStep + 1}`);
+            if (nextNav) {
+                nextNav.disabled = false;
+                nextNav.classList.remove('text-gray-400');
+            } 
+            showStep(currentStep + 1);
+        }
     }
 
     function copyHeaders(button) {
+         if (!navigator.clipboard) { alert('Clipboard API not available.'); return; }
         navigator.clipboard.writeText(currentHeaders).then(() => {
             button.innerText = 'Copied!';
-            setTimeout(() => { button.innerText = 'Copy Headers'; }, 2000);
-        });
+            button.classList.add('copied');
+            setTimeout(() => { button.innerText = 'Copy Headers'; button.classList.remove('copied'); }, 2000);
+        }).catch(err => alert('Failed to copy headers.'));
     }
 
     function copyInjectedScript(button) {
-        if (!templatesLoaded) return;
-        const isAdvanced = document.getElementById('enableReporting').checked;
-        const templateName = isAdvanced ? 'apps_script_advanced.txt' : 'apps_script_simple.txt';
-        let injectedScript = templates[templateName];
+         if (!templatesLoaded) { alert('Templates are still loading.'); return; }
+         
+        const { secretKey, organisationName, isAdvanced, geminiKey, orsKey, escalationMinutes, firstAlertMinutes, checkinEnabled, checkinInterval } = config;
         
-        injectedScript = injectedScript.replace(/%%SECRET_KEY%%/g, document.getElementById('secretKeyStep3').value);
-        injectedScript = injectedScript.replace(/%%ORGANISATION_NAME%%/g, document.getElementById('organisationName').value || "On-the-Go AppSuite");
-        injectedScript = injectedScript.replace(/%%ESCALATION_MINUTES%%/g, document.getElementById('escalationMinutes').value);
-        injectedScript = injectedScript.replace(/%%FIRST_ALERT_MINUTES%%/g, document.getElementById('firstAlert').value);
-        injectedScript = injectedScript.replace(/%%CHECKIN_ENABLED%%/g, document.getElementById('enableCheckin').checked); 
-        injectedScript = injectedScript.replace(/%%CHECKIN_INTERVAL%%/g, document.getElementById('checkinInterval').value);
+        if (!secretKey) { alert("Please enter a Secret Key."); return; }
+
+        const templateName = isAdvanced ? 'apps_script_advanced.txt' : 'apps_script_simple.txt';
+        const template = templates[templateName];
+        
+        if (!template) { alert('Error: Script template not loaded.'); return; }
+        
+        let injectedScript = template.replace(/%%SECRET_KEY%%/g, secretKey);
+        injectedScript = injectedScript.replace(/%%ORGANISATION_NAME%%/g, organisationName);
+        injectedScript = injectedScript.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
+        injectedScript = injectedScript.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlertMinutes);
+        injectedScript = injectedScript.replace(/%%CHECKIN_ENABLED%%/g, checkinEnabled); 
+        injectedScript = injectedScript.replace(/%%CHECKIN_INTERVAL%%/g, checkinInterval);
 
         if (isAdvanced) {
-            const geminiKey = document.getElementById('geminiApiKeyStep3').value || "YOUR_GEMINI_API_KEY_HERE";
-            injectedScript = injectedScript.replace(/%%GEMINI_API_KEY%%/g, geminiKey);
+            injectedScript = injectedScript.replace(/%%GEMINI_API_KEY%%/g, geminiKey || "YOUR_GEMINI_API_KEY_HERE");
         }
 
         navigator.clipboard.writeText(injectedScript).then(() => {
-            button.innerText = 'Copied!';
-            setTimeout(() => { button.innerText = 'Copy Script'; }, 2000);
-        });
+            button.innerText = 'Copied!'; button.classList.add('copied');
+            setTimeout(() => { button.innerText = 'Copy Script'; button.classList.remove('copied'); }, 2000);
+        }).catch(err => alert('Failed to copy.'));
     }
 
     function validateUrl(input) {
+         if (!input) return; 
         const urlPattern = /^https:\/\/script\.google\.com\/macros\/s\/.*\/exec$/;
-        input.style.borderColor = (input.value && !urlPattern.test(input.value)) ? '#ef4444' : ''; 
+        if (input.value && !urlPattern.test(input.value)) { input.style.borderColor = '#ef4444'; } 
+        else { input.style.borderColor = ''; }
     }
 
     function testAndProceed() {
-        const url = document.getElementById('scriptUrl').value;
-        const key = document.getElementById('secretKeyStep3').value; 
+         if (!templatesLoaded) { alert('Templates are still loading.'); return; }
+        const urlInput = document.getElementById('scriptUrl');
+        const keyInput = document.getElementById('secretKeyStep3'); 
         const statusEl = document.getElementById('testStatus');
         
-        if (!url || !key) { statusEl.innerText = 'Missing URL or Key.'; return; }
-        statusEl.innerText = 'Testing...';
+        if (!urlInput || !keyInput || !statusEl) return; 
+
+        const url = urlInput.value;
+        const key = keyInput.value; 
+
+        if (!url || !key) { statusEl.innerText = 'Please fill in URL and Key.'; return; }
+
+        statusEl.innerText = 'Testing connection...';
 
         const script = document.createElement('script');
         const callbackName = 'jsonp_callback_' + Date.now();
+        let timer;
+
+        const cleanupJsonp = () => { clearTimeout(timer); delete window[callbackName]; if(document.body.contains(script)) document.body.removeChild(script); };
         
         window[callbackName] = function(data) {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            if (Array.isArray(data)) {
-                statusEl.innerText = 'Success!';
+            cleanupJsonp();
+            if (data.status === 'error' && data.message.includes('Access Denied')) {
+                statusEl.innerText = 'Error: Access Denied. Your Secret Key is incorrect.';
+            } else if (Array.isArray(data)) {
+                statusEl.innerText = 'Success! Connection verified.';
                 nextStep(); 
             } else {
-                statusEl.innerText = 'Error: ' + (data.message || 'Unknown');
+                statusEl.innerText = 'Error: Received unexpected data.';
             }
         };
         
         script.src = url + '?callback=' + callbackName + '&token=' + encodeURIComponent(key);
-        script.onerror = () => {
-            statusEl.innerText = 'Connection Failed.';
-        };
+        script.onerror = () => { cleanupJsonp(); statusEl.innerText = 'Error: Could not connect.'; };
+
+        timer = setTimeout(() => { if (window[callbackName]) { cleanupJsonp(); statusEl.innerText = 'Error: Timeout.'; } }, 20000); 
+        
         document.body.appendChild(script);
     }
 
     async function generateZip() {
-        const statusEl = document.getElementById('zipStatus');
-        statusEl.innerText = 'Building...';
-        try {
-            const zip = new JSZip();
-            const { secretKey, organisationName, isAdvanced, geminiKey, orsKey, deployedUrl, escalationMinutes, firstAlertMinutes, checkinEnabled, checkinInterval } = config;
-            const logoUrl = document.getElementById('logoUrl').value || 'https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png';
+         if (!templatesLoaded) { alert('Templates are still loading.'); return; }
 
+        const statusEl = document.getElementById('zipStatus');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        statusEl.innerText = 'Gathering files...';
+        downloadBtn.disabled = true;
+        downloadBtn.classList.add('bg-gray-500', 'cursor-not-allowed');
+
+        try {
+            if (typeof JSZip === 'undefined') throw new Error("JSZip library not loaded.");
+            const zip = new JSZip();
+            
+            const { secretKey, organisationName, isAdvanced, geminiKey, orsKey, deployedUrl, escalationMinutes, firstAlertMinutes, checkinEnabled, checkinInterval } = config;
+
+            const logoUrlInput = document.getElementById('logoUrl');
+            const logoUrl = logoUrlInput.value || 'https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png'; 
+            const geminiKeyToInject = geminiKey || "YOUR_GEMINI_API_KEY_HERE"; 
+            const orsKeyToInject = orsKey || "YOUR_ORS_API_KEY_HERE";
+            
             const workerTemplateName = isAdvanced ? 'worker_app_advanced.txt' : 'worker_app_simple.txt';
             const scriptTemplateName = isAdvanced ? 'apps_script_advanced.txt' : 'apps_script_simple.txt';
 
+            // 1. Worker App
+            statusEl.innerText = 'Processing Worker App...';
             let workerApp = templates[workerTemplateName];
             workerApp = workerApp.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlertMinutes);
             workerApp = workerApp.replace(/%%CHECKIN_ENABLED%%/g, checkinEnabled);
@@ -390,48 +517,63 @@
             workerApp = workerApp.replace(/%%GOOGLE_SHEET_URL%%/g, deployedUrl);
             workerApp = workerApp.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             workerApp = workerApp.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
-            // --- NEW: Inject ORS Key ---
+            
             if (isAdvanced) {
-                workerApp = workerApp.replace(/%%ORS_API_KEY%%/g, orsKey || "");
+                workerApp = workerApp.replace(/%%ORS_API_KEY%%/g, orsKeyToInject);
             }
             
             const workerFolder = zip.folder('WorkerApp'); 
             workerFolder.file('index.html', workerApp);
             workerFolder.file('sw.js', templates['sw.js']);
 
+            // 2. Manifest
             let manifest = templates['manifest.json'];
             manifest = manifest.replace(/https:\/\/i\.postimg\.cc\/dVmVg3Pn\/favicon-logo-for-LWSApp\.png/g, logoUrl);
             manifest = manifest.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             workerFolder.file('manifest.json', manifest);
 
+            // 3. Monitor App
+            statusEl.innerText = 'Processing Monitor App...';
             let monitorApp = templates['monitor_app_template.txt'];
             monitorApp = monitorApp.replace(/%%LOGO_URL%%/g, logoUrl); 
             monitorApp = monitorApp.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             const monitorFolder = zip.folder('MonitorApp'); 
             monitorFolder.file('index.html', monitorApp); 
 
+            // 4. Apps Script
+            statusEl.innerText = 'Processing Apps Script file...';
             let appsScript = templates[scriptTemplateName];
             appsScript = appsScript.replace(/%%SECRET_KEY%%/g, secretKey);
             appsScript = appsScript.replace(/%%ORGANISATION_NAME%%/g, organisationName);
             appsScript = appsScript.replace(/%%ESCALATION_MINUTES%%/g, escalationMinutes);
             appsScript = appsScript.replace(/%%FIRST_ALERT_MINUTES%%/g, firstAlertMinutes);
-            appsScript = appsScript.replace(/%%CHECKIN_ENABLED%%/g, checkinEnabled); 
-            appsScript = appsScript.replace(/%%CHECKIN_INTERVAL%%/g, checkinInterval);
-
+            
             if (isAdvanced) {
-                appsScript = appsScript.replace(/%%GEMINI_API_KEY%%/g, geminiKey || "YOUR_GEMINI_API_KEY_HERE");
+                appsScript = appsScript.replace(/%%GEMINI_API_KEY%%/g, geminiKeyToInject);
             }
             zip.file('01-PASTE_THIS_INTO_APPS_SCRIPT.txt', appsScript);
              
+            // 5. Generate
+            statusEl.innerText = 'Generating .zip file...';
             const content = await zip.generateAsync({ type: 'blob' });
+            
             const a = document.createElement('a');
             a.href = URL.createObjectURL(content);
             a.download = 'OTG_AppSuite_Package.zip'; 
+            document.body.appendChild(a);
             a.click();
-            statusEl.innerText = 'Done!';
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href); 
+
+            statusEl.innerText = 'App package download initiated!';
             
         } catch (error) {
-            statusEl.innerText = `Error: ${error.message}`;
+            console.error("Error during zip generation:", error);
+            statusEl.innerText = `Error generating zip: ${error.message}`;
+        } finally {
+             downloadBtn.disabled = false;
+             downloadBtn.classList.remove('bg-gray-500', 'cursor-not-allowed');
+             downloadBtn.classList.add('hover:bg-blue-700');
         }
     }
 </script>
