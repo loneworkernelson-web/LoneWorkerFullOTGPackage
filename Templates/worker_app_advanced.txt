@@ -283,11 +283,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     </div>
 </div>
 <script>
-    // --- TEMPLATE PLACEHOLDERS ---
-    var FIRST_ALERT_MINUTES = "%%FIRST_ALERT_MINUTES%%";
-    // ... existing ...
-    var ORS_API_KEY = "%%ORS_API_KEY%%"; // <--- ADD THIS
-let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
+    <script>
+    let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
     let quickStatBtn;
     let reportModal, reportModalTitle, reportFormContainer, reportFormChecklists, reportNotes, reportLoading, cancelReportBtn, submitReportBtn, uploadQueueBanner;
     let confirmModal, confirmModalTitle, confirmModalMessage, confirmModalCancelBtn, confirmModalOkBtn;
@@ -318,6 +315,7 @@ let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, in
     var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
     var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
     var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
+    var ORS_API_KEY = "%%ORS_API_KEY%%";
 
     let synth, checkinCountdownInterval;
     let lastBatteryReportTime = 0; 
@@ -422,7 +420,6 @@ let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, in
             state.locations.push({ id: 'loc_travelling_default', name: 'Travelling', address: 'GPS updates will be sent every 15 minutes.', companyName: 'Internal', templateName: "", noReport: true }); 
         } 
         
-        // --- FIX: Force URL Injection ---
         const prefilledUrl = "%%GOOGLE_SHEET_URL%%";
         if (prefilledUrl.startsWith('http')) {
             state.settings.googleSheetUrl = prefilledUrl;
@@ -432,11 +429,9 @@ let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, in
 
     function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
     
-function renderLocations() {
+    function renderLocations() {
         locationList.innerHTML = ''; 
-        if (state.locations.length === 0) { 
-            locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; 
-        }
+        if (state.locations.length === 0) { locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; }
         
         state.locations.sort((a,b) => a.name.localeCompare(b.name)).forEach(loc => { 
             const isSelected = loc.id === state.selectedLocationId; 
@@ -469,8 +464,10 @@ function renderLocations() {
             locationList.appendChild(locationEl); 
         });
     }
+    // End of Part 2
 
-    function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; const hours = Math.floor(minutes / 60); const mins = minutes % 60; return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`; }
+
+function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; const hours = Math.floor(minutes / 60); const mins = minutes % 60; return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`; }
     
     function updateHomeScreenButtons() { 
         if (state.selectedLocationId) { 
