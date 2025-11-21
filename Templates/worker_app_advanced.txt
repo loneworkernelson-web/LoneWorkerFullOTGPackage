@@ -938,19 +938,33 @@ async function showReportModal(isFromAlert = false) { // Note: Added async
         buildReportForm(checklistItems, calculatedDistance); 
     }
     
-    function buildReportForm(items, calculatedDistance = null) { // Added param
+    /**
+     * Helper to build the checklist HTML from an array of objects.
+     */
+    function buildReportForm(items, calculatedDistance = null) {
          reportFormChecklists.innerHTML = items.map((item, index) => {
-            // ... (header logic same) ...
-            // ... (textarea logic same) ...
+            if (!item || typeof item.text === 'undefined') {
+                 console.warn("Invalid checklist item:", item);
+                 return ''; 
+            }
+
+            if (item.type === 'header') {
+                return `<h3 class="text-lg font-semibold text-blue-300 mt-4 mb-2">${item.text}</h3>`;
             
+            } else if (item.type === 'textarea') {
+                return `
+                <div class="mt-4">
+                    <label for="wsa-note-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label>
+                    <textarea id="wsa-note-${index}" data-header="${item.text}" class="wsa-custom-note mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
+                </div>
+                `;
             } else if (item.type === 'number') { 
-                // --- NEW: Pre-fill Distance ---
+                // --- Pre-fill Distance Logic ---
                 let value = "";
                 // Check if this field looks like a distance field (e.g., "$ KMs", "$ Distance")
                 if (calculatedDistance && /km|mil|dist/i.test(item.text)) {
                     value = calculatedDistance;
                 }
-                // --- END NEW ---
                 
                 return `
                 <div class="mt-4">
@@ -958,10 +972,17 @@ async function showReportModal(isFromAlert = false) { // Note: Added async
                     <input type="number" id="wsa-num-${index}" value="${value}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="decimal" step="0.1">
                 </div>
                 `;
-            } 
-            // ... (checkbox logic same) ...
+            } else { 
+                // Default to checkbox
+                return `<label for="check-${index}" class="flex items-center p-2 bg-gray-900 rounded-md cursor-pointer">
+                    <input id="check-${index}" name="${item.text}" type="checkbox" class="h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                    <span class="ml-3 text-gray-300">${item.text}</span>
+                </label>`;
+            }
          }).join('');
-         // ...
+         
+        reportFormContainer.classList.remove('hidden');
+        submitReportBtn.disabled = false;
     }
 
     function submitReport() {
