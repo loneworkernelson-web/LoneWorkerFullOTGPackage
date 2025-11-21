@@ -435,16 +435,40 @@ let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, in
 
     function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
     
-    function renderLocations() {
-        locationList.innerHTML = ''; if (state.locations.length === 0) { locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; }
+function renderLocations() {
+        locationList.innerHTML = ''; 
+        if (state.locations.length === 0) { 
+            locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; 
+        }
+        
         state.locations.sort((a,b) => a.name.localeCompare(b.name)).forEach(loc => { 
             const isSelected = loc.id === state.selectedLocationId; 
+            
             let templateInfo = loc.templateName ? ` (${loc.templateName})` : ' ((Standard))';
             if (loc.noReport) templateInfo = " (No Report)";
+            
             const companyHtml = loc.companyName ? `<p class="text-sm text-blue-400">${loc.companyName}${templateInfo}</p>` : '';
+            
+            const baseClass = "selectable-item p-3 rounded-lg cursor-pointer border-2 transition-transform duration-100";
+            const activeClass = isSelected ? 'bg-blue-900/50 border-blue-500' : 'bg-gray-800 border-transparent hover:border-gray-600';
+            
             const locationEl = document.createElement('div'); 
-            locationEl.className = `selectable-item p-3 rounded-lg cursor-pointer border-2 transition-transform duration-100 ${isSelected ? 'bg-blue-900/50 border-blue-500' : 'bg-gray-800 border-transparent hover:border-gray-600'}`; 
-            locationEl.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-semibold">${loc.name}</p><p class="text-sm text-gray-400">${loc.address}</p>${companyHtml}</div><button type="button" class="edit-location-btn p-2 rounded-full hover:bg-gray-700" data-id="${loc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button></div>`; 
+            locationEl.className = `${baseClass} ${activeClass}`;
+            
+            locationEl.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold">${loc.name}</p>
+                        <p class="text-sm text-gray-400">${loc.address}</p>
+                        ${companyHtml}
+                    </div>
+                    <button type="button" class="edit-location-btn p-2 rounded-full hover:bg-gray-700" data-id="${loc.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                    </button>
+                </div>`; 
+            
             locationList.appendChild(locationEl); 
         });
     }
