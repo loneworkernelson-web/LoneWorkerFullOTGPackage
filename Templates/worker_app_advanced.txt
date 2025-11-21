@@ -74,12 +74,10 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 </div>
 <input id="durationSlider" type="range" min="0" max="14" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
 </div>
-<!-- === Button Group === -->
 <div class="flex space-x-4 flex-shrink-0">
     <button type="button" id="quickStatBtn" disabled class="flex-1 bg-teal-900 text-teal-700 font-bold py-4 px-4 rounded-lg text-lg transition-colors duration-300">Quick Stat</button>
     <button type="button" id="arrivedBtn" disabled class="long-press-btn relative flex-2 bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 w-2/3">Select Location</button>
 </div>
-<!-- === END Button Group === -->
 </div>
 </div>
 </div>
@@ -126,15 +124,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 <div><label for="pinCode" class="block text-sm font-medium text-gray-400">Normal 4-Digit PIN</label><input type="password" id="pinCode" pattern="[0-9]*" inputmode="numeric" maxlength="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
 <div><label for="duressPin" class="block text-sm font-medium text-gray-400">Duress 4-Digit PIN (Silent Alarm)</label><input type="password" id="duressPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
 <div><label for="googleSheetUrl" class="block text-sm font-medium text-gray-400">Google Sheet Web App URL</label><input type="url" id="googleSheetUrl" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
-
-<!-- === NEW: Troubleshooting Section === -->
 <div class="border-t border-gray-700 pt-4 mt-4">
      <label class="block text-sm font-medium text-gray-400">Troubleshooting</label>
      <button type="button" id="clearCacheBtn" class="mt-2 w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg">Clear Cached Forms & Data</button>
      <p class="text-xs text-gray-500 mt-1">If your report forms are not updating, click this button to clear the app's cache and re-sync all forms.</p>
 </div>
-<!-- === END NEW === -->
-
 </div>
 </div>
 <div class="pt-4 flex-shrink-0"><button type="button" id="saveSettingsBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Save Settings</button></div>
@@ -148,8 +142,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         <div class="space-y-4">
             <div><label for="locationName" class="block text-sm font-medium text-gray-400">Location Name</label><input type="text" id="locationName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
             <div><label for="locationAddress" class="block text-sm font-medium text-gray-400">Location Address</label><input type="text" id="locationAddress" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"><button type="button" id="useCurrentLocationBtn" class="mt-2 text-sm text-blue-400 hover:text-blue-300">Use Current Location</button></div>
-            
-            <!-- === MODIFIED: Template Name === -->
             <div class="border-t border-gray-700 pt-4">
                  <label for="companyName" class="block text-sm font-medium text-gray-400">Report As: (Company Name)</label>
                  <input type="text" id="companyName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. Smith & Co.">
@@ -159,12 +151,10 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <input type="text" id="templateName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Leave blank for (Standard) form">
                  <p class="text-xs text-gray-500 mt-1">Enter the exact name of the form from the `Checklists` sheet (e.g., "Site Audit").</p>
             </div>
-            <!-- === NEW: No Report Required === -->
              <div class="flex items-center">
                 <input id="noReportRequired" type="checkbox" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
                 <label for="noReportRequired" class="ml-2 block text-sm font-medium text-gray-300">No report required for this location</label>
             </div>
-             <!-- === END NEW === -->
         </div>
         <div class="mt-6 flex justify-end space-x-3">
             <button type="button" id="deleteLocationBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden">Delete</button>
@@ -173,13 +163,10 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         </div>
     </div>
 
-    <!-- === NEW WSA REPORT MODAL === -->
     <div id="reportModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] flex flex-col">
         <h2 id="reportModalTitle" class="text-xl font-bold mb-4">Visit Report</h2>
         <div id="reportFormContainer" class="flex-1 overflow-y-auto pr-2">
-            <div id="reportFormChecklists" class="space-y-2">
-                <!-- Checklists will be dynamically inserted here -->
-            </div>
+            <div id="reportFormChecklists" class="space-y-2"></div>
             <div class="mt-4">
                 <label for="reportNotes" class="block text-sm font-medium text-gray-400">Brief Record of Visit (Standard)</label>
                 <textarea id="reportNotes" rows="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
@@ -194,8 +181,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             <button type="button" id="submitReportBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Submit Report</button>
         </div>
     </div>
-    <!-- === END NEW WSA REPORT MODAL === -->
-
     <div id="infoModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
         <h2 class="text-xl font-bold mb-4">How to Use This App</h2>
         <div class="text-gray-300 space-y-4">
@@ -231,7 +216,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <li><strong>Start Your Visit:</strong> Press and hold the green <strong>"Start"</strong> button for 1.5 seconds. The screen will lock, and your countdown timer will begin.</li>
             </ol>
             
-            <!-- === NEW: Quick Stat Info === -->
             <h3 class="font-semibold text-lg text-blue-400">5. Filing a "Quick Stat" (Data Entry)</h3>
              <ol class="list-decimal list-inside space-y-1">
                 <li>Select a **Location** from the main screen (one that does not have "No Report Required" checked).</li>
@@ -240,11 +224,9 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <li>Fill out the form and click **"Submit Report"**.</li>
                 <li>This will log your report without starting a safety timer. Use this for phone calls or visits you are logging after the fact.</li>
             </ol>
-            <!-- === END NEW === -->
 
             <h3 class="font-semibold text-lg text-blue-400">6. Special Note: GPS Tracking</h3>
             <p>For GPS tracking to work reliably (either for the "Travelling" location or if you become overdue), the app must be **open on your screen**. If you lock your phone or switch to another app, GPS updates may stop.</p>
-
 
              <h3 class="font-semibold text-lg text-blue-400">7. While On-Site</h3>
               <ul class="list-disc list-inside space-y-2">
@@ -269,7 +251,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
                 <li><strong>To Cancel an Alert:</strong> Press and hold the <strong>"I AM SAFE"</strong> button for 1 second and enter your **normal PIN**. This will clear the alert and then open the Visit Report form (if one is required).</li>
                 <li><strong>Silent (Duress) Alert:</strong> If you are being forced to cancel an alert, enter your **Duress PIN** instead. The app will look like it has been cancelled/extended, but it will silently send a high-priority alert to the monitor.</li>
             </ul>
-
         </div>
         <div class="mt-6 flex justify-end">
             <button type="button" id="closeInfoModalBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Close</button>
@@ -295,7 +276,6 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         <div id="checkinCountdown" class="text-6xl font-bold text-yellow-400 mb-6">2:00</div>
         <button type="button" id="checkinOkBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I am OK</button>
     </div>
-    <!-- === NEW: Confirm Modal === -->
     <div id="confirmModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn text-center">
         <h2 id="confirmModalTitle" class="text-xl font-bold mb-2 text-yellow-400">Confirmation Required</h2>
         <p id="confirmModalMessage" class="text-gray-300 mb-6"></p>
@@ -306,7 +286,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     </div>
 </div>
 <script>
-   let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
+    let pages, modals, locationList, arrivedBtn, durationSlider, durationDisplay, infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, closeInfoModalBtn, cancelLocationBtn, saveLocationBtn, deleteLocationBtn, useCurrentLocationBtn, panicBtn, iamSafeBtn, departBtn, extendBtn, pinInput, confirmPinBtn, cancelPinBtn, alertModalOkBtn, checkinOkBtn, startReminderBanner, clearCacheBtn;
     let quickStatBtn;
     let reportModal, reportModalTitle, reportFormContainer, reportFormChecklists, reportNotes, reportLoading, cancelReportBtn, submitReportBtn, uploadQueueBanner;
     let confirmModal, confirmModalTitle, confirmModalMessage, confirmModalCancelBtn, confirmModalOkBtn;
@@ -337,6 +317,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     var CHECKIN_ENABLED = "%%CHECKIN_ENABLED%%";
     var CHECKIN_INTERVAL = "%%CHECKIN_INTERVAL%%"; 
     var ESCALATION_MINUTES = "%%ESCALATION_MINUTES%%";
+    var ORS_API_KEY = "%%ORS_API_KEY%%"; 
 
     let synth, checkinCountdownInterval;
     let lastBatteryReportTime = 0; 
@@ -441,11 +422,12 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             state.locations.push({ id: 'loc_travelling_default', name: 'Travelling', address: 'GPS updates will be sent every 15 minutes.', companyName: 'Internal', templateName: "", noReport: true }); 
         } 
         
-        // --- FIX: Force URL Injection ---
+        // --- FORCE URL UPDATE ---
         const prefilledUrl = "%%GOOGLE_SHEET_URL%%";
         if (prefilledUrl.startsWith('http')) {
             state.settings.googleSheetUrl = prefilledUrl;
         }
+        // --- END FORCE UPDATE ---
         saveState(); 
     }
 
@@ -578,25 +560,19 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         }, true); 
     }
     
-   function handleSafeLongPress() {
+    function handleSafeLongPress() {
         withPinVerification((isDuress) => {
-            if (isDuress) {
-                iamSafe(true); 
-            } else {
+            if (isDuress) { iamSafe(true); } 
+            else {
                 if (!state.activeVisit) return; 
                 const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-                
-                // --- FIX: Removed hardcoded 'Travelling' check ---
-                if (location && location.noReport) {
-                    console.log("Location marked 'No Report Required', skipping report.");
+                if (location && (location.noReport)) {
                     iamSafe(false); 
-                } else {
-                    showReportModal(true); 
-                }
-                // --- END FIX ---
+                } else { showReportModal(true); }
             }
         }, true); 
     }
+
     function attemptStartVisit() {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -633,9 +609,21 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         const location = state.locations.find(l => l.id === state.selectedLocationId);
         const now = new Date();
         const anticipatedDepartureTime = new Date(now.getTime() + state.visitDurationMinutes * 60 * 1000);
+        
+        // --- NEW: Capture Start Coords ---
+        let startCoords = null;
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+            });
+            startCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+        } catch (e) { console.warn("Could not get start coords:", e); }
+        // --- END NEW ---
+        
         state.activeVisit = {
             locationId: location.id,
             startTime: now,
+            startCoords: startCoords,
             anticipatedDepartureTime: anticipatedDepartureTime,
             arrivalTimeForSheet: now.toISOString(),
             alertState: 0,
@@ -707,6 +695,23 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             return note;
         } catch (e) { console.warn("Could not check battery:", e); return ""; }
     }
+    
+    // --- NEW: ORS Distance Calculation ---
+    async function getDrivingDistance(start, end) {
+        var orsKey = "%%ORS_API_KEY%%"; // Renamed local var to avoid confusion
+        if (!orsKey || !start || !end) return null;
+        try {
+            const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${orsKey}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            // Return distance in KM (rounded to 1 decimal)
+            return (data.features[0].properties.segments[0].distance / 1000).toFixed(1);
+        } catch (e) {
+            console.error("ORS Error:", e);
+            return null;
+        }
+    }
+    // --- END NEW ---
 
     async function depart(reportData = {}) {
         if (!state.activeVisit) return; 
@@ -877,115 +882,92 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     }
 
     // --- WSA: NEW FUNCTIONS ---
-    function showReportModal(isFromAlert = false) {
+    async function showReportModal(isFromAlert = false) {
         if (!state.activeVisit) return;
-
         const location = state.locations.find(l => l.id === state.activeVisit.locationId);
-        if (!location) {
-            showAlert("Error", "Could not find location data.");
-            return;
-        }
-
-        // --- FIX: Removed hardcoded 'Travelling' check ---
+        if (!location) { showAlert("Error", "Could not find location data."); return; }
         if (location.noReport) {
-            console.log("Location marked 'No Report Required', skipping report.");
-            if (isFromAlert) {
-                iamSafe(false); 
-            } else {
-                depart(); 
-            }
+            if (isFromAlert) { iamSafe(false); } else { depart(); }
             return; 
         }
-        // --- END FIX ---
-
         reportModal.dataset.isFromAlert = isFromAlert;
         reportModal.dataset.isQuickStat = 'false'; 
-        showModal('report');
-        reportModalTitle.textContent = `Visit Report for: ${location.name}`;
+
+        // --- NEW: Calculate Distance ---
+        reportLoading.classList.remove('hidden'); // Show spinner
         reportFormContainer.classList.add('hidden');
-        reportLoading.classList.add('hidden');
-        reportNotes.value = ''; 
-        reportFormChecklists.innerHTML = ''; 
+        showModal('report');
+        reportModalTitle.textContent = "Calculating Distance...";
+
+        let calculatedDistance = null;
+        // Check ORS key string length to ensure it's not the placeholder
+        var orsKey = "%%ORS_API_KEY%%";
+        if (orsKey && orsKey.length > 10 && state.activeVisit.startCoords) {
+             try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+                });
+                const endCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+                calculatedDistance = await getDrivingDistance(state.activeVisit.startCoords, endCoords);
+             } catch (e) { console.warn("Could not get end coords for distance:", e); }
+        }
+        // --- END NEW ---
+
+        reportModalTitle.textContent = `Visit Report for: ${location.name}`;
+        reportFormContainer.classList.remove('hidden'); reportLoading.classList.add('hidden');
+        reportNotes.value = ''; reportFormChecklists.innerHTML = ''; 
         submitReportBtn.textContent = "Submit Report & Depart"; 
 
-        let checklistItems;
-        let formToLoad = location.templateName || "(Standard)"; 
-
+        let checklistItems; let formToLoad = location.templateName || "(Standard)"; 
         console.log(`Loading form: '${formToLoad}'`);
         const cachedForm = state.cachedForms[formToLoad];
-
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
-            checklistItems = cachedForm;
-        } else if (cachedForm) {
-            checklistItems = [];
-        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
+        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) { checklistItems = cachedForm; } 
+        else if (cachedForm) { checklistItems = []; } 
+        else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
             console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
             checklistItems = state.cachedForms["(Standard)"];
         } else {
             console.warn(`No forms found in cache. Using hardcoded fallback.`);
             checklistItems = STANDARD_CHECKLIST_FALLBACK;
         }
-        
-        buildReportForm(checklistItems);
+        buildReportForm(checklistItems, calculatedDistance);
     }
     
-function showQuickStatModal() {
-        if (!state.selectedLocationId) {
-            showAlert("No Location", "Please select a location from the list first.");
-            return;
-        }
-
+    function showQuickStatModal() {
+        if (!state.selectedLocationId) { showAlert("No Location", "Please select a location from the list first."); return; }
         const location = state.locations.find(l => l.id === state.selectedLocationId);
-        if (!location) {
-            showAlert("Error", "Could not find location data.");
-            return;
-        }
-
-        // --- FIX: Removed hardcoded 'Travelling' check ---
+        if (!location) { showAlert("Error", "Could not find location data."); return; }
         if (location.noReport) {
-            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'.");
-            return;
+            showAlert("Not Supported", "Cannot file a 'Quick Stat' for this location. This location is marked as 'No Report Required'."); return;
         }
-        // --- END FIX ---
-
-        reportModal.dataset.isFromAlert = 'false';
-        reportModal.dataset.isQuickStat = 'true';
-
+        reportModal.dataset.isFromAlert = 'false'; reportModal.dataset.isQuickStat = 'true';
         showModal('report');
         reportModalTitle.textContent = `Quick Stat for: ${location.name}`;
-        reportFormContainer.classList.add('hidden');
-        reportLoading.classList.add('hidden');
-        reportNotes.value = ''; 
-        reportFormChecklists.innerHTML = ''; 
+        reportFormContainer.classList.add('hidden'); reportLoading.classList.add('hidden');
+        reportNotes.value = ''; reportFormChecklists.innerHTML = ''; 
         submitReportBtn.textContent = "Submit Report"; 
 
-        let checklistItems;
-        let formToLoad = location.templateName || "(Standard)"; 
+        let checklistItems; let formToLoad = location.templateName || "(Standard)"; 
         const cachedForm = state.cachedForms[formToLoad];
-
-        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) {
-            checklistItems = cachedForm;
-        } else if (cachedForm) {
-            checklistItems = [];
-        } else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
-            console.warn(`Form '${formToLoad}' not found. Falling back to (Standard).`);
+        if (cachedForm && Array.isArray(cachedForm) && cachedForm.length > 0) { checklistItems = cachedForm; } 
+        else if (cachedForm) { checklistItems = []; } 
+        else if (formToLoad !== "(Standard)" && state.cachedForms["(Standard)"]) {
             checklistItems = state.cachedForms["(Standard)"];
-        } else {
-            console.warn(`No forms found in cache. Using hardcoded fallback.`);
-            checklistItems = STANDARD_CHECKLIST_FALLBACK;
-        }
-        
-        buildReportForm(checklistItems);
+        } else { checklistItems = STANDARD_CHECKLIST_FALLBACK; }
+        buildReportForm(checklistItems); // No distance for quick stats
     }
     
-    function buildReportForm(items) {
+    function buildReportForm(items, calculatedDistance = null) {
          reportFormChecklists.innerHTML = items.map((item, index) => {
             if (!item || typeof item.text === 'undefined') { console.warn("Invalid checklist item:", item); return ''; }
             if (item.type === 'header') { return `<h3 class="text-lg font-semibold text-blue-300 mt-4 mb-2">${item.text}</h3>`; } 
             else if (item.type === 'textarea') {
                 return `<div class="mt-4"><label for="wsa-note-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label><textarea id="wsa-note-${index}" data-header="${item.text}" class="wsa-custom-note mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea></div>`;
             } else if (item.type === 'number') { 
-                return `<div class="mt-4"><label for="wsa-num-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label><input type="number" id="wsa-num-${index}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="numeric" pattern="[0-9]*"></div>`;
+                // --- NEW: Pre-fill Distance ---
+                let value = "";
+                if (calculatedDistance && /km|mil|dist/i.test(item.text)) { value = calculatedDistance; }
+                return `<div class="mt-4"><label for="wsa-num-${index}" class="block text-sm font-medium text-gray-300">${item.text}</label><input type="number" id="wsa-num-${index}" value="${value}" data-header="${item.text}" class="wsa-custom-number mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" inputmode="decimal" step="0.1"></div>`;
             } else { 
                 return `<label for="check-${index}" class="flex items-center p-2 bg-gray-900 rounded-md cursor-pointer"><input id="check-${index}" name="${item.text}" type="checkbox" class="h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"><span class="ml-3 text-gray-300">${item.text}</span></label>`;
             }
@@ -1151,9 +1133,11 @@ function showQuickStatModal() {
                 document.getElementById('locationModalTitle').textContent = 'Add New Location';
                 document.getElementById('locationName').value = '';
                 document.getElementById('locationAddress').value = '';
+                
                 document.getElementById('companyName').value = '';
                 document.getElementById('templateName').value = '';
                 document.getElementById('noReportRequired').checked = false;
+                
                 document.getElementById('deleteLocationBtn').classList.add('hidden');
                 document.querySelector('#saveLocationBtn').dataset.id = '';
             });
@@ -1169,14 +1153,17 @@ function showQuickStatModal() {
                     document.getElementById('locationModalTitle').textContent = 'Edit Location'; 
                     document.getElementById('locationName').value = location.name; 
                     document.getElementById('locationAddress').value = location.address; 
+                    
                     document.getElementById('companyName').value = location.companyName || '';
                     document.getElementById('templateName').value = location.templateName || '';
                     document.getElementById('noReportRequired').checked = location.noReport || false;
+                    
                     if (locId === 'loc_travelling_default') {
                         document.getElementById('deleteLocationBtn').classList.add('hidden');
                     } else {
                         document.getElementById('deleteLocationBtn').classList.remove('hidden'); 
                     }
+                    
                     document.querySelector('#saveLocationBtn').dataset.id = locId; 
                     document.querySelector('#deleteLocationBtn').dataset.id = locId; 
                 }); 
@@ -1197,6 +1184,7 @@ function showQuickStatModal() {
             const id = document.querySelector('#saveLocationBtn').dataset.id;
             const name = document.getElementById('locationName').value.trim();
             const address = document.getElementById('locationAddress').value.trim();
+            
             const companyName = document.getElementById('companyName').value.trim();
             const templateName = document.getElementById('templateName').value.trim();
             const noReport = document.getElementById('noReportRequired').checked;
@@ -1306,8 +1294,7 @@ function showQuickStatModal() {
         applyLongPress(extendBtn, handleExtendLongPress, 1000); 
         applyLongPress(iamSafeBtn, handleSafeLongPress, 1000); 
     }
-    
-    function init() {
+function init() {
         pages = { main: document.getElementById('mainPage'), locked: document.getElementById('lockedPage'), settings: document.getElementById('settingsPage') };
         modals = { 
             backdrop: document.getElementById('modalBackdrop'), location: document.getElementById('locationModal'), 
@@ -1358,7 +1345,4 @@ function showQuickStatModal() {
             if (pages[key] && !pages[key].classList.contains('active')) { pages[key].classList.add('hidden'); } 
         });
     }
-    window.addEventListener('load', init); 
-    </script>
-</body>
-</html>
+    window.addEventListener('load', init);
