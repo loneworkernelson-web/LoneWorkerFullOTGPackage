@@ -30,26 +30,19 @@ body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparen
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
 header button svg, .edit-location-btn svg { pointer-events: none; }
-/* Spinner for loading */
 .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 </head>
 <body class="bg-gray-900 text-white h-full overflow-hidden">
 <div id="app-container" class="h-full flex flex-col">
-<!-- Main/Visit Page -->
 <div id="mainPage" class="page active h-full flex-col p-4 bg-gray-800 animate-fadeIn">
-
     <div id="startReminderBanner" class="hidden bg-yellow-600/20 border border-yellow-500 text-yellow-200 text-sm rounded-lg p-3 mb-4 text-center">
         Reminder: Don't forget to start your timer when you arrive on site.
     </div>
-    
-    <!-- Upload Queue Banner -->
     <div id="uploadQueueBanner" class="hidden bg-blue-600/20 border border-blue-500 text-blue-200 text-sm rounded-lg p-3 mb-4 flex items-center justify-center">
-        <div class="spinner mr-3"></div>
-        <span>Syncing pending reports...</span>
+        <div class="spinner mr-3"></div><span>Syncing pending reports...</span>
     </div>
-
 <header class="flex justify-between items-center mb-4 relative z-10 flex-shrink-0">
     <div class="flex items-center">
         <img src="https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png" alt="Logo" class="h-8 w-8 mr-3 rounded" onerror="this.style.display='none'"> 
@@ -124,6 +117,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
 <div><label for="pinCode" class="block text-sm font-medium text-gray-400">Normal 4-Digit PIN</label><input type="password" id="pinCode" pattern="[0-9]*" inputmode="numeric" maxlength="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
 <div><label for="duressPin" class="block text-sm font-medium text-gray-400">Duress 4-Digit PIN (Silent Alarm)</label><input type="password" id="duressPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
 <div><label for="googleSheetUrl" class="block text-sm font-medium text-gray-400">Google Sheet Web App URL</label><input type="url" id="googleSheetUrl" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
+
 <div class="border-t border-gray-700 pt-4 mt-4">
      <label class="block text-sm font-medium text-gray-400">Troubleshooting</label>
      <button type="button" id="clearCacheBtn" class="mt-2 w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg">Clear Cached Forms & Data</button>
@@ -142,6 +136,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
         <div class="space-y-4">
             <div><label for="locationName" class="block text-sm font-medium text-gray-400">Location Name</label><input type="text" id="locationName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
             <div><label for="locationAddress" class="block text-sm font-medium text-gray-400">Location Address</label><input type="text" id="locationAddress" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"><button type="button" id="useCurrentLocationBtn" class="mt-2 text-sm text-blue-400 hover:text-blue-300">Use Current Location</button></div>
+            
             <div class="border-t border-gray-700 pt-4">
                  <label for="companyName" class="block text-sm font-medium text-gray-400">Report As: (Company Name)</label>
                  <input type="text" id="companyName" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. Smith & Co.">
@@ -166,7 +161,8 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
     <div id="reportModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] flex flex-col">
         <h2 id="reportModalTitle" class="text-xl font-bold mb-4">Visit Report</h2>
         <div id="reportFormContainer" class="flex-1 overflow-y-auto pr-2">
-            <div id="reportFormChecklists" class="space-y-2"></div>
+            <div id="reportFormChecklists" class="space-y-2">
+            </div>
             <div class="mt-4">
                 <label for="reportNotes" class="block text-sm font-medium text-gray-400">Brief Record of Visit (Standard)</label>
                 <textarea id="reportNotes" rows="4" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
@@ -181,6 +177,7 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             <button type="button" id="submitReportBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Submit Report</button>
         </div>
     </div>
+
     <div id="infoModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
         <h2 class="text-xl font-bold mb-4">How to Use This App</h2>
         <div class="text-gray-300 space-y-4">
