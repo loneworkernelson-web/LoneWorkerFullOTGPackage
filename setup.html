@@ -9,224 +9,229 @@
   <style>
     .step { display: none; }
     .step.active { display: block; }
-    .step-nav button {
-      transition: all 0.2s;
-    }
-    .step-nav button.current {
-      background-color: #3b82f6;
-      color: white;
-      font-weight: 600;
-    }
-    .copy-btn {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      background-color: #4b5563;
-      color: white;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .copy-btn:hover { background-color: #6b7280; }
-    .copy-btn.copied { background-color: #10b981; }
-    strong { color: #60a5fa; font-weight: 600; }
-    details > summary {
-      cursor: pointer;
-      color: #9ca3af;
-      font-size: 0.75rem;
-      margin-top: 0.25rem;
-    }
-    details > summary:hover { color: #60a5fa; }
-    details ol {
-      margin-top: 0.5rem;
-      padding-left: 1.5rem;
-      list-style-type: decimal;
-    }
+    .step-nav button { @apply transition-all duration-200 px-4 py-2 text-sm font-medium rounded-md; }
+    .step-nav button.current { @apply bg-blue-600 text-white font-semibold; }
+    .copy-btn { @apply absolute top-3 right-3 bg-gray-600 text-white text-xs px-2 py-1 rounded hover:bg-gray-500 transition; }
+    .copy-btn.copied { @apply bg-green-600; }
+    .hidden-field { transition: all 0.4s ease; overflow: hidden; }
+    .hidden-field.closed { opacity: 0; height: 0; margin: 0; padding: 0; }
   </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4 md:p-8">
-  <div class="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+<body class="bg-gray-900 text-white min-h-screen p-6">
+  <div class="max-w-5xl mx-auto">
 
-    <!-- Header -->
-    <div class="bg-gray-900 p-6 border-b border-gray-700 text-center">
-      <h1 class="text-3xl font-bold text-blue-400">On-the-Go AppSuite - Setup Tool</h1>
-      <p class="text-gray-400 mt-2">Create your custom worker safety + reporting apps in minutes</p>
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-blue-400 mb-2">On-the-Go AppSuite</h1>
+      <p class="text-xl text-gray-400">Full Production Setup Wizard • November 2025</p>
     </div>
 
-    <!-- Step Navigation -->
-    <div class="step-nav flex flex-wrap justify-center bg-gray-700 p-3 shadow-inner gap-2">
-      <button type="button" id="nav1" class="current px-4 py-2 text-sm font-medium rounded-md" onclick="showStep(1)">1. Welcome</button>
-      <button type="button" id="nav2" class="px-4 py-2 text-sm font-medium rounded-md text-gray-400" onclick="showStep(2)">2. Sheet Setup</button>
-      <button type="button" id="nav3" class="px-4 py-2 text-sm font-medium rounded-md text-gray-400" onclick="showStep(3)">3. Config</button>
-      <button type="button" id="nav4" class="px-4 py-2 text-sm font-medium rounded-md text-gray-400" onclick="showStep(4)">4. Download</button>
-      <button type="button" id="nav5" class="px-4 py-2 text-sm font-medium rounded-md text-gray-400" onclick="showStep(5)">5. Done</button>
+    <div class="step-nav flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-lg">
+      <button type="button" class="current" onclick="showStep(1)">1. Welcome</button>
+      <button type="button" onclick="showStep(2)">2. Sheet Setup</button>
+      <button type="button" onclick="showStep(3)">3. Configuration</button>
+      <button type="button" onclick="showStep(4)">4. Building…</button>
+      <button type="button" onclick="showStep(5)">5. Done!</button>
     </div>
 
-    <div class="p-6 md:p-8 space-y-8">
+    <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 md:p-12">
 
-      <!-- Step 1: Welcome -->
-      <div id="step1" class="step active">
-        <h2 class="text-2xl font-bold mb-6 text-blue-300">Welcome!</h2>
-        <p class="text-gray-300 mb-6 leading-relaxed">
-          This tool generates fully customized, offline-capable web apps for lone workers — with automatic check-ins, duress PINs, GPS tracking, and optional advanced reporting.
-        </p>
-        <div class="bg-gray-900 rounded-lg p-6 border border-gray-700 mb-6">
-          <p class="text-lg mb-4">Choose your app type:</p>
-          <div class="space-y-4">
-            <label class="flex items-center p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition">
-              <input type="radio" name="appType" value="simple" checked class="mr-4 h-5 w-5 text-blue-600">
-              <div>
-                <div class="font-semibold text-xl">Simple App (Safety Only)</div>
-                <p class="text-gray-400">Timer + SOS + auto alerts. Perfect for most users.</p>
-              </div>
-            </label>
-            <label class="flex items-center p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition">
-              <input type="radio" name="appType" value="advanced" class="mr-4 h-5 w-5 text-blue-600">
-              <div>
-                <div class="font-semibold text-xl">Advanced App (Safety + Reporting)</div>
-                <p class="text-gray-400">Everything above + dynamic report forms, photos, distance tracking.</p>
-              </div>
-            </label>
-          </div>
+      <!-- Step 1 -->
+      <div id="step1" class="step active space-y-10">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
+        <div class="grid md:grid-cols-2 gap-8">
+          <label class="block cursor-pointer">
+            <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
+            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
+              <div class="text-6xl mb-4">Shield</div>
+              <h3 class="text-2xl font-bold">Simple App</h3>
+              <p class="text-gray-400 mt-3">Safety-only • Timer • SOS • Duress PIN</p>
+              <p class="text-green-400 font-bold mt-4">Most Popular</p>
+            </div>
+          </label>
+          <label class="block cursor-pointer">
+            <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
+            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
+              <div class="text-6xl mb-4">Tools</div>
+              <h3 class="text-2xl font-bold">Advanced App</h3>
+              <p class="text-gray-400 mt-3">Full reporting • Photos • Gemini AI • Distance tracking</p>
+              <p class="text-yellow-400 font-bold mt-4">Compliance Teams</p>
+            </div>
+          </label>
         </div>
-        <button onclick="nextStep()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-lg">
-          Start Setup →
-        </button>
-      </div>
-
-      <!-- Step 2: Google Sheet Setup -->
-      <div id="step2" class="step">
-        <h2 class="text-2xl font-bold mb-6 text-blue-300">Step 2: Create Your Google Sheet</h2>
-        <ol class="list-decimal list-inside text-gray-300 space-y-4 text-lg mb-8">
-          <li>Go to <a href="https://sheets.new" target="_blank" class="text-blue-400 underline">sheets.new</a> → create a blank sheet</li>
-          <li>Rename it something like <strong>OTG Safety Log</strong></li>
-          <li>Rename the first tab to exactly: <strong>Visits</strong></li>
-          <li class="text-yellow-300">Advanced only: Add a second tab named exactly: <strong>Checklists</strong></li>
-        </ol>
-
-        <div class="relative bg-gray-900 rounded-lg p-6 font-mono text-sm text-gray-300 border border-gray-700 mb-6">
-          <button type="button" onclick="copyToClipboard('headers')" class="copy-btn">Copy</button>
-          <pre id="headers" class="overflow-x-auto">Date,Worker Name,Worker Phone Number,Emergency Contact Name,Emergency Contact Number,Emergency Contact Email,Escalation Contact Name,Escalation Contact Number,Escalation Contact Email,Location Name,Location Address,Arrival Time,Anticipated Departure Time,Actual Departure Time,Alarm Status,Notes,Last Known GPS,GPS Timestamp,Battery Level</pre>
-        </div>
-        <p class="text-gray-400 mb-6">Click "Copy" above → paste into cell A1 of your <strong>Visits</strong> tab</p>
-
-        <button onclick="nextStep()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-lg">
-          I Did This → Next
-        </button>
-      </div>
-
-      <!-- Step 3: Configuration -->
-      <div id="step3" class="step">
-        <h2 class="text-2xl font-bold mb-6 text-blue-300">Step 3: Configure Your App</h2>
-        <div class="grid md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-medium mb-2">Organisation Name</label>
-            <input type="text" id="orgName" class="w-full px-4 py-3 bg-gray-700 rounded-lg" placeholder="e.g. SafeWork NZ" value="My Company">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Secret Key (for Monitor Dashboard)</label>
-            <input type="password" id="secretKey" class="w-full px-4 py-3 bg-gray-700 rounded-lg" placeholder="Choose a strong password">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">OpenRouteService API Key (Optional)</label>
-            <input type="text" id="orsKey" class="w-full px-4 py-3 bg-gray-700 rounded-lg" placeholder="Get free at openrouteservice.org">
-            <p class="text-xs text-gray-500 mt-2">Enables auto distance calculation in reports</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">First Alert After (minutes)</label>
-            <input type="number" id="firstAlert" value="15" min="1" class="w-full px-4 py-3 bg-gray-700 rounded-lg">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Escalation Alert After (minutes)</label>
-            <input type="number" id="escalation" value="5" min="1" class="w-full px-4 py-3 bg-gray-700 rounded-lg">
-          </div>
-          <div class="flex items-center space-x-3">
-            <input type="checkbox" id="checkinEnabled" class="h-5 w-5 text-blue-600">
-            <label>Enable "Are You OK?" check-ins every <input type="number" id="checkinInterval" value="30" class="w-20 px-2 py-1 bg-gray-700 rounded mx-2"> minutes</label>
-          </div>
-        </div>
-
-        <button onclick="generateApps()" class="mt-8 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-lg">
-          Generate My Apps →
-        </button>
-      </div>
-
-      <!-- Step 4: Download -->
-      <div id="step4" class="step">
-        <h2 class="text-2xl font-bold mb-6 text-blue-300">Step 4: Your Apps Are Ready!</h2>
-        <div id="downloadSection" class="space-y-6">
-          <!-- Filled in by JS -->
-        </div>
-      </div>
-
-      <!-- Step 5: Done -->
-      <div id="step5" class="step">
-        <h2 class="text-2xl font-bold mb-6 text-green-400">All Done!</h2>
-        <p class="text-xl text-gray-300 mb-6">Your apps are ready to deploy.</p>
-        <div class="bg-gray-900 rounded-lg p-8 text-center">
-          <p class="text-2xl mb-6">Next: Deploy your Google Apps Script</p>
-          <a href="https://script.new" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-xl font-bold">
-            Open script.new → Paste Code
+        <div class="text-center space-y-6">
+          <a href="templates/OTG_AppSuite_Documentation.pdf" target="_blank" class="inline-block bg-indigo-600 hover:bg-indigo-700 px-10 py-4 rounded-xl font-bold text-xl">
+            Download Full Documentation (PDF)
           </a>
+          <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-12 py-5 rounded-xl font-bold text-2xl ml-6">
+            Start Setup →
+          </button>
         </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="step2" class="step space-y-8">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 2: Google Sheet Headers</h2>
+        <ol class="list-decimal list-inside text-xl text-gray-300 space-y-4 max-w-4xl mx-auto">
+          <li>Create sheet at <a href="https://sheets.new" target="_blank" class="text-blue-400 underline">sheets.new</a></li>
+          <li>Rename first tab → <strong>Visits</strong></li>
+          <li id="checklistsNote" class="text-yellow-300 font-bold hidden">Also create second tab → <strong>Checklists</strong></li>
+        </ol>
+        <div class="relative bg-gray-900 p-8 rounded-xl border border-gray-700 max-w-5xl mx-auto font-mono text-sm">
+          <button type="button" onclick="copyHeaders()" class="copy-btn">Copy</button>
+          <pre id="headers" class="text-gray-400 overflow-x-auto">Date,Worker Name,Worker Phone Number,Emergency Contact Name,Emergency Contact Number,Emergency Contact Email,Escalation Contact Name,Escalation Contact Number,Escalation Contact Email,Location Name,Location Address,Arrival Time,Anticipated Departure Time,Actual Departure Time,Alarm Status,Notes,Last Known GPS,GPS Timestamp,Battery Level</pre>
+        </div>
+        <div class="text-center">
+          <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-12 py-5 rounded-xl font-bold text-xl">
+            Done → Next
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="step3" class="step space-y-10">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input type="text" id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Secret Key (Monitor Dashboard)</label><input type="password" id="secretKey" placeholder="Strong password" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">First Alert After (minutes)</label><input type="number" id="firstAlert" value="15" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Escalation After (minutes)</label><input type="number" id="escalation" value="5" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+
+          <div id="orsField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService API Key (Distance)</label><input type="text" id="orsKey" placeholder="Optional • openrouteservice.org" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="geminiField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key (AI Spellcheck)</label><input type="text" id="geminiKey" placeholder="Optional • aistudio.google.com" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+
+          <div class="md:col-span-2">
+            <label class="flex items-center space-x-4 text-lg">
+              <input type="checkbox" id="checkinEnabled" class="h-6 w-6 text-blue-600">
+              <span>Enable check-ins every</span>
+              <input type="number" id="checkinInterval" value="30" min="5" class="w-24 px-4 py-3 bg-gray-700 rounded-lg mx-2">
+              <span>minutes</span>
+            </label>
+          </div>
+        </div>
+        <div class="text-center">
+          <button onclick="generateFullPackage()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-16 py-6 rounded-xl font-bold text-2xl shadow-2xl transform hover:scale-105 transition">
+            Generate My Full App Package
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Building -->
+      <div id="step4" class="step text-center py-32">
+        <div class="text-8xl mb-8 animate-pulse">Tools</div>
+        <h2 class="text-4xl font-bold text-green-400 mb-6">Building Your Custom Apps...</h2>
+        <p class="text-2xl text-gray-300">This takes 8–12 seconds</p>
+        <div class="mt-10 inline-block">
+          <div class="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-blue-500 mx-auto"></div>
+        </div>
+      </div>
+
+      <!-- Step 5: Success -->
+      <div id="step5" class="step text-center py-20 space-y-12">
+        <div class="text-9xl">Success</div>
+        <h2 class="text-5xl font-bold text-green-400">Your Apps Are Ready!</h2>
+        <p class="text-2xl text-gray-300 max-w-3xl mx-auto">Everything is customized and ready to deploy</p>
+        <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 px-20 py-10 rounded-3xl font-bold text-4xl shadow-2xl transform hover:scale-110 transition">
+          Download OTG_AppSuite.zip
+        </button>
+        <p class="text-xl text-gray-400 mt-10">
+          Next: Deploy your Google Apps Script at <a href="https://script.new" target="_blank" class="text-blue-400 underline">script.new</a>
+        </p>
       </div>
 
     </div>
   </div>
 
   <script>
-    let currentStep = 1;
-    const totalSteps = 5;
+    const REPO = "https://raw.githubusercontent.com/loneworkernelson.web/LoneWorkerFullOTGPackage/main/templates";
+    // ←←← CHANGE THIS TO YOUR ACTUAL REPO URL ←←←
+
+    let zip, finalBlob;
+
+    function toggleAdvanced() {
+      const adv = document.querySelector('input[value="advanced"]').checked;
+      document.getElementById('checklistsNote').classList.toggle('hidden', !adv);
+      document.querySelectorAll('.hidden-field').forEach(el => {
+        el.classList.toggle('closed', !adv);
+      });
+    }
 
     function showStep(n) {
-      if (n < 1 || n > totalSteps) return;
       document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
       document.getElementById('step' + n).classList.add('active');
-      document.querySelectorAll('.step-nav button').forEach(b => b.classList.remove('current'));
-      document.getElementById('nav' + n).classList.add('current');
-      currentStep = n;
+      document.querySelectorAll('.step-nav button').forEach((b, i) => {
+        b.classList.toggle('current', i + 1 === n);
+      });
     }
 
-    function nextStep() {
-      if (currentStep < totalSteps) showStep(currentStep + 1);
+    function nextStep() { showStep(document.querySelector('.step.active').id.replace('step', '') * 1 + 1); }
+
+    function copyHeaders() {
+      navigator.clipboard.writeText(document.getElementById('headers').textContent);
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
     }
 
-    function copyToClipboard(id) {
-      const text = document.getElementById(id).textContent;
-      navigator.clipboard.writeText(text);
-      const btn = document.querySelector(`button[onclick="copyToClipboard('${id}')"]`);
-      btn.textContent = "Copied!";
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.textContent = "Copy";
-        btn.classList.remove('copied');
-      }, 2000);
+    async function fetchTemplate(filename) {
+      const url = REPO + "/" + filename + "?v=" + Date.now();
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to load ${filename}`);
+      return await res.text();
     }
 
-    async function generateApps() {
-      const org = document.getElementById('orgName').value || "Worker App";
-      const secret = document.getElementById('secretKey').value || "changeme";
-      const ors = document.getElementById('orsKey').value;
-      const appType = document.querySelector('input[name="appType"]:checked').value;
-
-      // Placeholder — real version fetches from your GitHub templates
-      alert("Generating your apps... (full version fetches templates from GitHub)");
-
+    async function generateFullPackage() {
       showStep(4);
-      document.getElementById('downloadSection').innerHTML = `
-        <div class="text-center py-12">
-          <div class="inline-block animate-bounce text-6xl mb-6">Success</div>
-          <p class="text-2xl mb-8">Your custom apps are ready!</p>
-          <button class="bg-green-600 hover:bg-green-700 px-8 py-4 rounded-lg text-xl font-bold">
-            Download ZIP (Coming in full version)
-          </button>
-        </div>
-      `;
-      setTimeout(() => showStep(5), 3000);
+      zip = new JSZip();
+
+      try {
+        const isAdv = document.querySelector('input[value="advanced"]').checked;
+        const config = {
+          ORGANISATION_NAME: document.getElementById('orgName').value || "Worker Safety App",
+          SECRET_KEY: document.getElementById('secretKey').value || "changeme123",
+          FIRST_ALERT_MINUTES: document.getElementById('firstAlert').value,
+          ESCALATION_MINUTES: document.getElementById('escalation').value,
+          CHECKIN_ENABLED: document.getElementById('checkinEnabled').checked ? "true" : "false",
+          CHECKIN_INTERVAL: document.getElementById('checkinInterval').value,
+          ORS_API_KEY: document.getElementById('orsKey').value || "",
+          GEMINI_API_KEY: document.getElementById('geminiKey').value || ""
+        };
+
+        const workerTemplate = isAdv
+          ? await fetchTemplate("worker_app_advanced.txt")
+          : await fetchTemplate("worker_app_simple.txt");
+
+        let workerHtml = workerTemplate;
+        for (const [key, val] of Object.entries(config)) {
+          workerHtml = workerHtml.replace(new RegExp("%%" + key + "%%", "g"), val);
+        }
+        if (isAdv && config.GEMINI_API_KEY) {
+          workerHtml = workerHtml.replace("// %%GEMINI_INJECTION_POINT%%", `const GEMINI_KEY = "${config.GEMINI_API_KEY}";`);
+        }
+
+        zip.file("index.html", workerHtml);
+        zip.file("monitor.html", await fetchTemplate("monitor.txt"));
+        zip.file("gas_code.txt", await fetchTemplate("gas_code.txt"));
+        zip.file("manifest.json", await fetchTemplate("manifest.json"));
+        zip.file("README.txt", `OTG AppSuite - Generated on ${new Date().toLocaleString()}\nOrganisation: ${config.ORGANISATION_NAME}\nMode: ${isAdv ? "Advanced" : "Simple"}`);
+        zip.file("OTG_AppSuite_Documentation.pdf", await fetch("templates/OTG_AppSuite_Documentation.pdf").then(r => r.blob()));
+
+        finalBlob = await zip.generateAsync({ type: "blob" });
+        showStep(5);
+
+        document.getElementById('downloadBtn').onclick = () => {
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(finalBlob);
+          link.download = "OTG_AppSuite_Full_Package.zip";
+          link.click();
+        };
+
+      } catch (err) {
+        alert("Error: " + err.message + "\n\nCheck your GitHub repo URL at the top of the script!");
+        showStep(3);
+      }
     }
+
+    toggleAdvanced();
   </script>
 </body>
 </html>
