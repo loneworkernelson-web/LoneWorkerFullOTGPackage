@@ -168,17 +168,95 @@
         </div>
       </div>
 
-      <!-- Step 4: Deploy Apps Script -->
-      <div id="step4" class="step space-y-8 text-center">
-        <h2 class="text-3xl font-bold text-blue-300">Step 4: Deploy Your Google Apps Script</h2>
-        <p class="text-xl text-gray-300 max-w-4xl mx-auto">Click below → paste the code → Deploy as Web App → Copy the /exec URL</p>
-        <div class="relative bg-gray-900 p-8 rounded-xl border border-gray-700 max-w-5xl mx-auto font-mono text-sm">
-          <button type="button" onclick="copyScript()" class="copy-btn">Copy All</button>
-          <pre id="scriptDisplay" class="text-left text-gray-400 overflow-x-auto h-96"></pre>
+           <!-- Step 4: Deploy Apps Script – EXTREMELY DETAILED FOR BEGINNERS -->
+      <div id="step4" class="step space-y-12">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 4: Connect Everything to Your Google Sheet</h2>
+
+        <div class="bg-yellow-900/30 border-2 border-yellow-600 rounded-2xl p-10 max-w-5xl mx-auto text-center">
+          <p class="text-2xl text-yellow-300 font-bold">Don’t panic — this looks scary but we’ll do it together!</p>
+          <p class="text-xl text-gray-300 mt-4">You’re just going to copy-paste one block of code and click a few buttons.</p>
         </div>
-        <div class="flex justify-center gap-6 mt-8">
-          <a href="https://script.new" target="_blank" class="bg-blue-600 hover:bg-blue-700 px-10 py-5 rounded-xl font-bold text-xl">Open script.new</a>
-          <button onclick="nextStep()" class="bg-green-600 hover:bg-green-700 px-12 py-5 rounded-xl font-bold text-xl">I’ve Deployed It →</button>
+
+        <!-- 4A: Paste the code -->
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
+          <h3 class="text-2xl font-bold text-blue-400">1. Open Google Apps Script & Paste the Code</h3>
+          <ol class="text-lg text-gray-300 space-y-6 list-decimal list-inside max-w-4xl mx-auto">
+            <li>Click this huge button → a new tab will open:</li>
+            <div class="text-center my-8">
+              <a href="https://script.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-16 py-8 rounded-2xl font-bold text-3xl shadow-2xl transform hover:scale-105 transition">
+                Open script.new (Click Me!)
+              </a>
+            </div>
+            <li>In the new tab, delete everything that’s already there (it’s just a sample function)</li>
+            <li>Click the big <strong>Copy All Code</strong> button below</li>
+            <li>Paste into the blank script editor using <strong>Ctrl+V</strong> (or Cmd+V on Mac)</li>
+            <li>At the top-left, rename the project from “Untitled project” to something like <strong>OTG AppSuite Backend</strong></li>
+            <li>Click the blue <strong>Save</strong> button (or press Ctrl+S)</li>
+          </ol>
+
+          <div class="relative bg-gray-800 p-10 rounded-xl border border-gray-600 mt-10 font-mono text-sm">
+            <button type="button" onclick="copyScript()" class="copy-btn text-lg px-6 py-3">Copy All Code</button>
+            <pre id="scriptDisplay" class="text-left text-gray-400 overflow-x-auto h-96 mt-6 whitespace-pre-wrap"></pre>
+          </div>
+        </div>
+
+        <!-- 4B: Deploy as Web App -->
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
+          <h3 class="text-2xl font-bold text-blue-400">2. Deploy as Web App (One-click)</h3>
+          <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-4xl mx-auto">
+            <li>At the top-right, click the blue button that says <strong>Deploy</strong> → <strong>New deployment</strong></li>
+            <li>Click <strong>Select type</strong> → choose <strong>Web app</strong></li>
+            <li>Leave everything as default except:</li>
+            <ul class="list-disc list-inside ml-8 text-gray-400 space-y-2">
+              <li><strong>Who has access:</strong> choose <strong>Anyone</strong> (yes, really — it’s safe because of your secret key)</li>
+            </ul>
+            <li>Click the big blue <strong>Deploy</strong> button</li>
+            <li>If Google asks for permissions, click <strong>Allow</strong> (it needs to read your sheet)</li>
+            <li>A box will pop up with a long URL ending in <strong>/exec</strong> → <strong>Copy that entire URL</strong></li>
+          </ol>
+        </div>
+
+        <!-- 4C: Set up the automatic trigger -->
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
+          <h3 class="text-2xl font-bold text-blue-400">3. Set Up the 1-Minute Automatic Check (Important!)</h3>
+          <p class="text-xl text-gray-300 max-w-4xl mx-auto">This makes overdue alerts work automatically.</p>
+          <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-4xl mx-auto">
+            <li>In the same Apps Script window, click the clock icon on the left sidebar (Triggers)</li>
+            <li>Click <strong>+ Add Trigger</strong> (bottom right)</li>
+            <li>Choose these exact settings:</li>
+            <ul class="list-none ml-8 text-gray-400 space-y-3 text-lg">
+              <li><strong>Function to run:</strong> checkOverdueVisits</li>
+              <li><strong>Deployment:</strong> Head</li>
+              <li><strong>Event source:</strong> Time-driven</li>
+              <li><strong>Type:</strong> Minutes timer</li>
+              <li><strong>Every minutes:</strong> 1</li>
+            </ul>
+            <li>Click <strong>Save</strong></li>
+          </ol>
+          <p class="text-center text-green-400 font-bold text-2xl mt-8">This trigger is what makes your alerts work!</p>
+        </div>
+
+        <!-- 4D: Test the connection -->
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
+          <h3 class="text-2xl font-bold text-green-400">4. Test That Everything Is Connected</h3>
+          <p class="text-xl text-gray-300 max-w-4xl mx-auto">We’ll do a live test right now — takes 10 seconds</p>
+          <div class="text-center space-y-6">
+            <p class="text-lg">Paste your <strong>/exec</strong> URL here:</p>
+            <input type="url" id="testUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full max-w-2xl px-6 py-5 bg-gray-700 rounded-xl text-lg text-center">
+            <p class="text-lg mt-6">Your secret key (from Step 3):</p>
+            <input type="text" id="testKey" value="" placeholder="Your secret key appears here automatically" class="w-full max-w-2xl px-6 py-5 bg-gray-700 rounded-xl text-lg text-center" readonly>
+            <button onclick="testConnection()" class="mt-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 px-16 py-8 rounded-xl font-bold text-3xl shadow-2xl transform hover:scale-105 transition">
+              Test Connection Now
+            </button>
+            <div id="testResult" class="mt-8 text-2xl font-bold"></div>
+          </div>
+        </div>
+
+        <!-- Final button (only appears after successful test) -->
+        <div class="text-center pt-10">
+          <button id="proceedAfterTest" onclick="nextStep()" disabled class="bg-gradient-to-r from-green-600 to-emerald-600 opacity-50 px-20 py-10 rounded-2xl font-bold text-4xl cursor-not-allowed">
+            All Working! → Next Step
+          </button>
         </div>
       </div>
 
@@ -313,6 +391,43 @@
       };
     }
 
+        // Auto-fill secret key in test field
+    document.getElementById('testKey').value = document.getElementById('secretKey').value || "changeme123";
+
+    function copyScript() {
+      navigator.clipboard.writeText(gasCode);
+      const btn = document.querySelector('#step4 .copy-btn');
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy All Code'; btn.classList.remove('copied'); }, 2000);
+    }
+
+    async function testConnection() {
+      const url = document.getElementById('testUrl').value.trim();
+      const key = document.getElementById('testKey').value;
+      const resultDiv = document.getElementById('testResult');
+      const proceedBtn = document.getElementById('proceedAfterTest');
+
+      if (!url || !url.includes('/exec')) {
+        resultDiv.innerHTML = '<span class="text-red-400">Please paste your full /exec URL</span>';
+        return;
+      }
+
+      resultDiv.textContent = "Testing...";
+      try {
+        const response = await fetch(`${url}?test=1&key=${encodeURIComponent(key)}`);
+        const text = await response.text();
+        if (text.includes("OTG_SUCCESS")) {
+          resultDiv.innerHTML = '<span class="text-green-400 text-3xl">Perfect! Everything is connected!</span>';
+          proceedBtn.disabled = false;
+          proceedBtn.className = 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-10 rounded-2xl font-bold text-4xl shadow-2xl transform hover:scale-105 transition cursor-pointer';
+          document.getElementById('webAppUrl').value = url; // auto-fill next step
+        } else {
+          resultDiv.innerHTML = '<span class="text-red-400">Failed — check your secret key and URL</span>';
+        }
+      } catch (e) {
+        resultDiv.innerHTML = '<span class="text-red-400">Connection failed — double-check the URL</span>';
+      }
+    }
     toggleAdvanced();
   </script>
 </body>
