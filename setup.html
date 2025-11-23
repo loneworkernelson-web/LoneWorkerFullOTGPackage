@@ -40,15 +40,15 @@
       <div id="step1" class="step active space-y-10">
         <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
         <div class="grid md:grid-cols-2 gap-8">
-          <label class="block cursor-pointer">
-            <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
-            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
-              <div class="text-6xl mb-4">Shield</div>
-              <h3 class="text-2xl font-bold">Simple App</h3>
-              <p class="text-gray-400 mt-3">Safety-only • Timer • SOS • Duress PIN</p>
-              <p class="text-green-400 font-bold mt-4">Most Popular</p>
-            </div>
-          </label>
+         <label class="block cursor-pointer">
+          <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
+          <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
+          <div class="text-6xl mb-4">Tools</div>
+          <h3 class="text-2xl font-bold">Advanced App</h3>
+          <p class="text-gray-400 mt-3">Custom checklists • AI notes • Distance calculations • Advanced reporting</p>
+          <p class="text-yellow-400 font-bold mt-4">Extra Features</p>
+        </div>
+      </label>
           <label class="block cursor-pointer">
             <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
             <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
