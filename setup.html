@@ -129,18 +129,73 @@
         </div>
       </div>
 
-      <!-- Step 3: Configuration + Logo Upload -->
-      <div id="step3" class="step space-y-10">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings</h2>
-        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input type="text" id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">Secret Key (Monitor Dashboard)</label><input type="password" id="secretKey" placeholder="Strong password" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">First Alert After (minutes)</label><input type="number" id="firstAlert" value="15" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">Escalation After (minutes)</label><input type="number" id="escalation" value="5" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div id="orsField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService API Key</label><input type="text" id="orsKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div id="geminiField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key</label><input type="text" id="geminiKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+           <!-- Step 3: Configuration – NOW SUPER CLEAR & REASSURING -->
+      <div id="step3" class="step space-y-12">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings (We’ll explain everything)</h2>
 
-          <!-- LOGO UPLOAD -->
+        <div class="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+
+          <!-- Organisation Name -->
+          <div class="bg-gray-800/50 rounded-2xl p-8 border border-gray-600">
+            <label class="block text-xl font-semibold text-blue-300 mb-3">Organisation Name</label>
+            <input type="text" id="orgName" value="My Company" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
+            <p class="text-gray-400 mt-4 text-sm">This appears at the top of the app and on the home-screen icon</p>
+          </div>
+
+          <!-- Secret Key – BIG EXPLANATION -->
+          <div class="bg-red-900/30 rounded-2xl p-8 border-2 border-red-600 relative">
+            <label class="block text-xl font-semibold text-red-300 mb-3">Secret Key (Monitor Dashboard Password)</label>
+            <input type="password" id="secretKey" placeholder="Make one up now – strong!" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
+            <div class="mt-5 space-y-3 text-sm">
+              <p class="text-yellow-300 font-bold text-lg">You invent this password yourself — right now!</p>
+              <p class="text-gray-300">Make it strong (at least 12 characters, mix letters + numbers + symbols)</p>
+              <p class="text-gray-300">Example: <code class="bg-gray-800 px-2 py-1 rounded">NelsonSafety2025!x9</code></p>
+              <p class="text-red-300 font-bold">Write it down somewhere safe — you will need it every time you open the monitoring dashboard!</p>
+              <p class="text-gray-400 text-xs mt-4">This key protects your live worker data — nobody can see it without this password.</p>
+            </div>
+          </div>
+
+          <!-- First Alert -->
+          <div class="bg-orange-900/30 rounded-2xl p-8 border border-orange-600">
+            <label class="block text-xl font-semibold text-orange-300 mb-3">First Alert After (minutes)</label>
+            <input type="number" id="firstAlert" value="15" min="1" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
+            <p class="text-gray-300 mt-4">How many minutes can a worker be late checking out before the first alert is sent?</p>
+            <p class="text-sm text-gray-400 mt-2">Most companies use 10–20 minutes · 15 is very common</p>
+          </div>
+
+          <!-- Escalation -->
+          <div class="bg-pink-900/30 rounded-2xl p-8 border border-pink-600">
+            <label class="block text-xl font-semibold text-pink-300 mb-3">Escalation After (minutes)</label>
+            <input type="number" id="escalation" value="5" min="1" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
+            <p class="text-gray-300 mt-4">After the first alert, how long before we phone/text the escalation contact?</p>
+            <p class="text-sm text-gray-400 mt-2">Usually 5–10 minutes · 5 is standard</p>
+          </div>
+
+          <!-- OpenRouteService Key -->
+          <div id="orsField" class="hidden-field closed bg-cyan-900/20 rounded-2xl p-8 border border-cyan-600">
+            <label class="block text-xl font-semibold text-cyan-300 mb-3">OpenRouteService API Key (Optional – Distance Tracking)</label>
+            <input type="text" id="orsKey" placeholder="Leave blank if you don’t need distance alerts" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
+            <div class="mt-4 text-center">
+              <a href="https://openrouteservice.org/dev/#/signup" target="_blank" class="inline-block bg-cyan-600 hover:bg-cyan-700 px-8 py-4 rounded-xl font-bold text-lg">
+                Need Help? Get Free Key (30-second sign-up)
+              </a>
+            </div>
+            <p class="text-gray-400 text-sm mt-4 text-center">Free tier = 2,000 requests/day – plenty for most teams</p>
+          </div>
+
+          <!-- Gemini Key -->
+          <div id="geminiField" class="hidden-field closed bg-purple-900/20 rounded-2xl p-8 border border-purple-600">
+            <label class="block text-xl font-semibold text-purple-300 mb-3">Gemini API Key (Optional – AI Spellcheck & Notes)</label>
+            <input type="text" id="geminiKey" placeholder="Leave blank to skip AI features" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
+            <div class="mt-4 text-center">
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" class="inline-block bg-purple-600 hover:bg-purple-700 px-8 py-4 rounded-xl font-bold text-lg">
+                Need Help? Get Free Gemini Key (Instant)
+              </a>
+            </div>
+            <p class="text-gray-400 text-sm mt-4 text-center">Free tier = 60 requests/minute – more than enough</p>
+          </div>
+
+          <!-- Logo Upload (unchanged – already perfect) -->
           <div class="md:col-span-2 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 rounded-2xl p-8 border-2 border-purple-600">
             <label class="block text-2xl font-bold text-purple-300 mb-6 text-center">Upload Your Company Logo / App Icon (Optional)</label>
             <p class="text-center text-gray-300 mb-6 text-lg">Recommended: 512×512 PNG with transparent background</p>
@@ -152,10 +207,13 @@
               </div>
             </div>
           </div>
+
         </div>
-        <div class="text-center">
-          <button onclick="generateScriptAndProceed()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-16 py-6 rounded-xl font-bold text-2xl shadow-2xl transform hover:scale-105 transition">
-            Generate Apps Script Code
+
+        <!-- Next Button -->
+        <div class="text-center mt-12">
+          <button onclick="generateScriptAndProceed()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-2xl font-bold text-4xl shadow-2xl transform hover:scale-105 transition">
+            Everything Looks Good — Generate Apps Script Code
           </button>
         </div>
       </div>
