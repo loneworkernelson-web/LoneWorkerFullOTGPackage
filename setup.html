@@ -209,7 +209,7 @@
         }
 
         zip.file("index.html", workerHtml);
-        zip.file("monitor.html", await fetchTemplate("monitor_apptemplate.txt"));
+        zip.file("monitor.html", await fetchTemplate("monitor_app_template.txt"));
         zip.file("apps_script_advanced.txt", await fetchTemplate("apps_script_advanced.txt"));
         zip.file("manifest.json", await fetchTemplate("manifest.json"));
         zip.file("README.txt", `OTG AppSuite - Generated on ${new Date().toLocaleString()}\nOrganisation: ${config.ORGANISATION_NAME}\nMode: ${isAdv ? "Advanced" : "Simple"}`);
