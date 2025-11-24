@@ -15,7 +15,7 @@ var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%; // Time in minutes for first 
 
 // ——— MAIN doGet – ONLY ONE OF THESE IN THE WHOLE SCRIPT ———
 function doGet(e) {
-  // ——— SETUP TOOL TEST ENDPOINT (MUST BE FIRST) ———
+  // SETUP TOOL TEST ENDPOINT — MUST BE FIRST
   if (e && e.parameter && e.parameter.test === "1") {
     if ((e.parameter.key || "").trim() === SECRET_KEY.trim()) {
       return ContentService.createTextOutput("OTG_SUCCESS_2025");
@@ -24,91 +24,56 @@ function doGet(e) {
     }
   }
 
-  // ——— MONITOR APP JSONP REQUEST ———
+  // MONITOR APP (JSONP)
   if (e.parameter.callback) {
-    var token = e.parameter.token;
-    if (token !== SECRET_KEY) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: "error", message: "Access Denied" }))
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    if (e.parameter.token !== SECRET_KEY) {
+      return ContentService.createTextOutput(e.parameter.callback + "({status:'error',message:'Access Denied'})").setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
-   
     var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
     var data = sheet.getDataRange().getValues();
-   
-    if (data.length === 0 || data[0].length === 0) {
-         var callback = e.parameter.callback;
-         return ContentService.createTextOutput(callback + '([])').setMimeType(ContentService.MimeType.JAVASCRIPT);
+    if (data.length <= 1) {
+      return ContentService.createTextOutput(e.parameter.callback + "([])").setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
     var headers = data.shift();
     var json = data.map(function(row) {
       var obj = {};
-      headers.forEach(function(header, i) {
-        if (row[i] instanceof Date) {
-          obj[header] = row[i].toISOString();
-        } else {
-          obj[header] = row[i];
-        }
+      headers.forEach(function(h, i) {
+        obj[h] = (row[i] instanceof Date) ? row[i].toISOString() : row[i];
       });
       return obj;
     });
-    var callback = e.parameter.callback;
-    var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
-    return ContentService
-      .createTextOutput(jsonpResponse)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    return ContentService.createTextOutput(e.parameter.callback + "(" + JSON.stringify(json) + ")").setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
 
-  // ——— WORKER APP: GET FORMS ———
-  if (e.parameter.action === 'getForms' && e.parameter.companyName) {
-    var companyName = e.parameter.companyName;
+  // WORKER APP — GET FORMS
+  if (e.parameter.action === "getForms" && e.parameter.companyName) {
     var questions = [];
     try {
-      var checklistSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
-      var data = checklistSheet.getDataRange().getValues();
-      var headers = data.shift();
-     
-      for (var i = 0; i < data.length; i++) {
-        if (data[i][0] === companyName) {
+      var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
+      var rows = sheet.getDataRange().getValues();
+      var headers = rows.shift();
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i][0] === e.parameter.companyName) {
           for (var j = 1; j < headers.length; j++) {
-            var questionText = data[i][j];
-            if (questionText) {
-              var textStr = String(questionText);
-              if (textStr.startsWith("# ")) {
-                questions.push({ "type": "header", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("#")) {
-                 questions.push({ "type": "header", "text": textStr.substring(1).trim() });
-              } else if (textStr.startsWith("% ")) {
-                 questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("%")) {
-                 questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
-              } else if (textStr.startsWith("$ ")) {
-                 questions.push({ "type": "number", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("$")) {
-                 questions.push({ "type": "number", "text": textStr.substring(1).trim() });
-              } else {
-                questions.push({ "type": "checkbox", "text": textStr });
-              }
-            } else {
-              break;
-            }
+            if (!rows[i][j]) break;
+            var q = String(rows[i][j]).trim();
+            if (q.startsWith("# ")) questions.push({type:"header", text:q.substring(2)});
+            else if (q.startsWith("#")) questions.push({type:"header", text:q.substring(1)});
+            else if (q.startsWith("% ")) questions.push({type:"textarea", text:q.substring(2)});
+            else if (q.startsWith("%")) questions.push({type:"textarea", text:q.substring(1)});
+            else if (q.startsWith("$ ")) questions.push({type:"number", text:q.substring(2)});
+            else if (q.startsWith("$")) questions.push({type:"number", text:q.substring(1)});
+            else questions.push({type:"checkbox", text:q});
           }
           break;
         }
       }
-    } catch (err) {
-      Logger.log("Error in getForms: " + err.toString());
-    }
-   
-    return ContentService
-      .createTextOutput(JSON.stringify(questions))
-      .setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {}
+    return ContentService.createTextOutput(JSON.stringify(questions)).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // ——— DEFAULT: INVALID REQUEST ———
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
-    .setMimeType(ContentService.MimeType.JSON);
+  // DEFAULT — INVALID REQUEST
+  return ContentService.createTextOutput(JSON.stringify({status:"error", message:"Invalid request"})).setMimeType(ContentService.MimeType.JSON);
 }
   // 1. Monitor App Request (JSONP)
   if (e.parameter.callback) {
