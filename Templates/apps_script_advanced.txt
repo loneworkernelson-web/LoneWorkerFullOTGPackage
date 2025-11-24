@@ -13,6 +13,19 @@ var REPORT_TAB_PREFIX = "Report - ";
 var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Time in minutes to wait before escalating
 var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%; // Time in minutes for first overdue alert
 
+// === TEST ENDPOINT FOR SETUP TOOL ===
+function doGet(e) {
+  if (e.parameter.test === "1")
+    return ContentService.createTextOutput(
+      e.parameter.key === SECRET_KEY ? "OTG_SUCCESS_2025" : "WRONG_KEY"
+    );
+  return HtmlService.createHtmlOutput("OK");
+}
+  
+  // Normal web app handling below...
+  return HtmlService.createHtmlOutput("OK");
+}
+
 // --- PDF REPORTING CONFIGURATION ---
 var DEFAULT_REPORT_TEMPLATE_ID = "YOUR_DEFAULT_TEMPLATE_ID_HERE"; 
 var PDF_OUTPUT_FOLDER_ID = "YOUR_OUTPUT_FOLDER_ID_HERE";
