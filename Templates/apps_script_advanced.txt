@@ -1701,3 +1701,22 @@ function msToTime(duration) {
   let hours = Math.floor((duration / (1000 * 60 * 60)));
   return hours + "h " + minutes + "m";
 }
+function handlePhotoUpload(e) {
+  if (!e.parameter.photoCount) return "";
+  const orgName = PropertiesService.getScriptProperties().getProperty("ORG_NAME") || "Unknown Org";
+  let folder = DriveApp.getFoldersByName("OTG AppSuite Photos – " + orgName);
+  if (!folder.hasNext()) folder = DriveApp.createFolder("OTG AppSuite Photos – " + orgName);
+  else folder = folder.next();
+
+  const links = [];
+  for (let i = 1; i <= 5; i++) {
+    const file = e.files["photo" + i];
+    if (file) {
+      const blob = file.blob || Utilities.newBlob(Utilities.base64Decode(file.base64), file.mimeType, file.filename);
+      const uploaded = folder.createFile(blob);
+      uploaded.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      links.push(uploaded.getUrl());
+    }
+  }
+  return links.join(" | ");
+}
