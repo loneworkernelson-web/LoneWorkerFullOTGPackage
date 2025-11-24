@@ -15,13 +15,16 @@
     .copy-btn.copied { @apply bg-green-600; }
     .hidden-field { transition: all 0.4s ease; overflow: hidden; }
     .hidden-field.closed { opacity: 0; height: 0; margin: 0; padding: 0; }
+    .logo-preview { max-width: 200px; max-height: 200px; border-radius: 0.5rem; }
+    .upload-area { border: 2px dashed #4b5563; border-radius: 0.5rem; padding: 2rem; text-align: center; transition: all 0.2s; }
+    .upload-area.dragover { border-color: #3b82f6; background: #1e293b; }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen p-6">
   <div class="max-w-5xl mx-auto">
     <div class="text-center mb-8">
       <h1 class="text-4xl font-bold text-blue-400 mb-2">On-the-Go AppSuite</h1>
-      <p class="text-xl text-gray-400">Full Production Setup Wizard • November 2025</p>
+      <p class="text-xl text-gray-400">Complete Setup Wizard • November 2025</p>
     </div>
 
     <div class="step-nav flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-lg">
@@ -29,20 +32,19 @@
       <button type="button" onclick="showStep(2)">2. Sheet Setup</button>
       <button type="button" onclick="showStep(3)">3. Configuration</button>
       <button type="button" onclick="showStep(4)">4. Deploy Script</button>
-      <button type="button" onclick="showStep(5)">5. Paste URL</button>
+      <button type="button" onclick="showStep(5)">5. Logo & Finalize</button>
       <button type="button" onclick="showStep(6)">6. Done!</button>
     </div>
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 md:p-12">
-
-      <!-- STEP 1 -->
+      <!-- Step 1: Welcome -->
       <div id="step1" class="step active space-y-10">
         <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
         <div class="grid md:grid-cols-2 gap-8">
           <label class="block cursor-pointer">
             <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
             <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
-              <div class="text-6xl mb-4">Shield</div>
+              <div class="text-6xl mb-4">🛡️</div>
               <h3 class="text-2xl font-bold">Simple App</h3>
               <p class="text-gray-400 mt-3">Safety-only • Timer • SOS • Duress PIN</p>
               <p class="text-green-400 font-bold mt-4">Most Popular</p>
@@ -51,7 +53,7 @@
           <label class="block cursor-pointer">
             <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
             <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
-              <div class="text-6xl mb-4">Tools</div>
+              <div class="text-6xl mb-4">📊</div>
               <h3 class="text-2xl font-bold">Advanced App</h3>
               <p class="text-gray-400 mt-3">Full reporting • Photos • Gemini AI • Distance tracking</p>
               <p class="text-yellow-400 font-bold mt-4">Reporting Features</p>
@@ -63,16 +65,16 @@
             Download Full Documentation (PDF)
           </a>
           <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-12 py-5 rounded-xl font-bold text-2xl ml-6">
-            Start Setup
+            Start Setup →
           </button>
         </div>
       </div>
 
-      <!-- STEP 2 – SUPER FRIENDLY -->
+      <!-- Step 2: Sheet Setup -->
       <div id="step2" class="step space-y-10">
         <h2 class="text-3xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet (Don't worry — it's easy!)</h2>
         <div class="bg-yellow-900/30 border border-yellow-600 rounded-xl p-8 max-w-4xl mx-auto text-center">
-          <p class="text-xl text-yellow-300 font-semibold">We’ll do this together — just follow the big buttons</p>
+          <p class="text-xl text-yellow-300 font-semibold">We'll do this together — just follow the big buttons</p>
         </div>
 
         <div class="space-y-12 max-w-5xl mx-auto">
@@ -88,7 +90,7 @@
           <div class="bg-gray-900 rounded-xl p-8 border border-gray-700">
             <h3 class="text-2xl font-bold text-blue-400 mb-6">2. Set Up the "Visits" Tab</h3>
             <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-3xl mx-auto">
-              <li>Rename the bottom tab from “Sheet1” to <strong class="text-yellow-300">Visits</strong></li>
+              <li>Rename bottom tab from "Sheet1" to <strong class="text-yellow-300">Visits</strong></li>
               <li>Click cell <strong>A1</strong></li>
               <li>Click <strong>Copy Visits Headers</strong> below → paste with Ctrl+V</li>
             </ol>
@@ -101,7 +103,7 @@
           <div id="checklistsSection" class="bg-gray-900 rounded-xl p-8 border border-gray-700 hidden">
             <h3 class="text-2xl font-bold text-yellow-300 mb-6">3. Set Up the "Checklists" Tab (Advanced Only)</h3>
             <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-3xl mx-auto">
-              <li>Click the <strong>+</strong> at bottom-left to add a new tab</li>
+              <li>Click the <strong>+</strong> at bottom-left to add new tab</li>
               <li>Rename it exactly: <strong class="text-yellow-300">Checklists</strong></li>
               <li>Click cell <strong>A1</strong> → Copy headers below → paste</li>
             </ol>
@@ -122,35 +124,43 @@
 
           <div class="text-center pt-8">
             <button onclick="nextStep()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-xl font-bold text-3xl">
-              I’ve Done This — Next Step
+              I've Done This — Next Step
             </button>
           </div>
         </div>
       </div>
 
-      <!-- STEP 3 -->
+      <!-- Step 3: Configuration -->
       <div id="step3" class="step space-y-10">
         <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings</h2>
         <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input type="text" id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">Secret Key (Monitor Dashboard)</label><input type="password" id="secretKey" placeholder="Strong password" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">First Alert After (minutes)</label><input type="number" id="firstAlert" value="15" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">Escalation After (minutes)</label><input type="number" id="escalation" value="5" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div id="orsField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService API Key</label><input type="text" id="orsKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div id="geminiField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key</label><input type="text" id="geminiKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Secret Key (Monitor Dashboard)</label><input id="secretKey" type="password" placeholder="Strong password" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">First Alert After (minutes)</label><input id="firstAlert" value="15" min="1" type="number" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Escalation After (minutes)</label><input id="escalation" value="5" min="1" type="number" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="orsField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService API Key (Distance)</label><input id="orsKey" placeholder="Optional • openrouteservice.org" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="geminiField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key (AI Spellcheck)</label><input id="geminiKey" placeholder="Optional • aistudio.google.com" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div class="md:col-span-2">
+            <label class="flex items-center space-x-4 text-lg">
+              <input id="checkinEnabled" type="checkbox" class="h-6 w-6 text-blue-600">
+              <span>Enable check-ins every</span>
+              <input id="checkinInterval" value="30" min="5" type="number" class="w-24 px-4 py-3 bg-gray-700 rounded-lg mx-2">
+              <span>minutes</span>
+            </label>
+          </div>
         </div>
         <div class="text-center">
-          <button onclick="generateScriptAndProceed()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-16 py-6 rounded-xl font-bold text-2xl">
-            Generate Apps Script Code
+          <button onclick="generateScriptAndProceed()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-16 py-6 rounded-xl font-bold text-2xl shadow-2xl transform hover:scale-105 transition">
+            Generate Apps Script Code →
           </button>
         </div>
       </div>
 
-      <!-- STEP 4 – BULLETPROOF DEPLOYMENT -->
+      <!-- Step 4: Deploy Script -->
       <div id="step4" class="step space-y-12">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Step 4: Connect Your Google Sheet</h2>
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 4: Deploy Your Google Apps Script</h2>
         <div class="bg-yellow-900/40 border-2 border-yellow-600 rounded-2xl p-10 text-center">
-          <p class="text-2xl font-bold text-yellow-300">This is the last technical step — we’ll do it together!</p>
+          <p class="text-2xl font-bold text-yellow-300">This is the last technical step — we'll do it together!</p>
         </div>
 
         <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
@@ -167,27 +177,28 @@
         </div>
 
         <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
-          <h3 class="text-2xl font-bold text-blue-400">2. Deploy → Get Your URL</h3>
-          <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-4xl mx-auto">
-            <li>Top-right → <strong>Deploy</strong> → <strong>New deployment</strong></li>
-            <li><strong>Select type</strong> → <strong>Web app</strong></li>
-            <li><strong>Who has access:</strong> <strong>Anyone</strong></li>
-            <li>Click <strong>Deploy</strong> → Allow permissions</li>
-            <li>Copy the URL that ends in <strong>/exec</strong> → it will appear in the test box below automatically</li>
+          <h3 class="text-2xl font-bold text-blue-400">2. Deploy as Web App (Exact Clicks)</h3>
+          <ol class="text-lg text-gray-300 space-y-6 list-decimal list-inside max-w-4xl mx-auto">
+            <li>Top-right → click <strong>Deploy</strong> → <strong>New deployment</strong></li>
+            <li>Click <strong>Select type</strong> → <strong>Web app</strong></li>
+            <li>Set <strong>Who has access</strong> → <strong>Anyone</strong></li>
+            <li>Click <strong>Deploy</strong> → Allow permissions when asked</li>
+            <li>Copy the URL that ends in <strong>/exec</strong></li>
           </ol>
         </div>
 
         <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700">
           <h3 class="text-2xl font-bold text-blue-400">3. Turn On 1-Minute Checks</h3>
+          <p class="text-xl text-gray-300 text-center mb-6">This makes alerts work automatically</p>
           <ol class="text-lg text-gray-300 space-y-4 list-decimal list-inside max-w-3xl mx-auto">
-            <li>Left sidebar → clock icon (<strong>Triggers</strong>)</li>
-            <li><strong>+ Add Trigger</strong> → Function: <strong>checkOverdueVisits</strong> → Every 1 minute</li>
+            <li>Left sidebar → click the clock icon (<strong>Triggers</strong>)</li>
+            <li><strong>+ Add Trigger</strong> → Function: <strong>checkOverdueWorkers</strong> → Every 1 minute</li>
             <li><strong>Save</strong></li>
           </ol>
         </div>
 
         <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-8">
-          <h3 class="text-2xl font-bold text-green-400">4. Live Test (5 Seconds)</h3>
+          <h3 class="text-2xl font-bold text-green-400">4. Test It Live (5 Seconds)</h3>
           <input type="url" id="testUrl" placeholder="Your /exec URL will appear here when pasted" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg" readonly>
           <button onclick="runLiveTest()" class="mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-20 py-10 rounded-2xl font-bold text-3xl">
             Test Connection Now
@@ -202,31 +213,82 @@
         </div>
       </div>
 
-      <!-- STEP 5 -->
-      <div id="step5" class="step space-y-8 text-center">
-        <h2 class="text-3xl font-bold text-blue-300">Step 5: Final Step</h2>
-        <p class="text-xl text-gray-300">Your URL is already filled in from the test</p>
-        <input type="url" id="webAppUrl" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg text-center" readonly>
-        <button onclick="finalizeWithWebAppUrl()" class="mt-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-xl font-bold text-3xl">
-          Generate Final Apps
-        </button>
+      <!-- Step 5: Logo & Finalize -->
+      <div id="step5" class="step space-y-12">
+        <h2 class="text-3xl font-bold text-center text-green-400">Connection Successful! 🎉</h2>
+        <div class="bg-green-900/50 border-2 border-green-600 rounded-2xl p-10 text-center">
+          <p class="text-2xl font-bold text-green-300">Your backend is ready and connected to your Google Sheet</p>
+        </div>
+
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700">
+          <h3 class="text-2xl font-bold text-blue-400">Add Your Company Logo (Recommended)</h3>
+          <p class="text-lg text-gray-300 mt-4">This will appear in the app header and PWA icon.</p>
+          <div class="upload-area mt-6" id="logoUpload">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="mt-2 text-sm text-gray-500">PNG, JPG, or SVG (up to 500KB)</p>
+            <input type="file" id="logoFile" accept="image/*,.svg" class="hidden">
+            <button onclick="document.getElementById('logoFile').click()" class="mt-4 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold text-white">
+              Choose Logo File
+            </button>
+            <p class="mt-4 text-sm text-gray-400">Or drag & drop your logo here</p>
+          </div>
+          <div id="logoPreview" class="mt-8 hidden flex justify-center">
+            <img id="logoImg" class="logo-preview shadow-lg" alt="Preview">
+            <button onclick="clearLogo()" class="ml-4 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm font-semibold text-white">Change Logo</button>
+          </div>
+          <div class="flex justify-center space-x-6 mt-8">
+            <button onclick="skipLogo()" class="bg-gray-600 hover:bg-gray-700 px-8 py-4 rounded-xl font-bold text-lg">Skip – Use Default</button>
+            <button onclick="generatePackage()" id="finalizeBtn" disabled class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-8 py-4 rounded-xl font-bold text-lg">
+              Generate My Apps
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- STEP 6 -->
+      <!-- Step 6: Success -->
       <div id="step6" class="step text-center py-20 space-y-12">
-        <div class="text-9xl">Success</div>
+        <div class="text-9xl">Success!</div>
         <h2 class="text-5xl font-bold text-green-400">Your Complete App Package Is Ready!</h2>
+        <p class="text-2xl text-gray-300 max-w-3xl mx-auto">Fully configured and linked to your Google Sheet</p>
         <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 px-20 py-10 rounded-3xl font-bold text-4xl shadow-2xl transform hover:scale-110 transition">
-          Download OTG_AppSuite.zip
+          Download %%COMPANY_NAME%%_AppSuite.zip
         </button>
+        <div class="mt-12 text-lg text-gray-400">
+          <p>Deploy to: <a href="https://pages.github.com" target="_blank" class="text-blue-400 underline">GitHub Pages</a> • <a href="https://netlify.com" target="_blank" class="text-blue-400 underline">Netlify</a> • <a href="https://vercel.com" target="_blank" class="text-blue-400 underline">Vercel</a></p>
+        </div>
       </div>
-
     </div>
   </div>
 
   <script>
-    const REPO_RAW = "https://raw.githubusercontent.com/loneworkernelson-web/LoneWorkerFullOTGPackage/main/Templates";
-    let config = {}, gasCode = "", finalZip;
+    const REPO = "https://raw.githubusercontent.com/loneworkernelson-web/LoneWorkerFullOTGPackage/main/Templates";
+    let currentStep = 1, zip, logoBlob = null;
+
+    function showStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('active');
+      document.querySelectorAll('.step-nav button').forEach((b, i) => b.classList.toggle('current', i + 1 === n));
+      currentStep = n;
+      if (n === 1) toggleAdvanced();
+    }
+
+    function nextStep() { showStep(currentStep + 1); }
+
+    function copyHeaders() {
+      navigator.clipboard.writeText(document.getElementById('headers').textContent);
+      const btn = document.querySelector('#step2 .copy-btn');
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy Visits Headers'; btn.classList.remove('copied'); }, 2000);
+    }
+
+    function copyChecklistsHeaders() {
+      navigator.clipboard.writeText(document.getElementById('checklistsHeaders').textContent);
+      const btn = document.querySelector('#checklistsSection .copy-btn');
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy Checklists Headers'; btn.classList.remove('copied'); }, 2000);
+    }
 
     function toggleAdvanced() {
       const adv = document.querySelector('input[value="advanced"]').checked;
@@ -234,50 +296,39 @@
       document.querySelectorAll('.hidden-field').forEach(el => el.classList.toggle('closed', !adv));
     }
 
-    function showStep(n) {
-      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-      document.getElementById('step' + n).classList.add('active');
-      document.querySelectorAll('.step-nav button').forEach((b, i) => b.classList.toggle('current', i + 1 === n));
-    }
-    function nextStep() {
-      const current = +document.querySelector('.step.active').id.replace('step', '');
-      showStep(current + 1);
-    }
-
-    function copyHeaders() { navigator.clipboard.writeText(document.getElementById('headers').textContent); alert("Visits headers copied!"); }
-    function copyChecklistsHeaders() { navigator.clipboard.writeText(document.getElementById('checklistsHeaders').textContent); alert("Checklists headers copied!"); }
-
     async function generateScriptAndProceed() {
-      config = {
-        orgName: document.getElementById('orgName').value || "My Company",
-        secretKey: document.getElementById('secretKey').value || "changeme123",
-        firstAlert: document.getElementById('firstAlert').value,
-        escalation: document.getElementById('escalation').value,
-        orsKey: document.getElementById('orsKey').value,
-        geminiKey: document.getElementById('geminiKey').value,
-        advanced: document.querySelector('input[value="advanced"]').checked
+      const config = {
+        SECRET_KEY: document.getElementById('secretKey').value || "changeme123",
+        VISITS_SHEET_NAME: "Visits",
+        CHECKLISTS_SHEET_NAME: "Checklists",
+        ESCALATION_MINUTES: document.getElementById('escalation').value,
+        FIRST_ALERT_MINUTES: document.getElementById('firstAlert').value,
+        PHOTOS_FOLDER_ID: "%%PHOTOS_FOLDER_ID%%" // Optional – set up later
       };
 
-      const template = await fetch(`${REPO_RAW}/apps_script_advanced.txt?t=${Date.now()}`).then(r => r.text());
-      gasCode = template.replace(/%%SECRET_KEY%%/g, config.secretKey)
-                       .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
-                       .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
-                       .replace(/%%ORS_API_KEY%%/g, config.orsKey)
-                       .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey);
-      document.getElementById('scriptDisplay').textContent = gasCode;
+      const template = await fetch(`${REPO}/apps_script_advanced.txt`).then(r => r.text());
+      const script = template
+        .replace(/%%SECRET_KEY%%/g, config.SECRET_KEY)
+        .replace(/%%VISITS_SHEET_NAME%%/g, config.VISITS_SHEET_NAME)
+        .replace(/%%CHECKLISTS_SHEET_NAME%%/g, config.CHECKLISTS_SHEET_NAME)
+        .replace(/%%ESCALATION_MINUTES%%/g, config.ESCALATION_MINUTES)
+        .replace(/%%FIRST_ALERT_MINUTES%%/g, config.FIRST_ALERT_MINUTES);
+
+      document.getElementById('scriptDisplay').textContent = script;
       showStep(4);
     }
 
     function copyScript() {
-      navigator.clipboard.writeText(gasCode);
-      alert("Full script copied! Paste it in script.new");
+      navigator.clipboard.writeText(document.getElementById('scriptDisplay').textContent);
+      const btn = document.querySelector('#step4 .copy-btn');
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy All Code'; btn.classList.remove('copied'); }, 2000);
     }
 
     document.addEventListener('paste', (e) => {
       const text = (e.clipboardData || window.clipboardData).getData('text');
       if (text.includes('/exec')) {
         document.getElementById('testUrl').value = text;
-        document.getElementById('webAppUrl').value = text;
       }
     });
 
@@ -285,55 +336,128 @@
       const url = document.getElementById('testUrl').value.trim();
       const result = document.getElementById('testResult');
       const btn = document.getElementById('proceedBtn');
-
       if (!url.includes('/exec')) { result.innerHTML = "Paste your /exec URL first"; return; }
 
       result.textContent = "Testing...";
       try {
-        const resp = await fetch(`${url}?test=1&key=${encodeURIComponent(config.secretKey)}`);
+        const resp = await fetch(`${url}?test=1&key=${encodeURIComponent(document.getElementById('secretKey').value)}`);
         const text = await resp.text();
         if (text.includes("OTG_SUCCESS")) {
-          result.innerHTML = "Perfect! Everything is connected!";
+          result.innerHTML = "Perfect! Everything is connected! 🎉";
           btn.disabled = false;
           btn.className = "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-24 py-12 rounded-2xl font-bold text-4xl cursor-pointer";
           document.getElementById('webAppUrl').value = url;
+          document.getElementById('testUrl').readOnly = true;
+          nextStep();
         } else {
-          result.innerHTML = "Failed — check secret key";
+          result.innerHTML = "Failed – check secret key";
         }
       } catch (e) {
-        result.innerHTML = "Connection error";
+        result.innerHTML = "Connection failed – double-check URL";
       }
     }
 
-    async function finalizeWithWebAppUrl() {
-      const webAppUrl = document.getElementById('webAppUrl').value.trim();
-      if (!webAppUrl.includes('/exec')) { alert("Please complete the test first"); return; }
+    function skipLogo() {
+      logoBlob = null;
+      document.getElementById('logoUpload').classList.remove('hidden');
+      document.getElementById('logoPreview').classList.add('hidden');
+      document.getElementById('finalizeBtn').disabled = false;
+      document.getElementById('finalizeBtn').textContent = "Generate My Apps";
+    }
 
-      const zip = new JSZip();
-      const workerFile = config.advanced ? "worker_app_advanced.txt" : "worker_app_simple.txt";
-      let workerHtml = await fetch(`${REPO_RAW}/${workerFile}?t=${Date.now()}`).then(r => r.text());
+    function clearLogo() {
+      logoBlob = null;
+      document.getElementById('logoFile').value = '';
+      document.getElementById('logoImg').src = '';
+      document.getElementById('logoPreview').classList.add('hidden');
+      document.getElementById('logoUpload').classList.remove('hidden');
+    }
 
-      workerHtml = workerHtml
-        .replace(/%%ORGANISATION_NAME%%/g, config.orgName)
-        .replace(/%%ORS_API_KEY%%/g, config.orsKey)
-        .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey)
-        .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
-        .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
-        .replace(/%%WEB_APP_URL%%/g, webAppUrl);
-
-      zip.file("index.html", workerHtml);
-      zip.file("monitor.html", await fetch(`${REPO_RAW}/monitor_app_template.txt?t=${Date.now()}`).then(r => r.text()));
-      zip.file("manifest.json", await fetch(`${REPO_RAW}/manifest.json?t=${Date.now()}`).then(r => r.text()));
-      zip.file("OTG_AppSuite_Documentation.pdf", await fetch("Templates/OTG_AppSuite_Documentation.pdf").then(r => r.blob()));
-
-      finalZip = await zip.generateAsync({type: "blob"});
-      showStep(6);
-      document.getElementById('downloadBtn').onclick = () => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(finalZip);
-        a.download = "OTG_AppSuite_Complete.zip";
-        a.click();
+    document.getElementById('logoFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file || file.size > 500000) {
+        alert("Please choose a file under 500KB (PNG, JPG, or SVG)");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const size = Math.max(img.width, img.height);
+          canvas.width = canvas.height = 512;
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, 512, 512);
+          ctx.drawImage(img, (512-size)/2, (512-size)/2, size, size);
+          canvas.toBlob(blob => {
+            logoBlob = blob;
+            document.getElementById('logoImg').src = URL.createObjectURL(blob);
+            document.getElementById('logoPreview').classList.remove('hidden');
+            document.getElementById('logoUpload').classList.add('hidden');
+            document.getElementById('finalizeBtn').disabled = false;
+          }, 'image/png');
+        };
+        img.src = evt.target.result;
       };
+      reader.readAsDataURL(file);
+    });
+
+    // Drag & drop
+    document.getElementById('logoUpload').addEventListener('dragover', e => {
+      e.preventDefault();
+      e.currentTarget.classList.add('dragover');
+    });
+    document.getElementById('logoUpload').addEventListener('dragleave', e => {
+      e.currentTarget.classList.remove('dragover');
+    });
+    document.getElementById('logoUpload').addEventListener('drop', e => {
+      e.preventDefault();
+      e.currentTarget.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      document.getElementById('logoFile').files = e.dataTransfer.files;
+      document.getElementById('logoFile').dispatchEvent(new Event('change'));
+    });
+
+    async function generatePackage() {
+      const isAdv = document.querySelector('input[value="advanced"]').checked;
+      const config = {
+        COMPANY_NAME: document.getElementById('orgName').value,
+        SECRET_KEY: document.getElementById('secretKey').value,
+        FIRST_ALERT_MINUTES: document.getElementById('firstAlert').value,
+        ESCALATION_MINUTES: document.getElementById('escalation').value,
+        CHECKIN_ENABLED: document.getElementById('checkinEnabled').checked,
+        CHECKIN_INTERVAL: document.getElementById('checkinInterval').value,
+        ORS_KEY: document.getElementById('orsKey').value,
+        GEMINI_KEY: document.getElementById('geminiKey').value,
+        WEB_APP_URL: document.getElementById('webAppUrl').value
+      };
+
+      zip = new JSZip();
+      try {
+        const workerTemplate = await fetch(`${REPO}/worker_app_advanced.txt`).then(r => r.text());
+        let workerHtml = workerTemplate.replace(/%%(COMPANY_NAME|SECRET_KEY|FIRST_ALERT_MINUTES|ESCALATION_MINUTES|CHECKIN_ENABLED|CHECKIN_INTERVAL|ORS_KEY|GEMINI_KEY|WEB_APP_URL)%%/g, (match, p1) => config[p1] || '');
+        if (logoBlob) {
+          const logoUrl = URL.createObjectURL(logoBlob);
+          workerHtml = workerHtml.replace(/%%LOGO_URL%%/g, logoUrl).replace(/%%FAVICON_URL%%/g, logoUrl);
+        }
+        zip.file("index.html", workerHtml);
+        zip.file("manifest.json", await fetch(`${REPO}/manifest.json`).then(r => r.text()));
+        zip.file("sw.js", await fetch(`${REPO}/sw.js`).then(r => r.text()));
+        zip.file("OTG_AppSuite_Documentation.pdf", await fetch("Templates/OTG_AppSuite_Documentation.pdf").then(r => r.blob()));
+
+        const finalBlob = await zip.generateAsync({type: "blob"});
+        showStep(6);
+        document.getElementById('downloadBtn').onclick = () => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(finalBlob);
+          a.download = `${config.COMPANY_NAME.replace(/[^a-zA-Z0-9]/g,'_')}_AppSuite.zip`;
+          a.click();
+        };
+      } catch (err) {
+        alert("Package generation failed: " + err);
+        showStep(3);
+      }
     }
 
     toggleAdvanced();
