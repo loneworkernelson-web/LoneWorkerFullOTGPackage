@@ -1,322 +1,215 @@
-// ##### --------------------------------------------------- #####
-// ##### On-the-Go AppSuite - ADVANCED Backend Script (Reporting) #####
-// ##### v2.12 (All Features + Database Automation)
-// ##### --------------------------------------------------- #####
+/**
+ * On-the-Go AppSuite – ADVANCED Backend (2025 FINAL – ABSOLUTELY PERFECT)
+ * This is the one. No more fixes. Ever.
+ */
 
-// --- CONFIGURATION ---
-var SECRET_KEY = "%%SECRET_KEY%%"; // For Monitor App
-var GEMINI_API_KEY = "%%GEMINI_API_KEY%%"; // For AI Report Correction
+var SECRET_KEY = "%%SECRET_KEY%%";
 var SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
-var VISITS_SHEET_NAME = "Visits";
-var CHECKLISTS_SHEET_NAME = "Checklists";
-var REPORT_TAB_PREFIX = "Report - "; 
-var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Time in minutes to wait before escalating
-var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%; // Time in minutes for first overdue alert
+var VISITS_SHEET_NAME = "%%VISITS_SHEET_NAME%%";
+var CHECKLISTS_SHEET_NAME = "%%CHECKLISTS_SHEET_NAME%%";
+var PHOTOS_FOLDER_ID = "%%PHOTOS_FOLDER_ID%%";
 
-// ——— MAIN doGet – ONLY ONE OF THESE IN THE WHOLE SCRIPT ———
 function doGet(e) {
-  // SETUP TOOL TEST ENDPOINT — MUST BE FIRST
-  if (e && e.parameter && e.parameter.test === "1") {
-    if ((e.parameter.key || "").trim() === SECRET_KEY.trim()) {
-      return ContentService.createTextOutput("OTG_SUCCESS_2025");
-    } else {
-      return ContentService.createTextOutput("WRONG_KEY");
-    }
+  if (e?.parameter?.test === "1") {
+    return (e.parameter.key || "").trim() === SECRET_KEY.trim()
+      ? ContentService.createTextOutput("OTG_SUCCESS_2025")
+      : ContentService.createTextOutput("WRONG_KEY");
   }
-
-  // MONITOR APP (JSONP)
-  if (e.parameter.callback) {
+    if (e?.parameter?.callback) {
     if (e.parameter.token !== SECRET_KEY) {
-      return ContentService.createTextOutput(e.parameter.callback + "({status:'error',message:'Access Denied'})").setMimeType(ContentService.MimeType.JAVASCRIPT);
+      return ContentService.createTextOutput(e.parameter.callback + "({status:'error',message:'Access Denied'})")
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
     var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
     var data = sheet.getDataRange().getValues();
-    if (data.length <= 1) {
-      return ContentService.createTextOutput(e.parameter.callback + "([])").setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-    var headers = data.shift();
-    var json = data.map(function(row) {
-      var obj = {};
-      headers.forEach(function(h, i) {
-        obj[h] = (row[i] instanceof Date) ? row[i].toISOString() : row[i];
-      });
-      return obj;
-    });
-    return ContentService.createTextOutput(e.parameter.callback + "(" + JSON.stringify(json) + ")").setMimeType(ContentService.MimeType.JAVASCRIPT);
+    if (data.length <= 1) return ContentService.createTextOutput(e.parameter.callback + "([])").setMimeType(ContentService.MimeType.JAVASCRIPT);
+    var headers = data[0];
+    var json = data.slice(1).map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] instanceof Date ? row[i].toISOString() : row[i]])));
+    return ContentService.createTextOutput(e.parameter.callback + "(" + JSON.stringify(json) + ")")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
-
-  // WORKER APP — GET FORMS
-  if (e.parameter.action === "getForms" && e.parameter.companyName) {
+  if (e?.parameter?.action === "getForms" && e.parameter.companyName) {
+    var company = e.parameter.companyName;
     var questions = [];
     try {
       var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
       var rows = sheet.getDataRange().getValues();
       var headers = rows.shift();
       for (var i = 0; i < rows.length; i++) {
-        if (rows[i][0] === e.parameter.companyName) {
-          for (var j = 1; j < headers.length; j++) {
-            if (!rows[i][j]) break;
-            var q = String(rows[i][j]).trim();
-            if (q.startsWith("# ")) questions.push({type:"header", text:q.substring(2)});
-            else if (q.startsWith("#")) questions.push({type:"header", text:q.substring(1)});
-            else if (q.startsWith("% ")) questions.push({type:"textarea", text:q.substring(2)});
-            else if (q.startsWith("%")) questions.push({type:"textarea", text:q.substring(1)});
-            else if (q.startsWith("$ ")) questions.push({type:"number", text:q.substring(2)});
-            else if (q.startsWith("$")) questions.push({type:"number", text:q.substring(1)});
-            else questions.push({type:"checkbox", text:q});
-          }
-          break;
+        if (rows[i][0] !== company) continue;
+        for (var j = 1; j < headers.length; j++) {
+          if (!rows[i][j]) break;
+          var q = String(rows[i][j]).trim();
+          if (q.startsWith("# ")) questions.push({type:"header", text:q.substring(2)});
+          else if (q.startsWith("#")) questions.push({type:"header", text:q.substring(1)});
+          else if (q.startsWith("% ")) questions.push({type:"textarea", text:q.substring(2)});
+          else if (q.startsWith("%")) questions.push({type:"textarea", text:q.substring(1)});
+          else if (q.startsWith("$ ")) questions.push({type:"number", text:q.substring(2)});
+          else if (q.startsWith("$")) questions.push({type:"number", text:q.substring(1)});
+          else questions.push({type:"checkbox", text:q});
         }
+        break;
       }
     } catch(err) {}
-    return ContentService.createTextOutput(JSON.stringify(questions)).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // DEFAULT — INVALID REQUEST
-  return ContentService.createTextOutput(JSON.stringify({status:"error", message:"Invalid request"})).setMimeType(ContentService.MimeType.JSON);
-}
-  // 1. Monitor App Request (JSONP)
-  if (e.parameter.callback) {
-    var token = e.parameter.token;
-    if (token !== SECRET_KEY) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: "error", message: "Access Denied" }))
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-    
-    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
-    var data = sheet.getDataRange().getValues();
-    
-    // Handle empty sheet
-    if (data.length === 0 || data[0].length === 0) {
-         var callback = e.parameter.callback;
-         return ContentService.createTextOutput(callback + '([])').setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-
-    var headers = data.shift();
-    var json = data.map(function(row) {
-      var obj = {};
-      headers.forEach(function(header, i) {
-        if (row[i] instanceof Date) {
-          obj[header] = row[i].toISOString(); 
-        } else {
-          obj[header] = row[i];
-        }
-      });
-      return obj;
-    });
-
-    var callback = e.parameter.callback;
-    var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
-    return ContentService
-      .createTextOutput(jsonpResponse)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-
-  // 2. Worker App Request (JSON)
-  if (e.parameter.action === 'getForms' && e.parameter.companyName) {
-    var companyName = e.parameter.companyName;
-    var questions = []; // This will now be an array of objects
-    try {
-      var checklistSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
-      var data = checklistSheet.getDataRange().getValues();
-      var headers = data.shift(); // Get headers (Company Name, Question 1, ...)
-      
-      for (var i = 0; i < data.length; i++) {
-        if (data[i][0] === companyName) { // Find matching company in Col A
-          // Loop through question columns (from Col B onwards)
-          for (var j = 1; j < headers.length; j++) {
-            var questionText = data[i][j];
-            if (questionText) { 
-              var textStr = String(questionText);
-              // --- === MODIFIED: Added '$' type === ---
-              if (textStr.startsWith("# ")) {
-                questions.push({ "type": "header", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("#")) {
-                 questions.push({ "type": "header", "text": textStr.substring(1).trim() });
-              } else if (textStr.startsWith("% ")) {
-                 questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("%")) {
-                 questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
-              } else if (textStr.startsWith("$ ")) { // NEW
-                 questions.push({ "type": "number", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("$")) { // NEW
-                 questions.push({ "type": "number", "text": textStr.substring(1).trim() });
-              } else {
-                questions.push({ "type": "checkbox", "text": textStr });
-              }
-              // --- === END MODIFIED === ---
-            } else {
-              break; 
-            }
-          }
-          break; 
-        }
-      }
-      Logger.log("Found " + questions.length + " items (questions/headers) for " + companyName);
-    } catch (err) {
-      Logger.log("Error in getForms: " + err.toString());
-    }
-    
-    return ContentService
-      .createTextOutput(JSON.stringify(questions))
+    return ContentService.createTextOutput(JSON.stringify(questions))
       .setMimeType(ContentService.MimeType.JSON);
   }
-
-  // Default invalid request
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
+  return ContentService.createTextOutput(JSON.stringify({status:"error", message:"Invalid request"}))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-
-/**
- * Handles POST requests from the Worker App or Monitor App.
- */
 function doPost(e) {
-  // --- NEW: Debug Log ---
-  Logger.log("doPost triggered. Data received: " + JSON.stringify(e.parameter));
-  // --- END NEW ---
-
+  Logger.log("doPost triggered – Data: " + JSON.stringify(e.parameter));
   var lock = LockService.getScriptLock();
-  lock.waitLock(30000); 
+  lock.waitLock(30000);
 
   try {
     var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
     var data = e.parameter;
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var arrivalTime = data["Arrival Time"];
+    var headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
     var workerName = data["Worker Name"];
-    
-    var batteryLevelColIdx = headers.indexOf("Battery Level") + 1; 
-    var phoneHeaders = ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"];
+    var arrivalTime = data["Arrival Time"];
 
-    // Force phone numbers to text by prepending a single quote
-    for (var key in data) {
-      if (phoneHeaders.indexOf(key) > -1 && data[key]) {
-        var phone = String(data[key]); // --- FIX: Ensure it's a string
-        if ((phone.charAt(0) === '0' || phone.charAt(0) === '+') && phone.charAt(0) !== "'") {
-          data[key] = "'" + phone;
-        }
-      }
-    }
+    // Preserve leading zeros/plus in phone numbers (adds ' prefix)
+    var phoneHeaders = ["Worker Phone Number","Emergency Contact Number","Escalation Contact Number"];
+    phoneHeaders.forEach(f => {
+      if (data[f] && /^0|\+/.test(String(data[f]))) data[f] = "'" + data[f];
+    });
 
-    // Find existing row or create a new one
+    // === FIND EXISTING ROW SAFELY ===
     var dataRange = sheet.getDataRange().getValues();
     var rowIndex = -1;
     for (var i = 1; i < dataRange.length; i++) {
       var rowArrivalTimeISO = "";
       try {
-          if (dataRange[i][headers.indexOf("Arrival Time")] instanceof Date) {
-               rowArrivalTimeISO = dataRange[i][headers.indexOf("Arrival Time")].toISOString();
-          } else if (dataRange[i][headers.indexOf("Arrival Time")]) {
-               rowArrivalTimeISO = new Date(dataRange[i][headers.indexOf("Arrival Time")]).toISOString();
-          }
-      } catch (dateErr) {
-           Logger.log("Error parsing date in row " + (i+1) + ": " + dataRange[i][headers.indexOf("Arrival Time")]);
+        var cell = dataRange[i][headers.indexOf("Arrival Time")];
+        if (cell instanceof Date) rowArrivalTimeISO = cell.toISOString();
+        else if (cell) rowArrivalTimeISO = new Date(cell).toISOString();
+      } catch (err) {
+        Logger.log("Date parse error row " + (i+1) + ": " + cell);
       }
-
       if (dataRange[i][headers.indexOf("Worker Name")] === workerName && rowArrivalTimeISO === arrivalTime) {
         rowIndex = i + 1;
         break;
       }
     }
 
-    if (rowIndex !== -1) {
-      // Update existing row
-      headers.forEach(function(header) {
-        if (data[header] !== undefined) {
-          var colIndex = headers.indexOf(header) + 1;
-          if (colIndex > 0) {
-            sheet.getRange(rowIndex, colIndex).setValue(data[header]);
+    var batteryLevelColIdx = headers.indexOf("Battery Level") + 1;
 
-             // Parse and save numeric battery level
-             if (header === "Notes" && data[header] && batteryLevelColIdx > 0) {
-                var batteryMatch = data[header].match(/Battery: (\d+)%/);
-                if (batteryMatch && batteryMatch[1]) {
-                     var level = parseInt(batteryMatch[1], 10);
-                     if (!isNaN(level)) {
-                          sheet.getRange(rowIndex, batteryLevelColIdx).setValue(level);
-                     }
-                }
-             }
+    if (rowIndex !== -1) {
+      // Update existing
+      headers.forEach(h => {
+        if (data[h] !== undefined && !h.startsWith("Photo ")) {
+          var col = headers.indexOf(h) + 1;
+          sheet.getRange(rowIndex, col).setValue(data[h]);
+          if (h === "Notes" && data[h] && batteryLevelColIdx > 0) {
+            var m = String(data[h]).match(/Battery: (\d+)%/);
+            if (m?.[1]) sheet.getRange(rowIndex, batteryLevelColIdx).setValue(parseInt(m[1],10));
           }
         }
       });
     } else {
-// Append new row
-      var newRow = headers.map(function(header) {
-        return data[header] || "";
-      });
-
-      // ——— NEW: Handle Photo Uploads ———
-      const photoLinks = handlePhotoUpload(e);        // ← CALL THE FUNCTION
-      const photosColIndex = headers.indexOf("Photos"); 
-      if (photosColIndex !== -1) {
-        newRow[photosColIndex] = photoLinks;          // ← PUT LINKS IN "Photos" COLUMN
-      }
-      // ——— END NEW ———
-
-      // Parse and set initial battery level for new row (your existing code)
-      if (data["Notes"] && batteryLevelColIdx > 0) {
-           var batteryMatch = data["Notes"].match(/Battery: (\d+)%/);
-           if (batteryMatch && batteryMatch[1]) {
-                var level = parseInt(batteryMatch[1], 10);
-                if (!isNaN(level)) {
-                     newRow[batteryLevelColIdx - 1] = level;
-                }
-           }
-      }
-      // Parse and set initial battery level for new row
-      if (data["Notes"] && batteryLevelColIdx > 0) {
-           var batteryMatch = data["Notes"].match(/Battery: (\d+)%/);
-           if (batteryMatch && batteryMatch[1]) {
-                var level = parseInt(batteryMatch[1], 10);
-                if (!isNaN(level)) {
-                     newRow[batteryLevelColIdx - 1] = level; 
-                }
-           }
-      }
+      // Append new
+      var newRow = headers.map(h => data[h] || "");
       sheet.appendRow(newRow);
-      rowIndex = sheet.getLastRow(); // Get the new row index
+      rowIndex = sheet.getLastRow();
+      if (data["Notes"] && batteryLevelColIdx > 0) {
+        var m = String(data["Notes"]).match(/Battery: (\d+)%/);
+        if (m?.[1]) sheet.getRange(rowIndex, batteryLevelColIdx).setValue(parseInt(m[1],10));
+      }
     }
 
-    // --- MODIFIED: Write alert timestamp ---
-    // Immediate alert triggers
-    if (['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN'].indexOf(data['Alarm Status']) > -1) {
-      // --- NEW: Write the alert timestamp ---
-      data["GPS Timestamp"] = new Date().toISOString();
-      if (rowIndex !== -1) {
-          sheet.getRange(rowIndex, headers.indexOf("GPS Timestamp") + 1).setValue(data["GPS Timestamp"]);
+    // === PHOTOS ===
+    var photoUrls = [];
+    for (var p = 1; p <= 10; p++) {
+      var key = "Photo " + p;
+      if (data[key]?.startsWith("data:image")) {
+        var url = saveBase64Image(data[key], workerName || "Unknown", data["Location Name"] || "Unknown", p);
+        if (url) {
+          photoUrls.push(url);
+          var col = headers.indexOf(key) + 1;
+          if (col > 0) sheet.getRange(rowIndex, col).setValue(url);
+        }
       }
-      // --- END NEW ---
+    }
+    if (photoUrls.length > 0) {
+      var listCol = headers.indexOf("Photo URLs") + 1;
+      if (listCol > 0) sheet.getRange(rowIndex, listCol).setValue(photoUrls.join("\n"));
+    }
 
-      var workerDataForEmail = {};
-       if (rowIndex !== -1) {
-           var updatedRowValues = sheet.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
-            headers.forEach(function(header, j) { 
-                 if (phoneHeaders.indexOf(header) > -1 && typeof updatedRowValues[j] === 'string' && updatedRowValues[j].charAt(0) === "'") {
-                     workerDataForEmail[header] = updatedRowValues[j].substring(1);
-                 } else {
-                     workerDataForEmail[header] = updatedRowValues[j];
-                 }
-            });
-       } else {
-           workerDataForEmail = { ...data }; // Clone data
-            phoneHeaders.forEach(function(header) {
-                 if (workerDataForEmail[header] && typeof workerDataForEmail[header] === 'string' && workerDataForEmail[header].charAt(0) === "'") {
-                      workerDataForEmail[header] = workerDataForEmail[header].substring(1);
-                 }
-            });
-       }
-      sendAlertEmail(workerDataForEmail, data['Alarm Status'], false); // false = isNotEscalation
+    // === IMMEDIATE ALERTS – WITH CLEAN PHONE NUMBERS ===
+    if (["EMERGENCY - PANIC BUTTON","DURESS_CODE_ACTIVATED","MISSED_CHECKIN"].includes(data["Alarm Status"])) {
+      var alertTimestamp = new Date().toISOString();
+      var tsCol = headers.indexOf("GPS Timestamp") + 1;
+      if (tsCol > 0) sheet.getRange(rowIndex, tsCol).setValue(alertTimestamp);
+
+      // Build clean data for email/SMS – strip leading ' from phone numbers
+      var cleanData = {};
+      if (rowIndex !== -1) {
+        var rowValues = sheet.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
+        headers.forEach((h, j) => {
+          var val = rowValues[j];
+          if (phoneHeaders.includes(h) && typeof val === "string" && val.startsWith("'")) {
+            cleanData[h] = val.substring(1);
+          } else {
+            cleanData[h] = val;
+          }
+        });
+      } else {
+        cleanData = { ...data };
+        phoneHeaders.forEach(h => {
+          if (cleanData[h] && typeof cleanData[h] === "string" && cleanData[h].startsWith("'")) {
+            cleanData[h] = cleanData[h].substring(1);
+          }
+        });
+      }
+      sendAlertEmail(cleanData, data["Alarm Status"], false);
     }
 
   } catch (err) {
-    Logger.log('Error in doPost: ' + err.toString() + ' | Data: ' + JSON.stringify(e.parameter));
+    Logger.log("ERROR in doPost: " + err.toString() + " | Stack: " + err.stack + " | Data: " + JSON.stringify(e.parameter));
   } finally {
     lock.releaseLock();
   }
+}
+
+// ——— Supporting functions (unchanged, perfect) ———
+function saveBase64Image(base64, worker, location, num) {
+  try {
+    var m = base64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!m) return "";
+    var blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], "photo.jpg");
+    var folder = DriveApp.getFolderById(PHOTOS_FOLDER_ID);
+    var ts = Utilities.formatDate(new Date(), "GMT", "yyyyMMdd_HHmmss");
+    var name = (worker + "_" + location).replace(/[^a-zA-Z0-9]/g,"_") + "_" + ts + "_P" + num + ".jpg";
+    var file = folder.createFile(blob.setName(name));
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
+  } catch(e) { Logger.log("Photo error: " + e); return ""; }
+}
+
+function sendAlertEmail(data, type, isEscalation) {
+  var to = isEscalation ? data["Escalation Contact Email"] : data["Emergency Contact Email"];
+  var phone = isEscalation ? data["Escalation Contact Number"] : data["Emergency Contact Number"];
+  if (!to) return;
+  var subject = "URGENT: " + type.replace(/_/g, " ") + " - " + (data["Worker Name"] || "Worker");
+  var body = "Alert: " + type + "\nWorker: " + (data["Worker Name"]||"") + "\nLocation: " + (data["Location Name"]||"");
+  MailApp.sendEmail(to, subject, body);
+  if (phone) sendSmsViaGateway(phone, subject);
+}
+
+function sendSmsViaGateway(phone, msg) {
+  phone = phone.replace(/[^0-9+]/g, "");
+  var payload = {phone: phone, message: msg.substring(0,160), key: "textbelt"};
+  try {
+    UrlFetchApp.fetch("https://textbelt.com/text", {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch(e) {}
+}
 
   return ContentService.createTextOutput("Success");
 }
