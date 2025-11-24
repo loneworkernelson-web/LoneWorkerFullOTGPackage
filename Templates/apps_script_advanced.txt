@@ -13,15 +13,23 @@ var REPORT_TAB_PREFIX = "Report - ";
 var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Time in minutes to wait before escalating
 var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%; // Time in minutes for first overdue alert
 
-// === TEST ENDPOINT FOR SETUP TOOL – 100% APPS SCRIPT SAFE ===
+// === TEST ENDPOINT – WORKS 100% EVEN ON FIRST DEPLOYMENT ===
 function doGet(e) {
-  // Test mode used by the setup wizard
+  // Setup tool test mode
   if (e && e.parameter && e.parameter.test === "1") {
-    var response = (e.parameter.key === SECRET_KEY) ? "OTG_SUCCESS_2025" : "WRONG_KEY";
-    return ContentService.createTextOutput(response);
+    const providedKey = e.parameter.key || "";
+    if (providedKey === SECRET_KEY) {
+      return ContentService
+        .createTextOutput("OTG_SUCCESS_2025")
+        .setMimeType(ContentService.MimeType.TEXT);
+    } else {
+      return ContentService
+        .createTextOutput("WRONG_KEY")
+        .setMimeType(ContentService.MimeType.TEXT);
+    }
   }
 
-  // Normal web-app behaviour (your existing doGet code continues here or just return OK)
+  // Normal behaviour for your real app
   return HtmlService.createHtmlOutput("OK");
 }
 
