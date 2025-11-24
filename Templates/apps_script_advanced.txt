@@ -192,10 +192,29 @@ function doPost(e) {
         }
       });
     } else {
-      // Append new row
+// Append new row
       var newRow = headers.map(function(header) {
         return data[header] || "";
       });
+
+      // ——— NEW: Handle Photo Uploads ———
+      const photoLinks = handlePhotoUpload(e);        // ← CALL THE FUNCTION
+      const photosColIndex = headers.indexOf("Photos"); 
+      if (photosColIndex !== -1) {
+        newRow[photosColIndex] = photoLinks;          // ← PUT LINKS IN "Photos" COLUMN
+      }
+      // ——— END NEW ———
+
+      // Parse and set initial battery level for new row (your existing code)
+      if (data["Notes"] && batteryLevelColIdx > 0) {
+           var batteryMatch = data["Notes"].match(/Battery: (\d+)%/);
+           if (batteryMatch && batteryMatch[1]) {
+                var level = parseInt(batteryMatch[1], 10);
+                if (!isNaN(level)) {
+                     newRow[batteryLevelColIdx - 1] = level;
+                }
+           }
+      }
       // Parse and set initial battery level for new row
       if (data["Notes"] && batteryLevelColIdx > 0) {
            var batteryMatch = data["Notes"].match(/Battery: (\d+)%/);
@@ -1719,4 +1738,33 @@ function handlePhotoUpload(e) {
     }
   }
   return links.join(" | ");
+}
+// ——————————————————————————————————————
+// NEW: Photo Upload Handler (up to 5 photos)
+// ——————————————————————————————————————
+function handlePhotoUpload(e) {
+  // Skip if no photos were sent
+  if (!e || !e.files || Object.keys(e.files).length === 0) return "";
+
+  const orgName = PropertiesService.getScriptProperties().getProperty("ORG_NAME") || "OTG AppSuite";
+  let folder;
+  try {
+    const folders = DriveApp.getFoldersByName("OTG AppSuite Photos – " + orgName);
+    folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("OTG AppSuite Photos – " + orgName);
+  } catch (err) {
+    folder = DriveApp.createFolder("OTG AppSuite Photos – " + orgName);
+  }
+
+  const links = [];
+  for (let i = 1; i <= 5; i++) {
+    const fileKey = "photo" + i;
+    if (e.files && e.files[fileKey]) {
+      const blob = e.files[fileKey].blob;
+      blob.setName("VisitPhoto_" + new Date().getTime() + "_" + i + ".jpg");
+      const uploadedFile = folder.createFile(blob);
+      uploadedFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      links.push(uploadedFile.getUrl());
+    }
+  }
+  return links.join(" | "); // Same separator you already use elsewhere
 }
