@@ -36,10 +36,6 @@ function doGet(e) {
   }
 }{"status":"error","message":"Invalid request"}
 
-  // Normal behaviour for your real app
-  return HtmlService.createHtmlOutput("OK");
-}
-
 // --- PDF REPORTING CONFIGURATION ---
 var DEFAULT_REPORT_TEMPLATE_ID = "YOUR_DEFAULT_TEMPLATE_ID_HERE"; 
 var PDF_OUTPUT_FOLDER_ID = "YOUR_OUTPUT_FOLDER_ID_HERE";
