@@ -512,7 +512,36 @@
       document.getElementById('scriptDisplay').textContent = script;
       showStep(4);
     }
+    async function finalizeWithWebAppUrl() {
+      const webAppUrl = document.getElementById('webAppUrl').value.trim();
+      if (!webAppUrl.includes('/exec')) { alert("Please complete the test first"); return; }
 
+      const zip = new JSZip();
+      const workerFile = config.advanced ? "worker_app_advanced.txt" : "worker_app_simple.txt";
+      let workerHtml = await fetch(`${REPO_RAW}/${workerFile}?t=${Date.now()}`).then(r => r.text());
+
+      workerHtml = workerHtml
+        .replace(/%%ORGANISATION_NAME%%/g, config.orgName)
+        .replace(/%%ORS_API_KEY%%/g, config.orsKey)
+        .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey)
+        .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
+        .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
+        .replace(/%%WEB_APP_URL%%/g, webAppUrl);
+
+      zip.file("index.html", workerHtml);
+      zip.file("monitor.html", await fetch(`${REPO_RAW}/monitor_app_template.txt?t=${Date.now()}`).then(r => r.text()));
+      zip.file("manifest.json", await fetch(`${REPO_RAW}/manifest.json?t=${Date.now()}`).then(r => r.text()));
+      zip.file("OTG_AppSuite_Documentation.pdf", await fetch("Templates/OTG_AppSuite_Documentation.pdf").then(r => r.blob()));
+
+      finalZip = await zip.generateAsync({type: "blob"});
+      showStep(6);
+      document.getElementById('downloadBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(finalZip);
+        a.download = "OTG_AppSuite_Complete.zip";
+        a.click();
+      };
+    }
     toggleAdvanced();
   </script>
 </body>
