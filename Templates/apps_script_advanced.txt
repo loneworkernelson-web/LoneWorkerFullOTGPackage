@@ -7,6 +7,8 @@ var SECRET_KEY = "%%SECRET_KEY%%";
 var SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
 var VISITS_SHEET_NAME = "%%VISITS_SHEET_NAME%%";
 var CHECKLISTS_SHEET_NAME = "%%CHECKLISTS_SHEET_NAME%%";
+var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
+var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%;
 var PHOTOS_FOLDER_ID = "%%PHOTOS_FOLDER_ID%%";
 
 function doGet(e) {
@@ -196,22 +198,6 @@ function sendAlertEmail(data, type, isEscalation) {
   var body = "Alert: " + type + "\nWorker: " + (data["Worker Name"]||"") + "\nLocation: " + (data["Location Name"]||"");
   MailApp.sendEmail(to, subject, body);
   if (phone) sendSmsViaGateway(phone, subject);
-}
-
-function sendSmsViaGateway(phone, msg) {
-  phone = phone.replace(/[^0-9+]/g, "");
-  var payload = {phone: phone, message: msg.substring(0,160), key: "textbelt"};
-  try {
-    UrlFetchApp.fetch("https://textbelt.com/text", {
-      method: "post",
-      contentType: "application/json",
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-  } catch(e) {}
-}
-
-  return ContentService.createTextOutput("Success");
 }
 
 // --- AUTOMATED TRIGGER FUNCTION ---
@@ -1664,52 +1650,4 @@ function msToTime(duration) {
   let minutes = Math.floor((duration / (1000 * 60)) % 60);
   let hours = Math.floor((duration / (1000 * 60 * 60)));
   return hours + "h " + minutes + "m";
-}
-function handlePhotoUpload(e) {
-  if (!e.parameter.photoCount) return "";
-  const orgName = PropertiesService.getScriptProperties().getProperty("ORG_NAME") || "Unknown Org";
-  let folder = DriveApp.getFoldersByName("OTG AppSuite Photos – " + orgName);
-  if (!folder.hasNext()) folder = DriveApp.createFolder("OTG AppSuite Photos – " + orgName);
-  else folder = folder.next();
-
-  const links = [];
-  for (let i = 1; i <= 5; i++) {
-    const file = e.files["photo" + i];
-    if (file) {
-      const blob = file.blob || Utilities.newBlob(Utilities.base64Decode(file.base64), file.mimeType, file.filename);
-      const uploaded = folder.createFile(blob);
-      uploaded.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      links.push(uploaded.getUrl());
-    }
-  }
-  return links.join(" | ");
-}
-// ——————————————————————————————————————
-// NEW: Photo Upload Handler (up to 5 photos)
-// ——————————————————————————————————————
-function handlePhotoUpload(e) {
-  // Skip if no photos were sent
-  if (!e || !e.files || Object.keys(e.files).length === 0) return "";
-
-  const orgName = PropertiesService.getScriptProperties().getProperty("ORG_NAME") || "OTG AppSuite";
-  let folder;
-  try {
-    const folders = DriveApp.getFoldersByName("OTG AppSuite Photos – " + orgName);
-    folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("OTG AppSuite Photos – " + orgName);
-  } catch (err) {
-    folder = DriveApp.createFolder("OTG AppSuite Photos – " + orgName);
-  }
-
-  const links = [];
-  for (let i = 1; i <= 5; i++) {
-    const fileKey = "photo" + i;
-    if (e.files && e.files[fileKey]) {
-      const blob = e.files[fileKey].blob;
-      blob.setName("VisitPhoto_" + new Date().getTime() + "_" + i + ".jpg");
-      const uploadedFile = folder.createFile(blob);
-      uploadedFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      links.push(uploadedFile.getUrl());
-    }
-  }
-  return links.join(" | "); // Same separator you already use elsewhere
 }
