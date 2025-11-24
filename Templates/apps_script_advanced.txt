@@ -13,6 +13,7 @@ var REPORT_TAB_PREFIX = "Report - ";
 var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%; // Time in minutes to wait before escalating
 var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%; // Time in minutes for first overdue alert
 
+// ——— MAIN doGet – ONLY ONE OF THESE IN THE WHOLE SCRIPT ———
 function doGet(e) {
   // ——— SETUP TOOL TEST ENDPOINT (MUST BE FIRST) ———
   if (e && e.parameter && e.parameter.test === "1") {
@@ -23,29 +24,92 @@ function doGet(e) {
     }
   }
 
-  // ——— YOUR REAL APP CODE BELOW (leave exactly as-is) ———
-  // (your existing doGet code that returns JSON, etc.)
-  try {
-    // ... all your existing code that sometimes returns {"status":"error",...}
-    // keep everything you already have here
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "error",
-      message: err.message || "Unknown error"
-    })).setMimeType(ContentService.MimeType.JSON);
+  // ——— MONITOR APP JSONP REQUEST ———
+  if (e.parameter.callback) {
+    var token = e.parameter.token;
+    if (token !== SECRET_KEY) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: "error", message: "Access Denied" }))
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+   
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
+    var data = sheet.getDataRange().getValues();
+   
+    if (data.length === 0 || data[0].length === 0) {
+         var callback = e.parameter.callback;
+         return ContentService.createTextOutput(callback + '([])').setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    var headers = data.shift();
+    var json = data.map(function(row) {
+      var obj = {};
+      headers.forEach(function(header, i) {
+        if (row[i] instanceof Date) {
+          obj[header] = row[i].toISOString();
+        } else {
+          obj[header] = row[i];
+        }
+      });
+      return obj;
+    });
+    var callback = e.parameter.callback;
+    var jsonpResponse = callback + '(' + JSON.stringify(json) + ')';
+    return ContentService
+      .createTextOutput(jsonpResponse)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
-}{"status":"error","message":"Invalid request"}
 
-// --- PDF REPORTING CONFIGURATION ---
-var DEFAULT_REPORT_TEMPLATE_ID = "YOUR_DEFAULT_TEMPLATE_ID_HERE"; 
-var PDF_OUTPUT_FOLDER_ID = "YOUR_OUTPUT_FOLDER_ID_HERE";
+  // ——— WORKER APP: GET FORMS ———
+  if (e.parameter.action === 'getForms' && e.parameter.companyName) {
+    var companyName = e.parameter.companyName;
+    var questions = [];
+    try {
+      var checklistSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CHECKLISTS_SHEET_NAME);
+      var data = checklistSheet.getDataRange().getValues();
+      var headers = data.shift();
+     
+      for (var i = 0; i < data.length; i++) {
+        if (data[i][0] === companyName) {
+          for (var j = 1; j < headers.length; j++) {
+            var questionText = data[i][j];
+            if (questionText) {
+              var textStr = String(questionText);
+              if (textStr.startsWith("# ")) {
+                questions.push({ "type": "header", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("#")) {
+                 questions.push({ "type": "header", "text": textStr.substring(1).trim() });
+              } else if (textStr.startsWith("% ")) {
+                 questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("%")) {
+                 questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
+              } else if (textStr.startsWith("$ ")) {
+                 questions.push({ "type": "number", "text": textStr.substring(2).trim() });
+              } else if (textStr.startsWith("$")) {
+                 questions.push({ "type": "number", "text": textStr.substring(1).trim() });
+              } else {
+                questions.push({ "type": "checkbox", "text": textStr });
+              }
+            } else {
+              break;
+            }
+          }
+          break;
+        }
+      }
+    } catch (err) {
+      Logger.log("Error in getForms: " + err.toString());
+    }
+   
+    return ContentService
+      .createTextOutput(JSON.stringify(questions))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
-// --- LONGITUDINAL REPORTING CONFIGURATION ---
-var LONGITUDINAL_ID_HEADER = "Longitudinal Report Sheet ID";
-
-
-// --- WEB APP ENDPOINTS ---
-function doGet(e) {
+  // ——— DEFAULT: INVALID REQUEST ———
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: "error", message: "Invalid request" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
   // 1. Monitor App Request (JSONP)
   if (e.parameter.callback) {
     var token = e.parameter.token;
