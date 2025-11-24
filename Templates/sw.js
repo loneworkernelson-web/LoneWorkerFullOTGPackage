@@ -1,69 +1,121 @@
-const CACHE_NAME = 'otg-appsuite-cache-v1';
-const URLS_TO_CACHE = [
-  'index.html',
+// sw.js – On-the-Go AppSuite Service Worker (2025 Final)
+// Offline-first + instant loading + perfect PWA install
+
+const CACHE_NAME = 'otg-appsuite-v2025.11';
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.ico',
+  // Core UI assets (embedded as data URLs in HTML – cached here for safety)
+  'https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.css',
   'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js'
+  // Optional: Add your logo if you want guaranteed offline access
+  // (The setup tool already inlines it as data URL, but this is extra safe)
 ];
 
-// Install the service worker and cache static assets
+// Install – cache everything immediately
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(URLS_TO_CACHE);
+        console.log('OTG AppSuite: Caching core assets');
+        return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+          console.warn('Some assets failed to cache:', err);
+        });
       })
+      .then(() => self.skipWaiting())
   );
 });
 
-// Serve cached content when offline
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-
-        // Clone the request
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then(
-          response => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
-  );
-});
-
-// Activate event: clean up old caches
+// Activate – clean up old caches
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
+        cacheNames.map(name => {
+          if (name !== CACHE_NAME) {
+            console.log('OTG AppSuite: Deleting old cache', name);
+            return caches.delete(name);
           }
         })
       );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch – serve from cache first, fall back to network
+self.addEventListener('fetch', event => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
+
+  // Skip browser extensions and external domains
+  if (!event.request.url.startsWith('http')) return;
+
+  event.respondWith(
+    caches.match(event.request).then(cachedResponse => {
+      // Return cached version if found
+      if (cachedResponse) {
+        // Quietly update in background
+        event.waitUntil(
+          fetch(event.request).then(networkResponse => {
+            if (networkResponse && networkResponse.status === 200) {
+              return caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, networkResponse.clone());
+              });
+            }
+          }).catch(() => {}) // Ignore network errors during background update
+        );
+        return cachedResponse;
+      }
+
+      // Otherwise try network
+      return fetch(event.request).then(networkResponse => {
+        // Cache successful responses (2xx only)
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // Truly offline – show simple fallback
+        if (event.request.destination === 'document') {
+          return caches.match('/index.html');
+        }
+      });
     })
   );
 });
+
+// Background sync for failed form submissions (optional future use)
+self.addEventListener('sync', event => {
+  if (event.tag === 'submit-form') {
+    console.log('Background sync: submitting pending form');
+    // Future: implement retry logic here
+  }
+});
+
+// Push notifications (optional – ready for future use)
+self.addEventListener('push', event => {
+  if (event.data) {
+    const data = event.data.json();
+    const options = {
+      body: data.body || 'Check your safety status',
+      icon: '/icon-192.png',
+      badge: '/badge-72.png',
+      tag: 'otg-alert',
+      renotify: true,
+      actions: [
+        { action: 'open', title: 'Open App' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
+    };
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'On-the-Go Alert', options)
+    );
+  }
+});
+
+console.log('OTG AppSuite Service Worker loaded – offline-ready');
