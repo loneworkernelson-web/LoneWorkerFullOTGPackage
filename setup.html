@@ -24,283 +24,195 @@
       <p class="text-xl text-gray-400">Full Production Setup Wizard • November 2025</p>
     </div>
 
-    <!-- Step Navigation -->
     <div class="step-nav flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-lg">
       <button type="button" class="current" onclick="showStep(1)">1. Welcome</button>
       <button type="button" onclick="showStep(2)">2. Sheet Setup</button>
       <button type="button" onclick="showStep(3)">3. Configuration</button>
       <button type="button" onclick="showStep(4)">4. Deploy Script</button>
-      <button type="button" onclick="showStep(5)">5. Test & Finalise</button>
+      <button type="button" onclick="showStep(5)">5. Paste URL</button>
       <button type="button" onclick="showStep(6)">6. Done!</button>
     </div>
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 md:p-12">
 
-      <!-- Step 1: Welcome -->
-        <div id="step1" class="step active space-y-10">
-          <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
-          <p class="text-center text-xl text-gray-400 max-w-3xl mx-auto">Both versions are completely free and full-featured. Pick the one that matches your needs.</p>
-
-          <div class="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-
-            <!-- SIMPLE APP OPTION -->
-            <label class="block cursor-pointer">
-              <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
-              <div class="bg-gray-900 border-4 border-gray-700 rounded-2xl p-10 text-center hover:border-green-500 transition-all duration-300 peer-checked:border-green-500 peer-checked:bg-green-900/20 shadow-xl">
-                <div class="text-7xl mb-6">Shield</div>
-                <h3 class="text-3xl font-bold mb-4">Simple Lone Worker App</h3>
-                <p class="text-gray-300 text-lg leading-relaxed">Perfect for most teams</p>
-                <ul class="mt-6 space-y-3 text-left text-gray-200">
-                  <li>Check-in / Check-out with timer</li>
-                  <li>Panic button & duress PIN</li>
-                  <li>GPS + automatic overdue alerts</li>
-                  <li>SMS + Email escalation</li>
-                  <li>Battery & location logging</li>
-                </ul>
-                <div class="mt-8 text-2xl font-bold text-green-400">Recommended for 70% of users</div>
-              </div>
-            </label>
-
-            <!-- ADVANCED APP OPTION -->
-            <label class="block cursor-pointer">
-              <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
-              <div class="bg-gray-900 border-4 border-gray-700 rounded-2xl p-10 text-center hover:border-purple-500 transition-all duration-300 peer-checked:border-purple-500 peer-checked:bg-purple-900/20 shadow-xl">
-                <div class="text-7xl mb-6">Tools</div>
-                <h3 class="text-3xl font-bold mb-4">Advanced + Reporting App</h3>
-                <p class="text-gray-300 text-lg leading-relaxed">Everything in Simple + full client reporting</p>
-                <ul class="mt-6 space-y-3 text-left text-gray-200">
-                  <li>Custom checklists per client</li>
-                  <li>Photo capture (up to 5)</li>
-                  <li>Travel distance auto-calculation</li>
-                  <li>AI note correction (Gemini)</li>
-                  <li>One-click monthly reports</li>
-                </ul>
-                <div class="mt-8 text-2xl font-bold text-purple-400">For funded contracts & compliance</div>
-              </div>
-            </label>
-
-          </div>
-
-          <div class="text-center space-y-8 mt-12">
-            <p class="text-xl text-gray-400">You can upgrade from Simple → Advanced any time later — no data loss</p>
-            <a href="Templates/OTG_AppSuite_Documentation.pdf" target="_blank" class="inline-block bg-indigo-600 hover:bg-indigo-700 px-10 py-5 rounded-xl font-bold text-xl shadow-lg">
-              Download Full Documentation (PDF)
-            </a>
-            <button onclick="nextStep()" class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 px-16 py-7 rounded-xl font-bold text-3xl shadow-2xl transform hover:scale-105 transition ml-6">
-              Continue with Selected Version
-            </button>
-          </div>
+      <!-- STEP 1 -->
+      <div id="step1" class="step active space-y-10">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
+        <div class="grid md:grid-cols-2 gap-8">
+          <label class="block cursor-pointer">
+            <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
+            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
+              <div class="text-6xl mb-4">Shield</div>
+              <h3 class="text-2xl font-bold">Simple App</h3>
+              <p class="text-gray-400 mt-3">Safety-only • Timer • SOS • Duress PIN</p>
+              <p class="text-green-400 font-bold mt-4">Most Popular</p>
+            </div>
+          </label>
+          <label class="block cursor-pointer">
+            <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
+            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
+              <div class="text-6xl mb-4">Tools</div>
+              <h3 class="text-2xl font-bold">Advanced App</h3>
+              <p class="text-gray-400 mt-3">Full reporting • Photos • Gemini AI • Distance tracking</p>
+              <p class="text-yellow-400 font-bold mt-4">Reporting Features</p>
+            </div>
+          </label>
         </div>
+        <div class="text-center space-y-6">
+          <a href="Templates/OTG_AppSuite_Documentation.pdf" target="_blank" class="inline-block bg-indigo-600 hover:bg-indigo-700 px-10 py-4 rounded-xl font-bold text-xl">
+            Download Full Documentation (PDF)
+          </a>
+          <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-12 py-5 rounded-xl font-bold text-2xl ml-6">
+            Start Setup
+          </button>
+        </div>
+      </div>
 
-      <!-- Step 2: Super-Friendly Sheet Setup -->
+      <!-- STEP 2 – SUPER FRIENDLY -->
       <div id="step2" class="step space-y-10">
         <h2 class="text-3xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet (Don't worry — it's easy!)</h2>
-
         <div class="bg-yellow-900/30 border border-yellow-600 rounded-xl p-8 max-w-4xl mx-auto text-center">
-          <p class="text-xl text-yellow-300 font-semibold">This is the only slightly technical part — we’ll do it together</p>
+          <p class="text-xl text-yellow-300 font-semibold">We’ll do this together — just follow the big buttons</p>
         </div>
 
         <div class="space-y-12 max-w-5xl mx-auto">
-
-          <!-- Create Sheet -->
-          <div class="bg-gray-900 rounded-xl p-8 border border-gray-700 text-center">
+          <div class="bg-gray-900 rounded-xl p-8 border border-gray-700">
             <h3 class="text-2xl font-bold text-blue-400 mb-6">1. Create Your Google Sheet</h3>
-            <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-12 py-6 rounded-xl font-bold text-2xl shadow-lg transform hover:scale-105 transition">
-              Click Here to Open Your New Sheet
-            </a>
+            <div class="text-center">
+              <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-12 py-6 rounded-xl font-bold text-2xl">
+                Click Here to Open Your New Sheet
+              </a>
+            </div>
           </div>
 
-          <!-- Visits Tab -->
           <div class="bg-gray-900 rounded-xl p-8 border border-gray-700">
             <h3 class="text-2xl font-bold text-blue-400 mb-6">2. Set Up the "Visits" Tab</h3>
             <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-3xl mx-auto">
-              <li>Rename bottom tab → <strong class="text-yellow-300">Visits</strong></li>
-              <li>Click cell A1 → Click <strong>Copy Visits Headers</strong> below → Paste (Ctrl+V)</li>
+              <li>Rename the bottom tab from “Sheet1” to <strong class="text-yellow-300">Visits</strong></li>
+              <li>Click cell <strong>A1</strong></li>
+              <li>Click <strong>Copy Visits Headers</strong> below → paste with Ctrl+V</li>
             </ol>
             <div class="relative bg-gray-800 p-8 rounded-xl border border-gray-600 mt-8 font-mono text-sm">
-              <button type="button" onclick="copyHeaders()" class="copy-btn text-lg px-4 py-2">Copy Visits Headers → Paste into A1</button>
+              <button type="button" onclick="copyHeaders()" class="copy-btn text-lg px-4 py-2">Copy Visits Headers</button>
               <pre id="headers" class="text-gray-400 overflow-x-auto mt-4">Date,Worker Name,Worker Phone Number,Emergency Contact Name,Emergency Contact Number,Emergency Contact Email,Escalation Contact Name,Escalation Contact Number,Escalation Contact Email,Location Name,Location Address,Arrival Time,Anticipated Departure Time,Actual Departure Time,Alarm Status,Notes,Last Known GPS,GPS Timestamp,Battery Level</pre>
             </div>
           </div>
 
-          <!-- Checklists Tab (Advanced Only) -->
           <div id="checklistsSection" class="bg-gray-900 rounded-xl p-8 border border-gray-700 hidden">
-            <h3 class="text-2xl font-bold text-yellow-300 mb-6">3. Set Up the "Checklists" Tab (Advanced App)</h3>
+            <h3 class="text-2xl font-bold text-yellow-300 mb-6">3. Set Up the "Checklists" Tab (Advanced Only)</h3>
             <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-3xl mx-auto">
-              <li>Click the <strong>+</strong> at bottom → rename new tab → <strong class="text-yellow-300">Checklists</strong></li>
-              <li>Click cell A1 → Click <strong>Copy Checklists Headers</strong> → Paste</li>
+              <li>Click the <strong>+</strong> at bottom-left to add a new tab</li>
+              <li>Rename it exactly: <strong class="text-yellow-300">Checklists</strong></li>
+              <li>Click cell <strong>A1</strong> → Copy headers below → paste</li>
             </ol>
             <div class="relative bg-gray-800 p-8 rounded-xl border border-gray-600 mt-8 font-mono text-sm">
-              <button type="button" onclick="copyChecklistsHeaders()" class="copy-btn text-lg px-4 py-2 bg-purple-600 hover:bg-purple-700">Copy Checklists Headers → Paste into A1</button>
+              <button type="button" onclick="copyChecklistsHeaders()" class="copy-btn text-lg px-4 py-2 bg-purple-600 hover:bg-purple-700">Copy Checklists Headers</button>
               <pre id="checklistsHeaders" class="text-gray-400 overflow-x-auto mt-4">Template Name,Question 1,Question 2,Question 3,Question 4,Question 5,Question 6,Question 7,Question 8,Question 9,Question 10,Question 11,Question 12,Question 13,Question 14,Question 15,Question 16,Question 17,Question 18,Question 19,Question 20,Question 21,Question 22,Question 23,Question 24,Question 25,Question 26,Question 27,Question 28,Question 29,Question 30,Question 31,Question 32,Question 33,Question 34,Question 35,Question 36,Question 37,Question 38,Question 39,Question 40</pre>
             </div>
 
-            <!-- (Standard) Explanation -->
             <div class="bg-indigo-900/50 border-2 border-indigo-500 rounded-2xl p-8 mt-10">
               <h4 class="text-2xl font-bold text-indigo-300 mb-6">Add Your Default Form</h4>
               <p class="text-lg text-gray-200">In the Checklists tab, type exactly this in cell <strong>A2</strong>:</p>
-              <div class="bg-gray-800 rounded-xl p-6 text-center font-mono text-3xl my-6 text-green-400">(Standard)</div>
+              <div class="bg-gray-800 rounded-xl p-6 text-center font-mono text-3xl text-green-400 my-6">
+                (Standard)
+              </div>
               <p class="text-green-400 font-bold text-xl text-center">This becomes the default form when no template is chosen</p>
             </div>
           </div>
 
           <div class="text-center pt-8">
-            <button onclick="nextStep()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-xl font-bold text-3xl shadow-2xl transform hover:scale-105 transition">
+            <button onclick="nextStep()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-xl font-bold text-3xl">
               I’ve Done This — Next Step
             </button>
           </div>
         </div>
       </div>
 
-                 <!-- Step 3: Configuration – FINAL POLISHED VERSION -->
-      <div id="step3" class="step space-y-12">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings (Everything explained)</h2>
-
-        <div class="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-
-          <!-- Organisation Name -->
-          <div class="bg-gray-800/50 rounded-2xl p-8 border border-gray-600">
-            <label class="block text-xl font-semibold text-blue-300 mb-3">Organisation Name</label>
-            <input type="text" id="orgName" value="My Company" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
-            <p class="text-gray-400 mt-4 text-sm">Appears at the top of the app and on phone home screens</p>
-          </div>
-
-          <!-- Secret Key – SUPER CLEAR -->
-          <div class="bg-red-900/30 rounded-2xl p-8 border-2 border-red-600">
-            <label class="block text-xl font-semibold text-red-300 mb-3">Monitor Dashboard Secret Key</label>
-            <input type="password" id="secretKey" placeholder="You make this up now" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
-            <div class="mt-5 space-y-3 text-sm">
-              <p class="text-yellow-300 font-bold text-lg">You invent this password yourself right now</p>
-              <p class="text-gray-300">Make it strong – 12+ characters, letters + numbers + symbols</p>
-              <p class="text-gray-300">Example: <code class="bg-gray-800 px-2 py-1 rounded">LoneWorker2025!nZ9</code></p>
-              <p class="text-red-300 font-bold">Write it down! You only need it the very first time you open the monitoring dashboard (or if you clear your browser cache)</p>
-            </div>
-          </div>
-
-          <!-- First Alert -->
-          <div class="bg-orange-900/30 rounded-2xl p-8 border border-orange-600">
-            <label class="block text-xl font-semibold text-orange-300 mb-3">First Alert After (minutes)</label>
-            <input type="number" id="firstAlert" value="15" min="1" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
-            <p class="text-gray-300 mt-4">How many minutes can a worker be overdue before the first SMS alert is sent?</p>
-            <p class="text-sm text-gray-400 mt-2">Most companies use 10–20 minutes · 15 is very common</p>
-          </div>
-
-          <!-- Escalation – NO PHONE MENTION -->
-          <div class="bg-pink-900/30 rounded-2xl p-8 border border-pink-600">
-            <label class="block text-xl font-semibold text-pink-300 mb-3">Escalation Alert After (minutes)</label>
-            <input type="number" id="escalation" value="5" min="1" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
-            <p class="text-gray-300 mt-4">After the first alert, how many more minutes before we SMS the escalation contact?</p>
-            <p class="text-sm text-gray-400 mt-2">Usually 5–10 minutes · 5 minutes is standard</p>
-          </div>
-
-          <!-- OpenRouteService – FIXED TEXT -->
-          <div id="orsField" class="hidden-field closed bg-cyan-900/20 rounded-2xl p-8 border border-cyan-600">
-            <label class="block text-xl font-semibold text-cyan-300 mb-3">OpenRouteService API Key (Optional – Distance calculations)</label>
-            <input type="text" id="orsKey" placeholder="Leave blank if not needed" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
-            <div class="mt-4 text-center">
-              <a href="https://openrouteservice.org/dev/#/signup" target="_blank" class="inline-block bg-cyan-600 hover:bg-cyan-700 px-8 py-4 rounded-xl font-bold text-lg">
-                Get Free Key – 30-second sign-up
-              </a>
-            </div>
-            <p class="text-gray-400 text-sm mt-4 text-center">Free tier = 2,000 calculations/day (more than enough)</p>
-          </div>
-
-          <!-- Gemini Key -->
-          <div id="geminiField" class="hidden-field closed bg-purple-900/20 rounded-2xl p-8 border border-purple-600">
-            <label class="block text-xl font-semibold text-purple-300 mb-3">Gemini API Key (Optional – AI spell-check & notes)</label>
-            <input type="text" id="geminiKey" placeholder="Leave blank to skip AI" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg">
-            <div class="mt-4 text-center">
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" class="inline-block bg-purple-600 hover:bg-purple-700 px-8 py-4 rounded-xl font-bold text-lg">
-                Get Free Gemini Key – Instant
-              </a>
-            </div>
-          </div>
-
-          <!-- Logo Upload + FREE RESIZER LINK -->
-          <div class="md:col-span-2 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 rounded-2xl p-8 border-2 border-purple-600">
-            <label class="block text-2xl font-bold text-purple-300 mb-6 text-center">Upload Your Company Logo / App Icon (Optional)</label>
-            <p class="text-center text-gray-300 mb-6 text-lg">
-              Best size: 512×512 PNG with transparent background<br>
-              <a href="https://www.remove.bg/upload" target="_blank" class="text-purple-400 underline hover:text-purple-300">
-                Free tool: remove background
-              </a> • 
-              <a href="https://resizeimage.net/" target="_blank" class="text-purple-400 underline hover:text-purple-300">
-                Free tool: resize/convert to PNG
-              </a>
-            </p>
-            <div class="flex flex-col items-center space-y-6">
-              <input type="file" id="logoUpload" accept="image/*" class="block w-full text-lg text-gray-300 file:mr-6 file:py-4 file:px-8 file:rounded-xl file:border-0 file:text-lg file:font-semibold file:bg-purple-700 file:text-white hover:file:bg-purple-800 cursor-pointer">
-              <div id="logoPreview" class="mt-6 hidden">
-                <p class="text-green-400 font-bold text-xl mb-4">Preview – looks perfect!</p>
-                <img id="previewImg" src="" alt="Your logo" class="max-w-xs max-h-64 rounded-xl shadow-2xl border-4 border-purple-500">
-              </div>
-            </div>
-            <p class="text-center text-gray-400 mt-6 text-sm">No logo? We’ll use a beautiful default one</p>
-          </div>
-
+      <!-- STEP 3 -->
+      <div id="step3" class="step space-y-10">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input type="text" id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Secret Key (Monitor Dashboard)</label><input type="password" id="secretKey" placeholder="Strong password" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">First Alert After (minutes)</label><input type="number" id="firstAlert" value="15" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Escalation After (minutes)</label><input type="number" id="escalation" value="5" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="orsField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService API Key</label><input type="text" id="orsKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="geminiField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key</label><input type="text" id="geminiKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
         </div>
-
-        <div class="text-center mt-12">
-          <button onclick="generateScriptAndProceed()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-2xl font-bold text-4xl shadow-2xl transform hover:scale-105 transition">
-            All Set — Generate Apps Script Code
+        <div class="text-center">
+          <button onclick="generateScriptAndProceed()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-16 py-6 rounded-xl font-bold text-2xl">
+            Generate Apps Script Code
           </button>
         </div>
       </div>
 
-      <!-- Step 4: Deploy Script (Ultra Detailed) -->
+      <!-- STEP 4 – BULLETPROOF DEPLOYMENT -->
       <div id="step4" class="step space-y-12">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Step 4: Connect to Your Google Sheet</h2>
-        <div class="bg-yellow-900/30 border-2 border-yellow-600 rounded-2xl p-10 max-w-5xl mx-auto text-center">
-          <p class="text-2xl text-yellow-300 font-bold">We’ll do this together — just copy & click!</p>
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 4: Connect Your Google Sheet</h2>
+        <div class="bg-yellow-900/40 border-2 border-yellow-600 rounded-2xl p-10 text-center">
+          <p class="text-2xl font-bold text-yellow-300">This is the last technical step — we’ll do it together!</p>
         </div>
 
         <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
-          <h3 class="text-2xl font-bold text-blue-400">1. Paste Code & Deploy</h3>
-          <ol class="text-lg text-gray-300 space-y-6 list-decimal list-inside max-w-4xl mx-auto">
-            <li><a href="https://script.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-12 py-6 rounded-xl font-bold text-2xl">Open script.new</a></li>
-            <li>Delete everything → Click <strong>Copy All Code</strong> below → Paste (Ctrl+V)</li>
-            <li>Rename project → <strong>OTG Backend</strong> → Save</li>
-            <li>Top-right: <strong>Deploy → New deployment → Web app → Anyone → Deploy</strong></li>
-            <li>Copy the URL ending in <strong>/exec</strong></li>
-          </ol>
-          <div class="relative bg-gray-800 p-10 rounded-xl border border-gray-600 mt-10 font-mono text-sm">
+          <h3 class="text-2xl font-bold text-blue-400">1. Paste the Code</h3>
+          <div class="text-center my-8">
+            <a href="https://script.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-16 py-8 rounded-2xl font-bold text-3xl">
+              Open script.new Now
+            </a>
+          </div>
+          <div class="relative bg-gray-800 p-10 rounded-xl border border-gray-600 mt-8 font-mono text-sm">
             <button type="button" onclick="copyScript()" class="copy-btn text-lg px-6 py-3">Copy All Code</button>
-            <pre id="scriptDisplay" class="text-left text-gray-400 overflow-x-auto h-96 mt-6 whitespace-pre-wrap"></pre>
+            <pre id="scriptDisplay" class="text-left text-gray-400 overflow-x-auto h-96 mt-6"></pre>
           </div>
         </div>
 
-        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700">
-          <h3 class="text-2xl font-bold text-blue-400">2. Set 1-Minute Trigger</h3>
-          <p class="text-xl text-gray-300 text-center">Click clock icon → Add Trigger → checkOverdueVisits → Minutes timer → Every 1 minute → Save</p>
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
+          <h3 class="text-2xl font-bold text-blue-400">2. Deploy → Get Your URL</h3>
+          <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-4xl mx-auto">
+            <li>Top-right → <strong>Deploy</strong> → <strong>New deployment</strong></li>
+            <li><strong>Select type</strong> → <strong>Web app</strong></li>
+            <li><strong>Who has access:</strong> <strong>Anyone</strong></li>
+            <li>Click <strong>Deploy</strong> → Allow permissions</li>
+            <li>Copy the URL that ends in <strong>/exec</strong> → it will appear in the test box below automatically</li>
+          </ol>
         </div>
 
-        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center">
-          <h3 class="text-2xl font-bold text-green-400">3. Test Connection</h3>
-          <input type="url" id="testUrl" placeholder="Paste your /exec URL here" class="w-full max-w-2xl px-6 py-5 bg-gray-700 rounded-xl text-lg text-center mt-6">
-          <input type="text" id="testKey" readonly class="w-full max-w-2xl px-6 py-5 bg-gray-700 rounded-xl text-lg text-center mt-4">
-          <button onclick="testConnection()" class="mt-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 px-16 py-8 rounded-xl font-bold text-3xl">
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700">
+          <h3 class="text-2xl font-bold text-blue-400">3. Turn On 1-Minute Checks</h3>
+          <ol class="text-lg text-gray-300 space-y-4 list-decimal list-inside max-w-3xl mx-auto">
+            <li>Left sidebar → clock icon (<strong>Triggers</strong>)</li>
+            <li><strong>+ Add Trigger</strong> → Function: <strong>checkOverdueVisits</strong> → Every 1 minute</li>
+            <li><strong>Save</strong></li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-8">
+          <h3 class="text-2xl font-bold text-green-400">4. Live Test (5 Seconds)</h3>
+          <input type="url" id="testUrl" placeholder="Your /exec URL will appear here when pasted" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg" readonly>
+          <button onclick="runLiveTest()" class="mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-20 py-10 rounded-2xl font-bold text-3xl">
             Test Connection Now
           </button>
-          <div id="testResult" class="mt-8 text-2xl font-bold"></div>
+          <div id="testResult" class="mt-8 text-3xl font-bold"></div>
         </div>
 
-        <div class="text-center">
-          <button id="proceedAfterTest" onclick="nextStep()" disabled class="bg-gradient-to-r from-green-600 to-emerald-600 opacity-50 px-20 py-10 rounded-2xl font-bold text-4xl cursor-not-allowed">
-            All Working! → Next Step
+        <div class="text-center pt-12">
+          <button id="proceedBtn" onclick="nextStep()" disabled class="bg-green-600 opacity-50 px-24 py-12 rounded-2xl font-bold text-4xl cursor-not-allowed">
+            All Connected! → Next Step
           </button>
         </div>
       </div>
 
-      <!-- Step 5: Finalise -->
+      <!-- STEP 5 -->
       <div id="step5" class="step space-y-8 text-center">
-        <h2 class="text-3xl font-bold text-blue-300">Step 5: Final Check</h2>
-        <input type="url" id="webAppUrl" placeholder="Your /exec URL (auto-filled if test passed)" class="w-full max-w-3xl mx-auto px-6 py-5 bg-gray-700 rounded-xl text-lg text-center">
-        <button onclick="finalizeWithWebAppUrl()" class="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-20 py-8 rounded-xl font-bold text-3xl">
+        <h2 class="text-3xl font-bold text-blue-300">Step 5: Final Step</h2>
+        <p class="text-xl text-gray-300">Your URL is already filled in from the test</p>
+        <input type="url" id="webAppUrl" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg text-center" readonly>
+        <button onclick="finalizeWithWebAppUrl()" class="mt-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-xl font-bold text-3xl">
           Generate Final Apps
         </button>
       </div>
 
-      <!-- Step 6: Success -->
+      <!-- STEP 6 -->
       <div id="step6" class="step text-center py-20 space-y-12">
         <div class="text-9xl">Success</div>
         <h2 class="text-5xl font-bold text-green-400">Your Complete App Package Is Ready!</h2>
@@ -314,11 +226,11 @@
 
   <script>
     const REPO_RAW = "https://raw.githubusercontent.com/loneworkernelson-web/LoneWorkerFullOTGPackage/main/Templates";
-    let config = {}, gasCode = "", finalZip, userLogoBlob = null, userLogoUrl = null;
+    let config = {}, gasCode = "", finalZip;
 
     function toggleAdvanced() {
       const adv = document.querySelector('input[value="advanced"]').checked;
-      document.getElementById('checklistsSection')?.classList.toggle('hidden', !adv);
+      document.getElementById('checklistsSection').classList.toggle('hidden', !adv);
       document.querySelectorAll('.hidden-field').forEach(el => el.classList.toggle('closed', !adv));
     }
 
@@ -327,36 +239,13 @@
       document.getElementById('step' + n).classList.add('active');
       document.querySelectorAll('.step-nav button').forEach((b, i) => b.classList.toggle('current', i + 1 === n));
     }
-    function nextStep() { const cur = +document.querySelector('.step.active').id.replace('step', ''); showStep(cur + 1); }
-
- function copyHeaders() {
-      const text = "Date\tWorker Name\tWorker Phone Number\tEmergency Contact Name\tEmergency Contact Number\tEmergency Contact Email\tEscalation Contact Name\tEscalation Contact Number\tEscalation Contact Email\tLocation Name\tLocation Address\tArrival Time\tAnticipated Departure Time\tActual Departure Time\tAlarm Status\tNotes\tLast Known GPS\tGPS Timestamp\tBattery Level";
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.querySelector('#step2 .copy-btn');
-        btn.textContent = 'Copied! Ready to paste across row';
-        btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = 'Copy Visits Headers'; btn.classList.remove('copied'); }, 3000);
-      });
+    function nextStep() {
+      const current = +document.querySelector('.step.active').id.replace('step', '');
+      showStep(current + 1);
     }
-    function copyChecklistsHeaders() {
-      const text = "Template Name\tQuestion 1\tQuestion 2\tQuestion 3\tQuestion 4\tQuestion 5\tQuestion 6\tQuestion 7\tQuestion 8\tQuestion 9\tQuestion 10\tQuestion 11\tQuestion 12\tQuestion 13\tQuestion 14\tQuestion 15\tQuestion 16\tQuestion 17\tQuestion 18\tQuestion 19\tQuestion 20\tQuestion 21\tQuestion 22\tQuestion 23\tQuestion 24\tQuestion 25\tQuestion 26\tQuestion 27\tQuestion 28\tQuestion 29\tQuestion 30\tQuestion 31\tQuestion 32\tQuestion 33\tQuestion 34\tQuestion 35\tQuestion 36\tQuestion 37\tQuestion 38\tQuestion 39\tQuestion 40";
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.querySelector('#checklistsSection .copy-btn');
-        btn.textContent = 'Copied! Ready to paste across row';
-        btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = 'Copy Checklists Headers'; btn.classList.remove('copied'); }, 3000);
-      });
-    }
-    function showCopied(selector) { const b = document.querySelector(selector); b.textContent = 'Copied!'; b.classList.add('copied'); setTimeout(() => { b.textContent = b.dataset.orig || 'Copy'; b.classList.remove('copied'); }, 2000); }
 
-    document.getElementById('logoUpload').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file || !file.type.startsWith('image/')) return;
-      userLogoBlob = file;
-      const reader = new FileReader();
-      reader.onload = ev => { userLogoUrl = ev.target.result; document.getElementById('previewImg').src = userLogoUrl; document.getElementById('logoPreview').classList.remove('hidden'); };
-      reader.readAsDataURL(file);
-    });
+    function copyHeaders() { navigator.clipboard.writeText(document.getElementById('headers').textContent); alert("Visits headers copied!"); }
+    function copyChecklistsHeaders() { navigator.clipboard.writeText(document.getElementById('checklistsHeaders').textContent); alert("Checklists headers copied!"); }
 
     async function generateScriptAndProceed() {
       config = {
@@ -368,46 +257,57 @@
         geminiKey: document.getElementById('geminiKey').value,
         advanced: document.querySelector('input[value="advanced"]').checked
       };
-      document.getElementById('testKey').value = config.secretKey;
 
       const template = await fetch(`${REPO_RAW}/apps_script_advanced.txt?t=${Date.now()}`).then(r => r.text());
-      gasCode = template.replace(/%%SECRET_KEY%%/g, config.secretKey);
+      gasCode = template.replace(/%%SECRET_KEY%%/g, config.secretKey)
+                       .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
+                       .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
+                       .replace(/%%ORS_API_KEY%%/g, config.orsKey)
+                       .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey);
       document.getElementById('scriptDisplay').textContent = gasCode;
       showStep(4);
     }
 
     function copyScript() {
       navigator.clipboard.writeText(gasCode);
-      const btn = document.querySelector('#step4 .copy-btn');
-      btn.textContent = 'Copied!'; btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Copy All Code'; btn.classList.remove('copied'); }, 2000);
+      alert("Full script copied! Paste it in script.new");
     }
 
-    async function testConnection() {
+    document.addEventListener('paste', (e) => {
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      if (text.includes('/exec')) {
+        document.getElementById('testUrl').value = text;
+        document.getElementById('webAppUrl').value = text;
+      }
+    });
+
+    async function runLiveTest() {
       const url = document.getElementById('testUrl').value.trim();
-      const key = document.getElementById('testKey').value;
-      const resultDiv = document.getElementById('testResult');
-      const btn = document.getElementById('proceedAfterTest');
+      const result = document.getElementById('testResult');
+      const btn = document.getElementById('proceedBtn');
 
-      if (!url.includes('/exec')) return resultDiv.innerHTML = '<span class="text-red-400">Please paste the full /exec URL</span>';
+      if (!url.includes('/exec')) { result.innerHTML = "Paste your /exec URL first"; return; }
 
-      resultDiv.textContent = "Testing...";
+      result.textContent = "Testing...";
       try {
-        const res = await fetch(`${url}?test=1&key=${encodeURIComponent(key)}`);
-        const txt = await res.text();
-        if (txt.includes("OTG_SUCCESS")) {
-          resultDiv.innerHTML = '<span class="text-green-400 text-3xl">Perfect! Everything is connected!</span>';
-          btn.disabled = false; btn.className = 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-10 rounded-2xl font-bold text-4xl shadow-2xl transform hover:scale-105 transition cursor-pointer';
+        const resp = await fetch(`${url}?test=1&key=${encodeURIComponent(config.secretKey)}`);
+        const text = await resp.text();
+        if (text.includes("OTG_SUCCESS")) {
+          result.innerHTML = "Perfect! Everything is connected!";
+          btn.disabled = false;
+          btn.className = "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-24 py-12 rounded-2xl font-bold text-4xl cursor-pointer";
           document.getElementById('webAppUrl').value = url;
         } else {
-          resultDiv.innerHTML = '<span class="text-red-400">Failed — check key & URL</span>';
+          result.innerHTML = "Failed — check secret key";
         }
-      } catch { resultDiv.innerHTML = '<span class="text-red-400">Connection failed</span>'; }
+      } catch (e) {
+        result.innerHTML = "Connection error";
+      }
     }
 
     async function finalizeWithWebAppUrl() {
-      const webAppUrl = (document.getElementById('webAppUrl').value || document.getElementById('testUrl').value).trim();
-      if (!webAppUrl.includes('/exec')) return alert("Please enter your /exec URL");
+      const webAppUrl = document.getElementById('webAppUrl').value.trim();
+      if (!webAppUrl.includes('/exec')) { alert("Please complete the test first"); return; }
 
       const zip = new JSZip();
       const workerFile = config.advanced ? "worker_app_advanced.txt" : "worker_app_simple.txt";
@@ -420,12 +320,6 @@
         .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
         .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
         .replace(/%%WEB_APP_URL%%/g, webAppUrl);
-
-      if (userLogoBlob) {
-        const ext = userLogoBlob.type.split('/')[1].split('+')[0] || 'png';
-        workerHtml = workerHtml.replace(/<link rel="icon"[^>]*>/, `<link rel="icon" href="logo.${ext}" type="${userLogoBlob.type}">`);
-        zip.file(`logo.${ext}`, userLogoBlob);
-      }
 
       zip.file("index.html", workerHtml);
       zip.file("monitor.html", await fetch(`${REPO_RAW}/monitor_app_template.txt?t=${Date.now()}`).then(r => r.text()));
