@@ -37,37 +37,60 @@
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 md:p-12">
 
       <!-- Step 1: Welcome -->
-      <div id="step1" class="step active space-y-10">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
-        <div class="grid md:grid-cols-2 gap-8">
-         <label class="block cursor-pointer">
-          <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
-          <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
-          <div class="text-6xl mb-4">Tools</div>
-          <h3 class="text-2xl font-bold">Advanced App</h3>
-          <p class="text-gray-400 mt-3">Custom checklists • AI notes • Distance calculations • Advanced reporting</p>
-          <p class="text-yellow-400 font-bold mt-4">Extra Features</p>
+        <div id="step1" class="step active space-y-10">
+          <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
+          <p class="text-center text-xl text-gray-400 max-w-3xl mx-auto">Both versions are completely free and full-featured. Pick the one that matches your needs.</p>
+
+          <div class="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+
+            <!-- SIMPLE APP OPTION -->
+            <label class="block cursor-pointer">
+              <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
+              <div class="bg-gray-900 border-4 border-gray-700 rounded-2xl p-10 text-center hover:border-green-500 transition-all duration-300 peer-checked:border-green-500 peer-checked:bg-green-900/20 shadow-xl">
+                <div class="text-7xl mb-6">Shield</div>
+                <h3 class="text-3xl font-bold mb-4">Simple Lone Worker App</h3>
+                <p class="text-gray-300 text-lg leading-relaxed">Perfect for most teams</p>
+                <ul class="mt-6 space-y-3 text-left text-gray-200">
+                  <li>Check-in / Check-out with timer</li>
+                  <li>Panic button & duress PIN</li>
+                  <li>GPS + automatic overdue alerts</li>
+                  <li>SMS + Email escalation</li>
+                  <li>Battery & location logging</li>
+                </ul>
+                <div class="mt-8 text-2xl font-bold text-green-400">Recommended for 70% of users</div>
+              </div>
+            </label>
+
+            <!-- ADVANCED APP OPTION -->
+            <label class="block cursor-pointer">
+              <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
+              <div class="bg-gray-900 border-4 border-gray-700 rounded-2xl p-10 text-center hover:border-purple-500 transition-all duration-300 peer-checked:border-purple-500 peer-checked:bg-purple-900/20 shadow-xl">
+                <div class="text-7xl mb-6">Tools</div>
+                <h3 class="text-3xl font-bold mb-4">Advanced + Reporting App</h3>
+                <p class="text-gray-300 text-lg leading-relaxed">Everything in Simple + full client reporting</p>
+                <ul class="mt-6 space-y-3 text-left text-gray-200">
+                  <li>Custom checklists per client</li>
+                  <li>Photo capture (up to 5)</li>
+                  <li>Travel distance auto-calculation</li>
+                  <li>AI note correction (Gemini)</li>
+                  <li>One-click monthly reports</li>
+                </ul>
+                <div class="mt-8 text-2xl font-bold text-purple-400">For funded contracts & compliance</div>
+              </div>
+            </label>
+
+          </div>
+
+          <div class="text-center space-y-8 mt-12">
+            <p class="text-xl text-gray-400">You can upgrade from Simple → Advanced any time later — no data loss</p>
+            <a href="Templates/OTG_AppSuite_Documentation.pdf" target="_blank" class="inline-block bg-indigo-600 hover:bg-indigo-700 px-10 py-5 rounded-xl font-bold text-xl shadow-lg">
+              Download Full Documentation (PDF)
+            </a>
+            <button onclick="nextStep()" class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 px-16 py-7 rounded-xl font-bold text-3xl shadow-2xl transform hover:scale-105 transition ml-6">
+              Continue with Selected Version
+            </button>
+          </div>
         </div>
-      </label>
-          <label class="block cursor-pointer">
-            <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
-            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
-              <div class="text-6xl mb-4">Tools</div>
-              <h3 class="text-2xl font-bold">Advanced App</h3>
-              <p class="text-gray-400 mt-3">Full reporting • Photos • Gemini AI • Distance tracking</p>
-              <p class="text-yellow-400 font-bold mt-4">Reporting Features</p>
-            </div>
-          </label>
-        </div>
-        <div class="text-center space-y-6">
-          <a href="Templates/OTG_AppSuite_Documentation.pdf" target="_blank" class="inline-block bg-indigo-600 hover:bg-indigo-700 px-10 py-4 rounded-xl font-bold text-xl">
-            Download Full Documentation (PDF)
-          </a>
-          <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-12 py-5 rounded-xl font-bold text-2xl ml-6">
-            Start Setup
-          </button>
-        </div>
-      </div>
 
       <!-- Step 2: Super-Friendly Sheet Setup -->
       <div id="step2" class="step space-y-10">
