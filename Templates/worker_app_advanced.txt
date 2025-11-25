@@ -996,7 +996,15 @@ function init() {
     processUploadQueue();
   }
   initEventListeners();
-  updateHomeScreenButtons();
+    updateHomeScreenButtons();
+
+  } catch (err) {
+    console.error("FATAL INIT ERROR:", err);
+    // If it crashes, alert and offer a reset
+    alert("Critical Error: App failed to start. Resetting data...");
+    localStorage.clear();
+    location.reload();
+  }
 }
 
 window.addEventListener('load', init);
