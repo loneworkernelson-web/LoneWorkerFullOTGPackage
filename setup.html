@@ -275,9 +275,20 @@
       showStep(current + 1);
     }
 
-    // Header Helpers
-    function copyHeaders() { navigator.clipboard.writeText(document.getElementById('headers').textContent); alert("Visits headers copied!"); }
-    function copyChecklistsHeaders() { navigator.clipboard.writeText(document.getElementById('checklistsHeaders').textContent); alert("Checklists headers copied!"); }
+    // Header Helpers (UPDATED to use TABS instead of Commas)
+    function copyHeaders() { 
+      const content = document.getElementById('headers').textContent;
+      // Replace commas with tabs for Sheets pasting
+      navigator.clipboard.writeText(content.replace(/,/g, '\t')); 
+      alert("Visits headers copied! (Tabs added for Google Sheets)"); 
+    }
+
+    function copyChecklistsHeaders() { 
+      const content = document.getElementById('checklistsHeaders').textContent;
+      // Replace commas with tabs for Sheets pasting
+      navigator.clipboard.writeText(content.replace(/,/g, '\t')); 
+      alert("Checklists headers copied! (Tabs added for Google Sheets)"); 
+    }
 
     // Logo Handling (Drag & Drop + Click)
     const dropZone = document.getElementById('dropZone');
@@ -388,7 +399,7 @@
         FIRST_ALERT_MINUTES: config.firstAlert,
         ESCALATION_MINUTES: config.escalation,
         WEB_APP_URL: webAppUrl,
-        GOOGLE_SHEET_URL: webAppUrl, // <--- ADDED FIX HERE: Maps URL to GOOGLE_SHEET_URL placeholder
+        GOOGLE_SHEET_URL: webAppUrl, 
         CHECKIN_ENABLED: "false",
         CHECKIN_INTERVAL: "60" 
       };
