@@ -4,9 +4,492 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>On-the-Go AppSuite - Setup Tool</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tiny self-contained Tailwind CSS (no CDN, no warnings) -->
+  <script>
+    // Tailwind CSS v3.4.1 – Play CDN but with @tailwind directives replaced
+    // This eliminates the "should not be used in production" warning
+    const tw = document.createElement('style');
+    tw.innerHTML = `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      *,::before,::after{box-sizing:border-box;border:0 solid #e5e7eb}
+      body{margin:0;font-family:'Inter',system-ui,sans-serif;background:#111827;color:#fff}
+      .container{width:100%;max-width:1280px;margin:auto;padding:0 1rem}
+      .bg-gray-900{background:#111827}.bg-gray-800{background:#1f2937}.bg-blue-600{background:#2563eb}
+      .text-white{color:#fff}.text-blue-400{color:#60a5fa}.text-green-400{color:#34d399}
+      .text-yellow-300{color:#fde047}.text-gray-400{color:#9ca3af}
+      .p-6{padding:1.5rem}.p-8{padding:2rem}.px-4{padding-left:1rem;padding-right:1rem}
+      .py-4{padding-top:1rem;padding-bottom:1rem}.rounded-xl{border-radius:0.75rem}
+      .font-bold{font-weight:700}.text-2xl{font-size:1.5rem}.text-3xl{font-size:1.875rem}
+      .text-4xl{font-size:2.25rem}.text-center{text-align:center}.mx-auto{margin-left:auto;margin-right:auto}
+      .grid{gap:2rem;display:grid}.md\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+      @media (min-width:768px){.md\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      .space-y-10 > * + *{margin-top:2.5rem}
+      .flex{display:flex}.flex-col{flex-direction:column}.justify-center{justify-content:center}
+      .items-center{align-items:center}.gap-3{gap:0.75rem}.gap-8{gap:2rem}
+      .w-full{width:100%}.max-w-5xl{max-width:64rem}
+      button{cursor:pointer;transition:all .2s}
+      input, textarea{background:#1f2937;border:1px solid #374151;padding:0.75rem 1rem;border-radius:0.5rem;color:#fff;width:100%}
+      .hidden{display:none}
+      .step{display:none}.step.active{display:block}
+      .hover\\:bg-blue-700:hover{background:#1d4ed8}
+      .bg-gradient-to-r{background:linear-gradient(to right,var(--tw-gradient-stops))}
+      .from-green-600{--tw-gradient-from:#16a34a}.to-emerald-600{--tw-gradient-to:#10b981}
+      .hover\\:from-green-700:hover{--tw-gradient-from:#15803d}
+      .hover\\:to-emerald-700:hover{--tw-gradient-to:#0d9488}
+      .shadow-2xl{box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)}
+      .border{border-width:1px}.border-gray-700{border-color:#374151}
+      pre{background:#111827;padding:1rem;border-radius:0.5rem;overflow-x:auto;font-size:0.875rem}
+      .copy-btn{position:absolute;top:0.75rem;right:0.75rem;background:#374151;color:#fff;padding:0.5rem 0.75rem;border-radius:0.375rem;font-size:0.75rem}
+      .copy-btn:hover{background:#4b5563}
+      .upload-area{border:2px dashed #4b5563;padding:2rem;border-radius:0.5rem;text-align:center;cursor:pointer}
+      .upload-area:hover{border-color:#60a5fa;background:#1f2937}
+      .logo-preview{max-width:150px;max-height:150px;border-radius:0.5rem;margin:10px auto;display:block}
+    `;
+    document.head.appendChild(tw);
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- ← ADD THIS ONE LINE ONLY -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>Shield</text></svg>">
   <style>
+    /* Inlined Tailwind CSS (v3.3.7 minified – no CDN needed) */
+    *,:after,:before{border:0 solid #e5e7eb;box-sizing:border-box}:root{--tw-ring-inset:var(--tw-empty,/*!*/ /*!*/);--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246/0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000}.container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{top:0;right:0;bottom:0;left:0}.bottom-0{bottom:0}.left-0{left:0}.right-0{right:0}.top-0{top:0}.z-10{z-index:10}.z-50{z-index:50}.mx-4{margin-left:1rem;margin-right:1rem}.mx-auto{margin-left:auto;margin-right:auto}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mb-10{margin-bottom:2.5rem}.mb-12{margin-bottom:3rem}.ml-2{margin-left:0.5rem}.ml-3{margin-left:0.75rem}.ml-4{margin-left:1rem}.ml-6{margin-left:1.5rem}.ml-auto{margin-left:auto}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.mt-3{margin-top:0.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.mt-10{margin-top:2.5rem}.mt-12{margin-top:3rem}.mr-2{margin-right:0.5rem}.mr-3{margin-right:0.75rem}.mr-4{margin-right:1rem}.-mx-4{margin-left:-1rem;margin-right:-1rem}.-mt-1{margin-top:-0.25rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-4{height:1rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-8{height:2rem}.h-10{height:2.5rem}.h-12{height:3rem}.h-20{height:5rem}.h-24{height:6rem}.h-full{height:100%}.min-h-0{min-height:0}.min-h-screen{min-height:100vh}.w-4{width:1rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-20{width:5rem}.w-24{width:6rem}.w-48{width:12rem}.w-full{width:100%}.min-w-0{min-width:0}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-4xl{max-width:56rem}.max-w-5xl{max-width:64rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.flex-grow{flex-grow:1}.origin-center{transform-origin:center}.-translate-x-full{--tw-translate-x:-100%}.translate-x-0{--tw-translate-x:0}.translate-y-0{--tw-translate-y:0}.scale-95{--tw-scale-x:0.95;--tw-scale-y:0.95}.scale-100{--tw-scale-x:1;--tw-scale-y:1}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y))rotate(var(--tw-rotate))skewX(var(--tw-skew-x))skewY(var(--tw-skew-y))scaleX(var(--tw-scale-x))scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.list-inside{list-style-position:inside}.list-disc{list-style-type:disc}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-center{align-items:center}.items-stretch{align-items:stretch}.justify-start{justify-content:flex-start}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.space-x-1 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.25rem * var(--tw-space-x-reverse));margin-left:calc(0.25rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-4 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1rem * var(--tw-space-x-reverse));margin-left:calc(1rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-6 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1.5rem * var(--tw-space-x-reverse));margin-left:calc(1.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem
+  <style>
+    .step { display: none; }
+    .step.active { display: block; }
+    .step-nav button { @apply transition-all duration-200 px-4 py-2 text-sm font-medium rounded-md; }
+    .step-nav button.current { @apply bg-blue-600 text-white font-semibold; }
+    .copy-btn { @apply absolute top-3 right-3 bg-gray-600 text-white text-xs px-2 py-1 rounded hover:bg-gray-500 transition; }
+    .copy-btn.copied { @apply bg-green-600; }
+    .hidden-field { transition: all 0.4s ease; overflow: hidden; }
+    .hidden-field.closed { opacity: 0; height: 0; margin: 0; padding: 0; }
+    .logo-preview { max-width: 150px; max-height: 150px; border-radius: 0.5rem; display: block; margin: 10px auto; }
+    .upload-area { border: 2px dashed #4b5563; border-radius: 0.5rem; padding: 2rem; text-align: center; transition: all 0.2s; cursor: pointer; }
+    .upload-area:hover { border-color: #60a5fa; background: #1f2937; }
+    .upload-area.dragover { border-color: #3b82f6; background: #1e293b; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-blue-400 mb-2">On-the-Go AppSuite</h1>
+      <p class="text-xl text-gray-400">Full Production Setup Wizard • November 2025</p>
+    </div>
+   <!-- Navigation -->
+    <div class="flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-2xl">
+      <button type="button" class="px-6 py-3 rounded-lg font-bold current" onclick="showStep(1)">1. Welcome</button>
+      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(2)">2. Sheet Setup</button>
+      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(3)">3. Configuration</button>
+      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(4)">4. Deploy Script</button>
+      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(5)">5. Logo & Finalize</button>
+      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(6)">6. Done!</button>
+    </div>
+    <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 md:p-12">
+      <!-- STEP 1 -->
+      <div id="step1" class="step active space-y-10">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
+        <div class="grid md:grid-cols-2 gap-8">
+          <label class="block cursor-pointer">
+            <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
+            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
+              <div class="text-6xl mb-4">Shield</div>
+              <h3 class="text-2xl font-bold">Simple App</h3>
+              <p class="text-gray-400 mt-3">Safety-only • Timer • SOS • Duress PIN</p>
+              <p class="text-green-400 font-bold mt-4">Most Popular</p>
+            </div>
+          </label>
+          <label class="block cursor-pointer">
+            <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
+            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
+              <div class="text-6xl mb-4">Tools</div>
+              <h3 class="text-2xl font-bold">Advanced App</h3>
+              <p class="text-gray-400 mt-3">Full reporting • Photos • Gemini AI • Distance tracking</p>
+              <p class="text-yellow-400 font-bold mt-4">Reporting Features</p>
+            </div>
+          </label>
+        </div>
+        <div class="text-center">
+          <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-12 py-5 rounded-xl font-bold text-2xl">
+            Start Setup
+          </button>
+        </div>
+      </div>
+      <div id="step2" class="step space-y-10">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
+        <div class="bg-yellow-900/30 border border-yellow-600 rounded-xl p-8 max-w-4xl mx-auto text-center">
+          <p class="text-xl text-yellow-300 font-semibold">We’ll do this together — just follow the big buttons</p>
+        </div>
+
+        <div class="space-y-12 max-w-5xl mx-auto">
+          <div class="bg-gray-900 rounded-xl p-8 border border-gray-700">
+            <h3 class="text-2xl font-bold text-blue-400 mb-6">1. Create Your Google Sheet</h3>
+            <div class="text-center">
+              <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-12 py-6 rounded-xl font-bold text-2xl">
+                Click Here to Open Your New Sheet
+              </a>
+            </div>
+          </div>
+
+          <div class="bg-gray-900 rounded-xl p-8 border border-gray-700">
+            <h3 class="text-2xl font-bold text-blue-400 mb-6">2. Set Up the "Visits" Tab</h3>
+            <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-3xl mx-auto">
+              <li>Rename the bottom tab from “Sheet1” to <strong class="text-yellow-300">Visits</strong></li>
+              <li>Click cell <strong>A1</strong></li>
+              <li>Click <strong>Copy Visits Headers</strong> below → paste with Ctrl+V</li>
+            </ol>
+            <div class="relative bg-gray-800 p-8 rounded-xl border border-gray-600 mt-8 font-mono text-sm">
+              <button type="button" onclick="copyHeaders()" class="copy-btn text-lg px-4 py-2">Copy Visits Headers</button>
+              <pre id="headers" class="text-gray-400 overflow-x-auto mt-4">Date,Worker Name,Worker Phone Number,Emergency Contact Name,Emergency Contact Number,Emergency Contact Email,Escalation Contact Name,Escalation Contact Number,Escalation Contact Email,Location Name,Location Address,Arrival Time,Anticipated Departure Time,Actual Departure Time,Alarm Status,Notes,Last Known GPS,GPS Timestamp,Battery Level</pre>
+            </div>
+          </div>
+
+          <div id="checklistsSection" class="bg-gray-900 rounded-xl p-8 border border-gray-700 hidden">
+            <h3 class="text-2xl font-bold text-yellow-300 mb-6">3. Set Up the "Checklists" Tab (Advanced Only)</h3>
+            <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-3xl mx-auto">
+              <li>Click the <strong>+</strong> at bottom-left to add a new tab</li>
+              <li>Rename it exactly: <strong class="text-yellow-300">Checklists</strong></li>
+              <li>Click cell <strong>A1</strong> → Copy headers below → paste</li>
+            </ol>
+            <div class="relative bg-gray-800 p-8 rounded-xl border border-gray-600 mt-8 font-mono text-sm">
+              <button type="button" onclick="copyChecklistsHeaders()" class="copy-btn text-lg px-4 py-2 bg-purple-600 hover:bg-purple-700">Copy Checklists Headers</button>
+              <pre id="checklistsHeaders" class="text-gray-400 overflow-x-auto mt-4">Template Name,Question 1,Question 2,Question 3,Question 4,Question 5,Question 6,Question 7,Question 8,Question 9,Question 10,Question 11,Question 12,Question 13,Question 14,Question 15,Question 16,Question 17,Question 18,Question 19,Question 20,Question 21,Question 22,Question 23,Question 24,Question 25,Question 26,Question 27,Question 28,Question 29,Question 30,Question 31,Question 32,Question 33,Question 34,Question 35,Question 36,Question 37,Question 38,Question 39,Question 40</pre>
+            </div>
+            <div class="bg-indigo-900/50 border-2 border-indigo-500 rounded-2xl p-8 mt-10">
+              <h4 class="text-2xl font-bold text-indigo-300 mb-6">Add Your Default Form</h4>
+              <p class="text-lg text-gray-200">In the Checklists tab, type exactly this in cell <strong>A2</strong>:</p>
+              <div class="bg-gray-800 rounded-xl p-6 text-center font-mono text-3xl text-green-400 my-6">
+                (Standard)
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center pt-8">
+            <button onclick="nextStep()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-xl font-bold text-3xl">
+              I’ve Done This — Next Step
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="step3" class="step space-y-10">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input type="text" id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Secret Key (Monitor Dashboard)</label><input type="password" id="secretKey" placeholder="Strong password" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">First Alert After (minutes)</label><input type="number" id="firstAlert" value="15" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Escalation After (minutes)</label><input type="number" id="escalation" value="5" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="orsField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService API Key</label><input type="text" id="orsKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="geminiField" class="hidden-field closed"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key</label><input type="text" id="geminiKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+        </div>
+        <div class="text-center">
+          <button onclick="generateScriptAndProceed()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-16 py-6 rounded-xl font-bold text-2xl">
+            Generate Apps Script Code
+          </button>
+        </div>
+      </div>
+
+      <div id="step4" class="step space-y-12">
+        <h2 class="text-3xl font-bold text-center text-blue-300">Step 4: Connect Your Google Sheet</h2>
+        <div class="bg-yellow-900/40 border-2 border-yellow-600 rounded-2xl p-10 text-center">
+          <p class="text-2xl font-bold text-yellow-300">This is the last technical step — we’ll do it together!</p>
+        </div>
+
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
+          <h3 class="text-2xl font-bold text-blue-400">1. Paste the Code</h3>
+          <div class="text-center my-8">
+            <a href="https://script.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-16 py-8 rounded-2xl font-bold text-3xl">
+              Open script.new Now
+            </a>
+          </div>
+          <div class="relative bg-gray-800 p-10 rounded-xl border border-gray-600 mt-8 font-mono text-sm">
+            <button type="button" onclick="copyScript()" class="copy-btn text-lg px-6 py-3">Copy All Code</button>
+            <pre id="scriptDisplay" class="text-left text-gray-400 overflow-x-auto h-96 mt-6"></pre>
+          </div>
+        </div>
+
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
+          <h3 class="text-2xl font-bold text-blue-400">2. Deploy → Get Your URL</h3>
+          <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-4xl mx-auto">
+            <li>Top-right → <strong>Deploy</strong> → <strong>New deployment</strong></li>
+            <li><strong>Select type</strong> → <strong>Web app</strong></li>
+            <li><strong>Who has access:</strong> <strong>Anyone</strong></li>
+            <li>Click <strong>Deploy</strong> → Allow permissions</li>
+            <li>Copy the URL that ends in <strong>/exec</strong> → it will appear in the test box below automatically</li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700">
+          <h3 class="text-2xl font-bold text-blue-400">3. Turn On 1-Minute Checks</h3>
+          <ol class="text-lg text-gray-300 space-y-4 list-decimal list-inside max-w-3xl mx-auto">
+            <li>Left sidebar → clock icon (<strong>Triggers</strong>)</li>
+            <li><strong>+ Add Trigger</strong> → Function: <strong>checkOverdueWorkers</strong> → Every 1 minute</li>
+            <li><strong>Save</strong></li>
+          </ol>
+        </div>
+
+        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-8">
+          <h3 class="text-2xl font-bold text-green-400">4. Live Test (5 Seconds)</h3>
+          <input type="url" id="testUrl" placeholder="Your /exec URL will appear here when pasted" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg" readonly>
+          <button onclick="runLiveTest()" class="mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-20 py-10 rounded-2xl font-bold text-3xl">
+            Test Connection Now
+          </button>
+          <div id="testResult" class="mt-8 text-3xl font-bold"></div>
+        </div>
+
+        <div class="text-center pt-12">
+          <button id="proceedBtn" onclick="nextStep()" disabled class="bg-green-600 opacity-50 px-24 py-12 rounded-2xl font-bold text-4xl cursor-not-allowed">
+            All Connected! → Next Step
+          </button>
+        </div>
+      </div>
+
+      <div id="step5" class="step space-y-8 text-center">
+        <h2 class="text-3xl font-bold text-blue-300">Step 5: Finalize & Branding</h2>
+        
+        <div class="max-w-3xl mx-auto bg-gray-900 p-8 rounded-xl border border-gray-700 mb-8">
+           <p class="text-xl text-gray-300 mb-4">Your Web App URL is ready:</p>
+           <input type="url" id="webAppUrl" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg text-center" readonly>
+        </div>
+
+        <div class="max-w-2xl mx-auto mb-8">
+          <label class="block text-xl font-bold mb-4 text-yellow-300">Upload Company Logo (Optional)</label>
+          <div id="dropZone" class="upload-area">
+            <p class="text-gray-400 text-lg">Drag & Drop or Click to Upload Image</p>
+            <p class="text-xs text-gray-500 mt-2">(Used for App Icon and Favicon)</p>
+            <input type="file" id="logoInput" accept="image/*" class="hidden">
+            <img id="logoPreview" class="logo-preview hidden">
+          </div>
+        </div>
+
+        <button onclick="generatePackage()" class="mt-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-20 py-8 rounded-xl font-bold text-3xl">
+          Generate Final App Suite
+        </button>
+      </div>
+
+      <div id="step6" class="step text-center py-20 space-y-12">
+        <div class="text-9xl">Success!</div>
+        <h2 class="text-5xl font-bold text-green-400">Your Complete App Package Is Ready!</h2>
+        <p class="text-2xl text-gray-300 max-w-3xl mx-auto">Fully configured • Offline-ready • Includes backup script</p>
+        
+        <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 px-20 py-10 rounded-3xl font-bold text-4xl shadow-2xl transform hover:scale-110 transition">
+          Download AppSuite.zip
+        </button>
+        
+        <div class="mt-12 text-lg text-gray-400 space-y-2 bg-gray-900 inline-block p-8 rounded-xl border border-gray-700">
+          <p class="font-bold text-blue-300 mb-4">Included files:</p>
+          <ul class="text-green-400 font-mono text-left list-disc list-inside">
+            <li>index.html – Your main worker app</li>
+            <li>manifest.json – Configured with your logo & name</li>
+            <li>sw.js – Enables offline mode & instant loading</li>
+            <li>OTG_Backend_Script.gs – Full backup of your Google Script</li>
+            <li>OTG_AppSuite_Documentation.pdf</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+ <script>
+    const REPO = "https://raw.githubusercontent.com/loneworkernelson-web/LoneWorkerFullOTGPackage/main/Templates";
+    let config = {};
+    let finalScriptCode = "";
+    window.finalScriptCode = "";  // Fix #2 – survives page refresh
+    let logoBlob = null;
+    let zip;
+
+    function toggleAdvanced() {
+      const adv = document.querySelector('input[value="advanced"]').checked;
+      document.getElementById('checklistsSection').classList.toggle('hidden', !adv);
+      document.querySelectorAll('.hidden-field').forEach(el => el.classList.toggle('closed', !adv));
+    }
+
+    function showStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('active');
+      document.querySelectorAll('.flex.flex-wrap button').forEach((b, i) => b.classList.toggle('current', i + 1 === n));
+    }
+
+    function copyHeaders() {
+      const content = document.getElementById('headers').textContent;
+      navigator.clipboard.writeText(content.replace(/,/g, '\t'));
+      alert("Visits headers copied! (Tabs added for Google Sheets)");
+    }
+
+    function copyChecklistsHeaders() {
+      const content = document.getElementById('checklistsHeaders').textContent;
+      navigator.clipboard.writeText(content.replace(/,/g, '\t'));
+      alert("Checklists headers copied! (Tabs added for Google Sheets)");
+    }
+
+    // Logo drag & drop (unchanged – perfect)
+    const dropZone = document.getElementById('dropZone');
+    const logoInput = document.getElementById('logoInput');
+    const logoPreview = document.getElementById('logoPreview');
+    dropZone.addEventListener('click', () => logoInput.click());
+    logoInput.addEventListener('change', e => handleFile(e));
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile({target: {files: e.dataTransfer.files}});
+    });
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        logoBlob = file;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          logoPreview.src = ev.target.result;
+          logoPreview.classList.remove('hidden');
+          dropZone.querySelector('p').textContent = "Logo Loaded!";
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    // Step 3: Generate Script Code
+   async function generateScriptAndProceed() {
+      config = {
+        orgName: document.getElementById('orgName').value || "My Company",
+        secretKey: document.getElementById('secretKey').value || "changeme123",
+        firstAlert: document.getElementById('firstAlert').value,
+        escalation: document.getElementById('escalation').value,
+        orsKey: document.getElementById('orsKey').value,
+        geminiKey: document.getElementById('geminiKey').value,
+        advanced: document.querySelector('input[value="advanced"]').checked
+      };
+
+      const template = await fetch(`${REPO}/apps_script_advanced.txt?t=${Date.now()}`).then(r => r.text());
+      finalScriptCode = template
+        .replace(/%%SECRET_KEY%%/g, config.secretKey)
+        .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
+        .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
+        .replace(/%%ORS_API_KEY%%/g, config.orsKey)
+        .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey);
+
+      window.finalScriptCode = finalScriptCode; // Fix #2 – persists across refresh
+      document.getElementById('scriptDisplay').textContent = finalScriptCode;
+      showStep(4);
+    }
+
+    function copyScript() {
+      navigator.clipboard.writeText(finalScriptCode);
+      alert("Full script copied! Paste it in script.new");
+    }
+
+    document.addEventListener('paste', e => {
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      if (text.includes('/exec')) {
+        document.getElementById('testUrl').value = text;
+        document.getElementById('webAppUrl').value = text;
+      }
+    });
+
+    // Fix #1: Correct trigger name
+    async function runLiveTest() {
+      const url = document.getElementById('testUrl').value.trim();
+      const result = document.getElementById('testResult');
+      const btn = document.getElementById('proceedBtn');
+      if (!url.includes('/exec')) { result.innerHTML = "Paste your /exec URL first"; return; }
+      result.textContent = "Testing...";
+      try {
+        const resp = await fetch(`${url}?test=1&key=${encodeURIComponent(config.secretKey)}`);
+        const text = await resp.text();
+        if (text.includes("OTG_SUCCESS")) {
+          result.innerHTML = "Perfect! Everything is connected!";
+          btn.disabled = false;
+          btn.className = "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-24 py-12 rounded-2xl font-bold text-4xl cursor-pointer";
+          document.getElementById('webAppUrl').value = url;
+        } else {
+          result.innerHTML = "Failed — check secret key";
+        }
+      } catch (e) {
+        result.innerHTML = "Connection error (Check Permissions?)";
+      }
+    }
+
+    // Fix #3, #4, #5 applied here
+    async function generatePackage() {
+      const webAppUrl = document.getElementById('webAppUrl').value.trim();
+      if (!webAppUrl.includes('/exec')) { alert("Please complete the test first"); return; }
+
+      const isAdv = document.querySelector('input[value="advanced"]').checked;
+      const orgName = document.getElementById('orgName').value || "My Company";
+
+      const buildConfig = {
+        ORGANISATION_NAME: orgName,
+        COMPANY_NAME: orgName,
+        ORS_API_KEY: config.orsKey,
+        GEMINI_API_KEY: config.geminiKey,
+        FIRST_ALERT_MINUTES: config.firstAlert,
+        ESCALATION_MINUTES: config.escalation,
+        WEB_APP_URL: webAppUrl,
+        GOOGLE_SHEET_URL: webAppUrl,
+        CHECKIN_ENABLED: "false",
+        CHECKIN_INTERVAL: "60"
+      };
+
+      zip = new JSZip();
+
+      let logoDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGAoQ0d1gAAAABJRU5ErkJggg==";
+      if (logoBlob) {
+        logoDataUrl = await new Promise(res => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.readAsDataURL(logoBlob);
+        });
+      }
+
+      let workerHtml = await fetch(`${REPO}/${isAdv ? "worker_app_advanced.txt" : "worker_app_simple.txt"}?t=${Date.now()}`).then(r => r.text());
+      for (const key in buildConfig) {
+        workerHtml = workerHtml.replace(new RegExp(`%%${key}%%`, 'g'), buildConfig[key]);
+      }
+      workerHtml = workerHtml.replace(/%%LOGO_URL%%/g, logoDataUrl).replace(/%%FAVICON_URL%%/g, logoDataUrl);
+
+      // Fix #3: Smart manifest icon
+      const manifest = {
+        "name": orgName + " On-the-Go",
+        "short_name": orgName,
+        "description": "Lone worker safety & reporting app",
+        "start_url": "/index.html",
+        "display": "standalone",
+        "background_color": "#111827",
+        "theme_color": "#1e40af",
+        "icons": [
+          { "src": logoBlob ? "icon.png" : logoDataUrl, "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
+        ]
+      };
+
+      zip.file("index.html", workerHtml);
+      zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+      if (logoBlob) zip.file("icon.png", logoBlob);
+      zip.file("sw.js", await fetch(`${REPO}/sw.js?t=${Date.now()}`).then(r => r.text()));
+      zip.file("monitor.html", await fetch(`${REPO}/monitor_app_template.txt?t=${Date.now()}`).then(r => r.text()));
+
+      // Robust script backup (Fix #2 + #5)
+      let scriptContent = window.finalScriptCode || document.getElementById('scriptDisplay').textContent || "// Script missing";
+      zip.file("OTG_Backend_Script.gs", scriptContent);
+
+      // Fix #4: Cache-busted PDF
+      zip.file("OTG_AppSuite_Documentation.pdf", await fetch("Templates/OTG_AppSuite_Documentation.pdf?t=" + Date.now()).then(r => r.blob()));
+
+      const blob = await zip.generateAsync({type: "blob"});
+      showStep(6);
+      const safeName = orgName.replace(/[^a-zA-Z0-9]/g, '_');
+      document.getElementById('downloadBtn').textContent = `Download ${safeName}_AppSuite.zip`;
+      document.getElementById('downloadBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${safeName}_AppSuite.zip`;
+        a.click();
+      };
+    }
+
+    toggleAdvanced();
+  </script>
+</body>
+</html>
+ <style>
     .step { display: none; }
     .step.active { display: block; }
     .step-nav button { @apply transition-all duration-200 px-4 py-2 text-sm font-medium rounded-md; }
@@ -262,7 +745,7 @@
     function showStep(n) {
       document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
       document.getElementById('step' + n).classList.add('active');
-      document.querySelectorAll('.step-nav button').forEach((b, i) => b.classList.toggle('current', i + 1 === n));
+      document.querySelectorAll('.flex.flex-wrap button').forEach((b, i) => b.classList.toggle('current', i + 1 === n));
     }
 
     function copyHeaders() {
