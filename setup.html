@@ -68,18 +68,18 @@
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8">
 
-      <!-- STEP 1 – Fully working + beautiful selection -->
+      <!-- STEP 1 – FULLY FIXED: both cards work, only ONE shows "SELECTED" -->
 <div id="step1" class="step active space-y-10">
   <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
   <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
 
     <!-- SIMPLE APP -->
     <label class="block cursor-pointer">
-      <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
+      <input type="radio" name="appMode" value="simple" checked class="hidden peer/simple">
       <div class="relative bg-gray-900 border-4 rounded-2xl p-10 text-center transition-all duration-300
-                  peer-checked:border-blue-500 peer-checked:shadow-2xl peer-checked:shadow-blue-500/30
+                  peer-checked/simple:border-blue-500 peer-checked/simple:shadow-2xl peer-checked/simple:shadow-blue-500/30
                   hover:border-blue-400">
-        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold opacity-0 peer-checked:opacity-100 transition">
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold opacity-0 peer-checked/simple:opacity-100 transition">
           SELECTED
         </div>
         <div class="text-8xl mb-6">Shield</div>
@@ -89,13 +89,13 @@
       </div>
     </label>
 
-    <!-- ADVANCED APP – FIXED: onchange was missing! -->
+    <!-- ADVANCED APP – NOW WORKS PERFECTLY -->
     <label class="block cursor-pointer">
-      <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
+      <input type="radio" name="appMode" value="advanced" class="hidden peer/advanced">
       <div class="relative bg-gray-900 border-4 rounded-2xl p-10 text-center transition-all duration-300
-                  peer-checked:border-yellow-500 peer-checked:shadow-2xl peer-checked:shadow-yellow-500/30
+                  peer-checked/advanced:border-yellow-500 peer-checked/advanced:shadow-2xl peer-checked/advanced:shadow-yellow-500/30
                   hover:border-yellow-400">
-        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-6 py-2 rounded-full text-sm font-bold opacity-0 peer-checked:opacity-100 transition">
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-6 py-2 rounded-full text-sm font-bold opacity-0 peer-checked/advanced:opacity-100 transition">
           SELECTED
         </div>
         <div class="text-8xl mb-6">Tools</div>
@@ -288,12 +288,19 @@
   let zip;
 
   // ← Function defined FIRST
+  // Put this near the top of your <script>, right after the other functions
   function toggleAdvanced() {
-    const adv = document.querySelector('input[value="advanced"]').checked;
-    const section = document.getElementById('checklistsSection');
-    if (section) section.classList.toggle('hidden', !adv);
-    document.querySelectorAll('.hidden-field').forEach(el => el.classList.toggle('open', adv));
-  }
+  const adv = document.querySelector('input[value="advanced"]').checked;
+  const section = document.getElementById('checklistsSection');
+  if (section) section.classList.toggle('hidden', !adv);
+  document.querySelectorAll('.hidden-field').forEach(el => el.classList.toggle('open', adv));
+}
+
+// Call it when radio buttons change AND on page load
+document.querySelectorAll('input[name="appMode"]').forEach(radio => {
+  radio.addEventListener('change', toggleAdvanced);
+});
+document.addEventListener('DOMContentLoaded', toggleAdvanced);
 
   // ← All other functions below (showStep, nextStep, copyHeaders, etc.)
   function showStep(n) {
