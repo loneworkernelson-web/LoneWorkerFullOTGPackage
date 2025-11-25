@@ -301,10 +301,19 @@ let state = {
 // CORE STATE & UI FUNCTIONS
 // ————————————————————————————————————————————————
 function loadState() {
+  // 1. Capture the URL that is hardcoded in this file (fresh from deployment)
+  const hardcodedUrl = '%%GOOGLE_SHEET_URL%%';
+
+  // 2. Load the cached user data (Name, PIN, etc.)
   const saved = localStorage.getItem('loneWorkerState');
   if (saved) {
     try { Object.assign(state, JSON.parse(saved)); } catch(e) { console.warn("Corrupted state, resetting"); }
   }
+
+  // 3. FORCE OVERWRITE: Ensure the app ALWAYS uses the URL from the code, not the cache
+  state.settings.googleSheetUrl = hardcodedUrl;
+
+  // 4. Ensure Travelling location always exists
   if (!state.locations.some(l => l.id === 'loc_travelling_default')) {
     state.locations.push({
       id: 'loc_travelling_default',
@@ -315,16 +324,22 @@ function loadState() {
       noReport: true
     });
   }
+
+  // 5. Data migrations (ensure fields exist)
   state.locations = state.locations.map(l => ({
     ...l,
     companyName: l.companyName || '',
     templateName: l.templateName || '',
     noReport: l.noReport || false
   }));
+
+  // 6. Restore Date objects
   if (state.activeVisit) {
     state.activeVisit.startTime = new Date(state.activeVisit.startTime);
     state.activeVisit.anticipatedDepartureTime = new Date(state.activeVisit.anticipatedDepartureTime);
   }
+
+  // 7. Save the corrected state back to storage immediately
   saveState();
 }
 function saveState() {
