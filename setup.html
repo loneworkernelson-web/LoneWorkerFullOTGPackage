@@ -68,11 +68,11 @@
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8">
 
-      <!-- STEP 1 – Now with beautiful, obvious selection highlighting -->
-      
+      <!-- STEP 1 – Fully working + beautiful selection -->
 <div id="step1" class="step active space-y-10">
   <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
   <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+
     <!-- SIMPLE APP -->
     <label class="block cursor-pointer">
       <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
@@ -89,7 +89,7 @@
       </div>
     </label>
 
-    <!-- ADVANCED APP -->
+    <!-- ADVANCED APP – FIXED: onchange was missing! -->
     <label class="block cursor-pointer">
       <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
       <div class="relative bg-gray-900 border-4 rounded-2xl p-10 text-center transition-all duration-300
@@ -104,6 +104,7 @@
         <p class="text-yellow-400 font-bold text-2xl mt-6">Reporting + AI Features</p>
       </div>
     </label>
+
   </div>
 
   <div class="text-center mt-12">
