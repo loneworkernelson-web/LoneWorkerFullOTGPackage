@@ -42,18 +42,37 @@
     .logo-preview{max-width:150px;max-height:150px;border-radius:0.5rem;margin:10px auto;display:block}
     .current{background:#2563eb;color:white!important;font-weight:700}
     .hidden-field{height:0;opacity:0;overflow:hidden;transition:all .4s ease;margin:0;padding:0}
-    .hidden-field.open{height:auto;opacity:1;padding-top:1rem;margin-top:1rem}
+    .hidden-field.open {
+      height:auto;
+      opacity:1;
+      padding-top:1rem;
+      margin-top:1rem;
+    }
+
+    /* ─────── Selection styling ─────── */
     .select-card.selected .card-inner {
-  /* Brighter, richer gold highlight – matches blue intensity */
-.select-card[data-mode="advanced"].selected .card-inner {
-  border-color: #fbbf24 !important;
-  box-shadow: 0 0 40px rgba(251, 191, 36, 0.6) !important;
-}
-.select-card[data-mode="advanced"].selected .selected-badge {
-  background: #f59e0b !important;  /* brighter amber */
-  color: black !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-}
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 40px rgba(96, 165, 250, 0.6) !important;
+    }
+    .select-card[data-mode="advanced"].selected .card-inner {
+      border-color: #fbbf24 !important;
+      box-shadow: 0 0 40px rgba(251, 191, 36, 0.6) !important;
+    }
+
+    .selected-badge {
+      @apply absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full text-sm font-bold opacity-0 transition;
+    }
+    .select-card.selected .selected-badge {
+      @apply opacity-100;
+    }
+    .select-card[data-mode="simple"].selected .selected-badge {
+      @apply bg-blue-600 text-white;
+    }
+    .select-card[data-mode="advanced"].selected .selected-badge {
+      background: #f59e0b !important;
+      color: black !important;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
