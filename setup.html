@@ -68,33 +68,50 @@
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8">
 
-      <!-- STEP 1 -->
-      <div id="step1" class="step active space-y-10">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
-        <div class="grid md:grid-cols-2 gap-8">
-          <label class="block cursor-pointer">
-            <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
-            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
-              <div class="text-6xl mb-4">Shield</div>
-              <h3 class="text-2xl font-bold">Simple App</h3>
-              <p class="text-gray-400 mt-3">Safety-only • Timer • SOS • Duress PIN</p>
-              <p class="text-green-400 font-bold mt-4">Most Popular</p>
-            </div>
-          </label>
-          <label class="block cursor-pointer">
-            <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
-            <div class="bg-gray-900 border-2 border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition peer-checked:border-blue-500 peer-checked:bg-blue-900/20">
-              <div class="text-6xl mb-4">Tools</div>
-              <h3 class="text-2xl font-bold">Advanced App</h3>
-              <p class="text-gray-400 mt-3">Full reporting • Photos • Gemini AI • Distance tracking</p>
-              <p class="text-yellow-400 font-bold mt-4">Reporting Features</p>
-            </div>
-          </label>
+      <!-- STEP 1 – Now with beautiful, obvious selection highlighting -->
+      
+<div id="step1" class="step active space-y-10">
+  <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
+  <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+    <!-- SIMPLE APP -->
+    <label class="block cursor-pointer">
+      <input type="radio" name="appMode" value="simple" checked onchange="toggleAdvanced()" class="hidden peer">
+      <div class="relative bg-gray-900 border-4 rounded-2xl p-10 text-center transition-all duration-300
+                  peer-checked:border-blue-500 peer-checked:shadow-2xl peer-checked:shadow-blue-500/30
+                  hover:border-blue-400">
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold opacity-0 peer-checked:opacity-100 transition">
+          SELECTED
         </div>
-        <div class="text-center">
-          <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-12 py-5 rounded-xl font-bold text-2xl">Start Setup</button>
-        </div>
+        <div class="text-8xl mb-6">Shield</div>
+        <h3 class="text-3xl font-bold mb-3">Simple App</h3>
+        <p class="text-gray-300 text-lg">Safety-only • Timer • SOS • Duress PIN</p>
+        <p class="text-green-400 font-bold text-2xl mt-6">Most Popular</p>
       </div>
+    </label>
+
+    <!-- ADVANCED APP -->
+    <label class="block cursor-pointer">
+      <input type="radio" name="appMode" value="advanced" onchange="toggleAdvanced()" class="hidden peer">
+      <div class="relative bg-gray-900 border-4 rounded-2xl p-10 text-center transition-all duration-300
+                  peer-checked:border-yellow-500 peer-checked:shadow-2xl peer-checked:shadow-yellow-500/30
+                  hover:border-yellow-400">
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-6 py-2 rounded-full text-sm font-bold opacity-0 peer-checked:opacity-100 transition">
+          SELECTED
+        </div>
+        <div class="text-8xl mb-6">Tools</div>
+        <h3 class="text-3xl font-bold mb-3">Advanced App</h3>
+        <p class="text-gray-300 text-lg">Full reporting • Photos • Gemini AI • Checklists</p>
+        <p class="text-yellow-400 font-bold text-2xl mt-6">Reporting + AI Features</p>
+      </div>
+    </label>
+  </div>
+
+  <div class="text-center mt-12">
+    <button onclick="nextStep()" class="bg-blue-600 hover:bg-blue-700 px-16 py-6 rounded-2xl font-bold text-3xl shadow-xl">
+      Continue → Start Setup
+    </button>
+  </div>
+</div>
 
       <!-- STEP 2 -->
       <div id="step2" class="step space-y-10">
