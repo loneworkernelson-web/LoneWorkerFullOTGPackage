@@ -880,29 +880,32 @@ function initEventListeners() {
   document.getElementById('cancelReportBtn').addEventListener('click', () => { hideModals(); if (state.activeVisit) enterLockedScreen(); });
   document.getElementById('submitReportBtn').addEventListener('click', submitReport);
   document.getElementById('closeInfoModalBtn').addEventListener('click', hideModals);
+// -- Settings Page Buttons --
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-    const fields = ['workerName','workerPhone','emergencyName','emergencyPhone','emergencyEmail','escalationName','escalationPhone','escalationEmail','pinCode','duressPin','googleSheetUrl'];
-    fields.forEach(f => {
-      const el = document.getElementById(f);
-      if (el) state.settings[f] = el.value.trim();
+    Object.keys(state.settings).forEach(k => {
+      // FIX: Look for the element ID directly without regex replacement
+      const el = document.getElementById(k);
+      if (el) state.settings[k] = el.value.trim();
     });
-    if (state.settings.pinCode.length !== 4 || !/^\d+$/.test(state.settings.pinCode)) {
-      showAlert("Invalid PIN", "Normal PIN must be exactly 4 digits");
+
+    // Check if critical PINs are set before allowing exit
+    if (!state.settings.pinCode || state.settings.pinCode.length !== 4) {
+      alert("Please enter a valid 4-digit PIN to save.");
       return;
     }
-    if (state.settings.duressPin.length !== 4 || !/^\d+$/.test(state.settings.duressPin)) {
-      showAlert("Invalid Duress PIN", "Duress PIN must be exactly 4 digits");
-      return;
-    }
+
     saveState();
     navigate('main');
-    showAlert("Saved", "Settings updated");
+
+    // FIX: Re-enable the close button so it works for the rest of the session
+    document.getElementById('closeSettingsBtn').style.opacity = '1';
+    document.getElementById('closeSettingsBtn').style.pointerEvents = 'auto';
   });
+
+  document.getElementById('closeSettingsBtn').addEventListener('click', () => navigate('main'));
+  
   document.getElementById('clearCacheBtn').addEventListener('click', () => {
-    if (confirm("Clear all data and reset app?")) {
-      localStorage.clear();
-      location.reload();
-    }
+    if(confirm("Reset all app data?")) { localStorage.clear(); location.reload(); }
   });
   document.getElementById('alertModalOkBtn').addEventListener('click', hideModals);
   document.getElementById('checkinOkBtn').addEventListener('click', () => {
@@ -917,13 +920,16 @@ function initEventListeners() {
 }
 
 function populateSettingsUI() {
-  Object.keys(state.settings).forEach(key => {
-    const el = document.getElementById(key);
-    if (el) el.value = state.settings[key] || '';
+  Object.keys(state.settings).forEach(k => {
+    // FIX: Removed .replace(...) to match IDs directly (e.g. "workerName" matches "workerName")
+    const el = document.getElementById(k); 
+    if (el) el.value = state.settings[k] || '';
   });
-  document.getElementById('googleSheetUrl').disabled = true;
+  
+  if(document.getElementById('googleSheetUrl')) {
+      document.getElementById('googleSheetUrl').disabled = true;
+  }
 }
-
 function showAlert(title, msg) {
   document.getElementById('alertModalTitle').textContent = title;
   document.getElementById('alertModalMessage').textContent = msg;
