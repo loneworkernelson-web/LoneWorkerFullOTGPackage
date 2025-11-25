@@ -406,71 +406,69 @@
     }
 
     async function generatePackage() {
-      const webAppUrl = document.getElementById('webAppUrl').value.trim();
-      if (!webAppUrl.includes('/exec')) { alert("Complete the test first"); return; }
-      const isAdv = document.querySelector('input[value="advanced"]').checked;
-      const orgName = document.getElementById('orgName').value || "My Company";
+  const webAppUrl = document.getElementById('webAppUrl').value.trim();
+  if (!webAppUrl.includes('/exec')) { alert("Complete the test first"); return; }
+  const isAdv = document.querySelector('input[value="advanced"]').checked;
+  const orgName = document.getElementById('orgName').value || "My Company";
 
-      const buildConfig = {
-        ORGANISATION_NAME: orgName,
-        COMPANY_NAME: orgName,
-        ORS_API_KEY: config.orsKey || "",
-        GEMINI_API_KEY: config.geminiKey || "",
-        FIRST_ALERT_MINUTES: config.firstAlert,
-        ESCALATION_MINUTES: config.escalation,
-        WEB_APP_URL: webAppUrl,
-        GOOGLE_SHEET_URL: webAppUrl,
-        CHECKIN_ENABLED: "false",
-        CHECKIN_INTERVAL: "60"
-      };
+  const buildConfig = {
+    ORGANISATION_NAME: orgName,
+    COMPANY_NAME: orgName,
+    ORS_API_KEY: config.orsKey || "",
+    GEMINI_API_KEY: config.geminiKey || "",
+    FIRST_ALERT_MINUTES: config.firstAlert,
+    ESCALATION_MINUTES: config.escalation,
+    WEB_APP_URL: webAppUrl,
+    GOOGLE_SHEET_URL: webAppUrl,
+    CHECKIN_ENABLED: "false",
+    CHECKIN_INTERVAL: "60"
+  };
 
-      zip = new JSZip();
-      let logoDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGAoQ0d1gAAAABJRU5ErkJggg==";
-      if (logoBlob) {
-        logoUrl = await new Promise(res => {
-          const r = new FileReader();
-          r.onload = () => res(r.result);
-          r.readAsDataURL(logoBlob);
-        });
-      }
+  zip = new JSZip();
 
-      let workerHtml = await fetch(`${REPO}/${isAdv ? "worker_app_advanced.txt" : "worker_app_simple.txt"}?t=${Date.now()}`).then(r => r.text());
-      for (const key in buildConfig) {
-        workerHtml = workerHtml.replace(new RegExp(`%%${key}%%`, 'g'), buildConfig[key]);
-      }
-      workerHtml = workerHtml.replace(/%%LOGO_URL%%/g, logoUrl).replace(/%%FAVICON_URL%%/g, logoUrl);
+  // Fixed: use the same variable name throughout
+  let logoDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGAoQ0d1gAAAABJRU5ErkJggg=="; // fallback tiny pixel
 
-      const manifest = {
-        "name": orgName + " On-the-Go",
-        "short_name": orgName,
-        "description": "Lone worker safety & reporting app",
-        "start_url": "/index.html",
-        "display": "standalone",
-        "background_color": "#111827",
-        "theme_color": "#1e40af",
-        "icons": [{ "src": logoBlob ? "icon.png" : logoUrl, "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }]
-      };
+  if (logoBlob) {
+    logoDataUrl = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(logoBlob);
+    });
+  }
 
-      zip.file("index.html", workerHtml);
-      zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-      if (logoBlob) zip.file("icon.png", logoBlob);
-      zip.file("sw.js", await fetch(`${REPO}/sw.js?t=${Date.now()}`).then(r => r.text()));
-      zip.file("monitor.html", await fetch(`${REPO}/monitor_app_template.txt?t=${Date.now()}`).then(r => r.text()));
-      zip.file("OTG_Backend_Script.gs", finalScriptCode || "// missing");
+  let workerHtml = await fetch(`${REPO}/${isAdv ? "worker_app_advanced.txt" : "worker_app_simple.txt"}?t=${Date.now()}`).then(r => r.text());
+  for (const key in buildConfig) {
+    workerHtml = workerHtml.replace(new RegExp(`%%${key}%%`, 'g'), buildConfig[key]);
+  }
+  workerHtml = workerHtml.replace(/%%LOGO_URL%%/g, logoDataUrl).replace(/%%FAVICON_URL%%/g, logoDataUrl);
 
-      const blob = await zip.generateAsync({type: "blob"});
-      showStep(6);
-      const safeName = orgName.replace(/[^a-zA-Z0-9]/g, '_');
-      document.getElementById('downloadBtn').textContent = `Download ${safeName}_AppSuite.zip`;
-      document.getElementById('downloadBtn').onclick = () => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${safeName}_AppSuite.zip`;
-        a.click();
-      };
-    }
+  const manifest = {
+    "name": orgName + " On-the-Go",
+    "short_name": orgName,
+    "description": "Lone worker safety & reporting app",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#111827",
+    "theme_color": "#1e40af",
+    "icons": [{ "src": logoBlob ? "icon.png" : logoDataUrl, "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }]
+  };
 
-    toggleAdvanced();
-  </script>
-</body>
-</html>
+  zip.file("index.html", workerHtml);
+  zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+  if (logoBlob) zip.file("icon.png", logoBlob);
+  zip.file("sw.js", await fetch(`${REPO}/sw.js?t=${Date.now()}`).then(r => r.text()));
+  zip.file("monitor.html", await fetch(`${REPO}/monitor_app_template.txt?t=${Date.now()}`).then(r => r.text()));
+  zip.file("OTG_Backend_Script.gs", finalScriptCode || "// missing");
+
+  const blob = await zip.generateAsync({type: "blob"});
+  showStep(6);
+  const safeName = orgName.replace(/[^a-zA-Z0-9]/g, '_');
+  document.getElementById('downloadBtn').textContent = `Download ${safeName}_AppSuite.zip`;
+  document.getElementById('downloadBtn').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safeName}_AppSuite.zip`;
+    a.click();
+  };
+}
