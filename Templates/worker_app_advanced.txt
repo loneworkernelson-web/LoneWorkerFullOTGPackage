@@ -571,8 +571,11 @@ async function calculateDistanceTo(address) {
     return null;
   }
 }
+// Long-press handler (Safe Version)
 function addLongPress(btn, callback, duration = 1500) {
-  let timer, progress = 0;
+  if (!btn) return; // <--- FIX: Stop if button doesn't exist
+  
+  let timer, progress;
   const start = (e) => {
     e.preventDefault();
     btn.classList.add('pressing');
@@ -937,19 +940,24 @@ function showAlert(title, msg) {
 }
 
 function init() {
-  pages = {
-    main: document.getElementById('mainPage'),
-    locked: document.getElementById('lockedPage'),
-    settings: document.getElementById('settingsPage')
-  };
-  modals = {
-    backdrop: document.getElementById('modalBackdrop'),
-    location: document.getElementById('locationModal'),
-    report: document.getElementById('reportModal'),
-    info: document.getElementById('infoModal'),
-    alert: document.getElementById('alertModal'),
-    checkin: document.getElementById('checkinModal')
-  };
+  try {
+    // 1. Define all elements FIRST
+    pages = {
+      main: document.getElementById('mainPage'),
+      locked: document.getElementById('lockedPage'),
+      settings: document.getElementById('settingsPage')
+    };
+    modals = {
+      backdrop: document.getElementById('modalBackdrop'),
+      location: document.getElementById('locationModal'),
+      report: document.getElementById('reportModal'),
+      info: document.getElementById('infoModal'),
+      pin: document.getElementById('pinModal'),
+      alert: document.getElementById('alertModal'),
+      checkin: document.getElementById('checkinModal'),
+      confirm: document.getElementById('confirmModal')
+    };
+// Assign Buttons
   locationList = document.getElementById('locationList');
   arrivedBtn = document.getElementById('arrivedBtn');
   quickStatBtn = document.getElementById('quickStatBtn');
@@ -958,6 +966,11 @@ function init() {
   reportFormChecklists = document.getElementById('reportFormChecklists');
   reportNotes = document.getElementById('reportNotes');
   reportLoading = document.getElementById('reportLoading');
+// Missing these caused the crash:
+    panicBtn = document.getElementById('panicBtn');
+    iamSafeBtn = document.getElementById('iamSafeBtn');
+    departBtn = document.getElementById('departBtn');
+    extendBtn = document.getElementById('extendBtn');
   reportModalTitle = document.getElementById('reportModalTitle');
   uploadQueueBanner = document.getElementById('uploadQueueBanner');
   startReminderBanner = document.getElementById('startReminderBanner');
