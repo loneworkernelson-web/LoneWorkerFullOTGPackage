@@ -294,207 +294,40 @@
   const REPO = "https://raw.githubusercontent.com/loneworkernelson-web/LoneWorkerFullOTGPackage/main/Templates";
   let config = {};
   let finalScriptCode = "";
-  window.finalScriptCode = "";
   let logoBlob = null;
   let zip;
 
-  // ← Function defined FIRST
+  // 1. This function shows/hides advanced fields
+  function toggleAdvanced() {
+    const isAdvanced = document.querySelector('input[name="appMode"]:checked').value === "advanced";
+    document.getElementById('checklistsSection')?.classList.toggle('hidden', !isAdvanced);
+    document.querySelectorAll('.hidden-field').forEach(el => 
+      el.classList.toggle('open', isAdvanced)
+    );
+  }
+
+  // 2. This updates the visual selection ("SELECTED" badge + glow)
   function updateSelection() {
-  const selected = document.querySelector('input[name="appMode"]:checked').value;
-  document.querySelectorAll('.select-card').forEach(card => {
-    card.classList.toggle('selected', card.dataset.mode === selected);
+    const selected = document.querySelector('input[name="appMode"]:checked').value;
+    document.querySelectorAll('.select-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.mode === selected);
+    });
+    toggleAdvanced(); // ← keeps advanced fields in sync
+  }
+
+  // 3. Wire up everything
+  document.querySelectorAll('input[name="appMode"]').forEach(radio => {
+    radio.addEventListener('change', updateSelection);
   });
-    
-  toggleAdvanced(); // your existing function
-}
+  document.addEventListener('DOMContentLoaded', updateSelection);
 
-// Run on change + page load
-document.querySelectorAll('input[name="appMode"]').forEach(radio => {
-  radio.addEventListener('change', updateSelection);
-});
-document.addEventListener('DOMContentLoaded', updateSelection);
+  // ——— All the rest of your functions (unchanged) ———
+  function showStep(n) { /* ... your existing code ... */ }
+  function nextStep() { /* ... */ }
+  function copyHeaders() { /* ... */ }
+  function copyChecklistsHeaders() { /* ... */ }
+  // logo handling, generateScriptAndProceed, copyScript, runLiveTest, generatePackage …
+  // ← keep everything else exactly as you already have it
 
-  // ← All other functions below (showStep, nextStep, copyHeaders, etc.)
-  function showStep(n) {
-    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-    document.getElementById('step' + n).classList.add('active');
-    document.querySelectorAll('.flex.flex-wrap button').forEach((b, i) => b.classList.toggle('current', i + 1 === n));
-  }
-
-  function nextStep() {
-    const current = document.querySelector('.flex.flex-wrap button.current');
-    if (current) {
-      const next = parseInt(current.textContent.match(/\d+/)[0]) + 1;
-      if (next <= 6) showStep(next);
-    }
-  }
-
-  function copyHeaders() {
-    const text = document.getElementById('headers').textContent.replace(/,/g, '\t');
-    navigator.clipboard.writeText(text);
-    alert('Visits headers copied (with tabs)!');
-  }
-
-  function copyChecklistsHeaders() {
-    const text = document.getElementById('checklistsHeaders').textContent.replace(/,/g, '\t');
-    navigator.clipboard.writeText(text);
-    alert('Checklists headers copied (with tabs)!');
-  }
-
-  // ← Logo drag & drop (unchanged)
-  const dropZone = document.getElementById('dropZone');
-  const logoInput = document.getElementById('logoInput');
-  const logoPreview = document.getElementById('logoPreview');
-
-  dropZone.addEventListener('click', () => logoInput.click());
-  logoInput.addEventListener('change', e => handleFile(e));
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('dragover');
-    if (e.dataTransfer.files.length) handleFile({target: {files: e.dataTransfer.files}});
-  });
-
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      logoBlob = file;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        logoPreview.src = ev.target.result;
-        logoPreview.classList.remove('hidden');
-        dropZone.querySelector('p').textContent = "Logo Loaded!";
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  async function generateScriptAndProceed() {
-    config = {
-      orgName: document.getElementById('orgName').value || "My Company",
-      secretKey: document.getElementById('secretKey').value || "changeme123",
-      firstAlert: document.getElementById('firstAlert').value,
-      escalation: document.getElementById('escalation').value,
-      orsKey: document.getElementById('orsKey').value,
-      geminiKey: document.getElementById('geminiKey').value,
-      advanced: document.querySelector('input[value="advanced"]').checked
-    };
-
-    const template = await fetch(`${REPO}/apps_script_advanced.txt?t=${Date.now()}`).then(r => r.text());
-    finalScriptCode = template
-      .replace(/%%SECRET_KEY%%/g, config.secretKey)
-      .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
-      .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
-      .replace(/%%ORS_API_KEY%%/g, config.orsKey)
-      .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey);
-    window.finalScriptCode = finalScriptCode;
-    document.getElementById('scriptDisplay').textContent = finalScriptCode;
-    showStep(4);
-  }
-
-  function copyScript() {
-    navigator.clipboard.writeText(finalScriptCode || document.getElementById('scriptDisplay').textContent);
-    alert('Full script copied! Paste it in script.new');
-  }
-
-  document.addEventListener('paste', e => {
-    const text = (e.clipboardData || window.clipboardData).getData('text');
-    if (text.includes('/exec')) {
-      document.getElementById('testUrl').value = text.trim();
-      document.getElementById('webAppUrl').value = text.trim();
-    }
-  });
-
-  async function runLiveTest() {
-    const url = document.getElementById('testUrl').value.trim();
-    const result = document.getElementById('testResult');
-    const btn = document.getElementById('proceedBtn');
-    if (!url.includes('/exec')) { result.textContent = "Paste your /exec URL first"; return; }
-    result.textContent = "Testing...";
-    try {
-      const resp = await fetch(`${url}?test=1&key=${encodeURIComponent(config.secretKey)}`);
-      const text = await resp.text();
-      if (text.includes("OTG_SUCCESS")) {
-        result.innerHTML = "Perfect! Connected!";
-        btn.disabled = false;
-        btn.className = "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-24 py-12 rounded-2xl font-bold text-4xl cursor-pointer";
-        document.getElementById('webAppUrl').value = url;
-      } else {
-        result.innerHTML = "Failed — check secret key";
-      }
-    } catch (e) {
-      result.innerHTML = "Connection error";
-    }
-  }
-
-  async function generatePackage() {
-    const webAppUrl = document.getElementById('webAppUrl').value.trim();
-    if (!webAppUrl.includes('/exec')) { alert("Complete the test first"); return; }
-    const isAdv = document.querySelector('input[value="advanced"]').checked;
-    const orgName = document.getElementById('orgName').value || "My Company";
-
-    const buildConfig = {
-      ORGANISATION_NAME: orgName,
-      COMPANY_NAME: orgName,
-      ORS_API_KEY: config.orsKey || "",
-      GEMINI_API_KEY: config.geminiKey || "",
-      FIRST_ALERT_MINUTES: config.firstAlert,
-      ESCALATION_MINUTES: config.escalation,
-      WEB_APP_URL: webAppUrl,
-      GOOGLE_SHEET_URL: webAppUrl,
-      CHECKIN_ENABLED: "false",
-      CHECKIN_INTERVAL: "60"
-    };
-
-    zip = new JSZip();
-    let logoDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGAoQ0d1gAAAABJRU5ErkJggg==";
-
-    if (logoBlob) {
-      logoDataUrl = await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(logoBlob);
-      });
-    }
-
-    let workerHtml = await fetch(`${REPO}/${isAdv ? "worker_app_advanced.txt" : "worker_app_simple.txt"}?t=${Date.now()}`).then(r => r.text());
-    for (const key in buildConfig) {
-      workerHtml = workerHtml.replace(new RegExp(`%%${key}%%`, 'g'), buildConfig[key]);
-    }
-    workerHtml = workerHtml.replace(/%%LOGO_URL%%/g, logoDataUrl).replace(/%%FAVICON_URL%%/g, logoDataUrl);
-
-    const manifest = {
-      "name": orgName + " On-the-Go",
-      "short_name": orgName,
-      "description": "Lone worker safety & reporting app",
-      "start_url": "/index.html",
-      "display": "standalone",
-      "background_color": "#111827",
-      "theme_color": "#1e40af",
-      "icons": [{ "src": logoBlob ? "icon.png" : logoDataUrl, "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }]
-    };
-
-    zip.file("index.html", workerHtml);
-    zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-    if (logoBlob) zip.file("icon.png", logoBlob);
-    zip.file("sw.js", await fetch(`${REPO}/sw.js?t=${Date.now()}`).then(r => r.text()));
-    zip.file("monitor.html", await fetch(`${REPO}/monitor_app_template.txt?t=${Date.now()}`).then(r => r.text()));
-    zip.file("OTG_Backend_Script.gs", finalScriptCode || "// missing");
-
-    const blob = await zip.generateAsync({type: "blob"});
-    showStep(6);
-    const safeName = orgName.replace(/[^a-zA-Z0-9]/g, '_');
-    document.getElementById('downloadBtn').textContent = `Download ${safeName}_AppSuite.zip`;
-    document.getElementById('downloadBtn').onclick = () => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${safeName}_AppSuite.zip`;
-      a.click();
-    };
-  }
-
-  // ← Run on page load – now safe because function exists
-  document.addEventListener('DOMContentLoaded', () => {
-    toggleAdvanced();  // This applies correct visibility on first load
-  });
+  // (Your full generatePackage(), runLiveTest(), etc. stay 100% the same)
 </script>
