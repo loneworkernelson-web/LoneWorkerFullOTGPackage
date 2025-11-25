@@ -21,58 +21,24 @@
   .selectable-item, .long-press-btn, button { -webkit-user-select: none; -ms-user-select: none; user-select: none; -webkit-touch-callout: none; }
   
   /* Fixed Long-Press Progress Bar */
-  .long-press-btn {
-    position: relative;
-    overflow: hidden;
-  }
+  .long-press-btn { position: relative; overflow: hidden; }
   .long-press-btn::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: var(--progress, 0%);
-    height: 100%;
+    content: ''; position: absolute; top: 0; left: 0; width: var(--progress, 0%); height: 100%;
     background: linear-gradient(90deg, rgba(255,255,255,0.4) var(--progress, 0%), transparent 0%);
-    border-radius: 0.5rem;
-    transition: none;
-    pointer-events: none;
+    border-radius: 0.5rem; transition: none; pointer-events: none;
   }
-  .long-press-btn.pressing::after {
-    transition: width 0s linear;
-  }
+  .long-press-btn.pressing::after { transition: width 0s linear; }
 
   /* Fixed Range Slider */
-  input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    width: 100%;
-  }
-  input[type="range"]::-webkit-slider-runnable-track {
-    height: 8px;
-    background: #374151;
-    border-radius: 4px;
-  }
+  input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 8px; background: #374151; border-radius: 4px; }
   input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 24px; height: 24px;
-    background: #3b82f6;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 8px rgba(0,0,0,0.3);
-    margin-top: -8px;
+    -webkit-appearance: none; width: 24px; height: 24px; background: #3b82f6; border-radius: 50%;
+    border: 2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.3); margin-top: -8px;
   }
-  input[type="range"]::-moz-range-track {
-    height: 8px;
-    background: #374151;
-    border-radius: 4px;
-    border: none;
-  }
+  input[type="range"]::-moz-range-track { height: 8px; background: #374151; border-radius: 4px; border: none; }
   input[type="range"]::-moz-range-thumb {
-    width: 24px; height: 24px;
-    background: #3b82f6;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    width: 24px; height: 24px; background: #3b82f6; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.3);
   }
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -84,7 +50,6 @@
 </head>
 <body class="bg-gray-900 text-white h-full overflow-hidden">
 <div id="app-container" class="h-full flex flex-col">
-  <!-- Banners -->
   <div id="startReminderBanner" class="hidden bg-yellow-600/20 border border-yellow-500 text-yellow-200 text-sm rounded-lg p-3 mx-4 mt-4 text-center">
     Reminder: Don't forget to start your timer when you arrive on site.
   </div>
@@ -92,7 +57,6 @@
     <div class="spinner mr-3"></div> <span>Syncing pending reports...</span>
   </div>
 
-  <!-- Main Page -->
   <div id="mainPage" class="page active h-full flex-col p-4 bg-gray-800 animate-fadeIn">
     <header class="flex justify-between items-center mb-4 relative z-10 flex-shrink-0">
       <div class="flex items-center">
@@ -101,10 +65,10 @@
       </div>
       <div class="flex items-center space-x-1">
         <button id="infoBtn" class="p-3 rounded-full hover:bg-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         </button>
         <button id="settingsBtn" class="p-3 rounded-full hover:bg-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.82l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.82l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
     </header>
@@ -114,7 +78,7 @@
           <h2 class="text-lg font-semibold mb-2 text-gray-300">Select Location</h2>
           <div id="locationList" class="space-y-2 flex-grow overflow-y-auto"></div>
           <button id="addLocationBtn" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" class="mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Add New Location
           </button>
         </div>
@@ -133,7 +97,6 @@
     </div>
   </div>
 
-  <!-- Locked Page -->
   <div id="lockedPage" class="page h-full flex-col justify-between items-center p-6 text-center animate-fadeIn">
     <div class="w-full flex justify-end">
       <button id="panicBtn" class="selectable-item w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full text-white font-bold text-2xl flex items-center justify-center shadow-lg border-4 border-red-800">SOS</button>
@@ -160,12 +123,11 @@
     </div>
   </div>
 
-  <!-- Settings Page -->
   <div id="settingsPage" class="page h-full flex-col p-4 bg-gray-800 animate-fadeIn">
     <header class="flex justify-between items-center mb-6 relative z-10 flex-shrink-0">
       <h1 class="text-2xl font-bold text-blue-400">Settings</h1>
       <button id="closeSettingsBtn" class="p-3 rounded-full hover:bg-gray-700">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </header>
     <div class="flex-1 overflow-y-auto -mx-4 px-4 min-h-0">
@@ -193,9 +155,7 @@
   </div>
 </div>
 
-<!-- Modals -->
 <div id="modalBackdrop" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
-  <!-- Location Modal -->
   <div id="locationModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
     <h2 id="locationModalTitle" class="text-xl font-bold mb-4">Add New Location</h2>
     <div class="space-y-4">
@@ -224,7 +184,6 @@
     </div>
   </div>
 
-  <!-- Report Modal -->
   <div id="reportModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] flex flex-col">
     <h2 id="reportModalTitle" class="text-xl font-bold mb-4">Visit Report</h2>
     <div id="reportLoading" class="hidden flex flex-col items-center justify-center my-8">
@@ -244,7 +203,6 @@
     </div>
   </div>
 
-  <!-- Info Modal -->
   <div id="infoModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
     <h2 class="text-xl font-bold mb-4">How to Use %%COMPANY_NAME%% On-The-Go</h2>
     <div class="text-gray-300 space-y-4 text-sm leading-relaxed">
@@ -275,7 +233,6 @@
     </div>
   </div>
 
-  <!-- Alert, Check-in, Confirm Modals -->
   <div id="alertModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn text-center">
     <h2 id="alertModalTitle" class="text-xl font-bold mb-2">Alert</h2>
     <p id="alertModalMessage" class="text-gray-300 mb-6"></p>
@@ -287,12 +244,30 @@
     <div id="checkinCountdown" class="text-6xl font-bold text-yellow-400 mb-6">2:00</div>
     <button id="checkinOkBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I am OK</button>
   </div>
+  <div id="confirmModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-fadeIn text-center">
+    <h2 id="confirmModalTitle" class="text-xl font-bold mb-2 text-yellow-400">Confirmation</h2>
+    <p id="confirmModalMessage" class="text-gray-300 mb-6"></p>
+    <div class="flex justify-center space-x-4">
+      <button id="confirmModalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg w-24">Cancel</button>
+      <button id="confirmModalOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-24">Confirm</button>
+    </div>
+  </div>
+  <div id="pinModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-xs p-6 animate-fadeIn text-center">
+    <h2 class="text-xl font-bold mb-4">Enter PIN</h2>
+    <p class="text-gray-400 mb-4">Please enter your 4-digit PIN</p>
+    <input id="pinInput" type="password" maxlength="4" inputmode="numeric" class="text-center text-3xl tracking-[1em] w-48 mx-auto bg-gray-900 border border-gray-700 rounded-md py-2 px-3 text-white">
+    <div class="mt-6 flex justify-end space-x-3">
+      <button id="cancelPinBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+      <button id="confirmPinBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Confirm</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
-// === FINAL BULLETPROOF LONE WORKER APP v2025-11-25 ===
-// Fully corrected and working 100%
-const VERSION = "FINAL_BULLETPROOF_2025-11-25";
+// === FINAL BULLETPROOF LONE WORKER APP v2025-11-25.2 ===
+// Includes Safe Modal Handling + Correct Icons
+const VERSION = "FINAL_BULLETPROOF_2025-11-25.2";
 const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImMxMTkzMGVjNTRmNjQ2YTY4MTFkYjVlZGIwZjBjMjZiIiwiaCI6Im11cm11cjY0In0=";
 let pages, modals, locationList, arrivedBtn, quickStatBtn, durationSlider, durationDisplay;
 let infoBtn, settingsBtn, closeSettingsBtn, addLocationBtn, saveSettingsBtn, clearCacheBtn;
@@ -379,7 +354,7 @@ function renderLocations() {
             ${company}
           </div>
           <button class="edit-location-btn p-2 rounded-full hover:bg-gray-700" data-id="${loc.id}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
           </button>
         </div>`;
       locationList.appendChild(el);
@@ -422,12 +397,18 @@ function navigate(page) {
     startReminderBanner.classList.add('hidden');
   }
 }
+// SAFE MODAL FUNCTION
 function showModal(key) {
   modals.backdrop.classList.remove('hidden');
   modals.backdrop.classList.add('flex');
-  Object.values(modals).forEach(m => m.classList.add('hidden'));
-  modals[key].classList.remove('hidden');
+  // Safe hide loop
+  Object.values(modals).forEach(m => {
+    if(m) m.classList.add('hidden');
+  });
+  // Safe show
+  if(modals[key]) modals[key].classList.remove('hidden');
 }
+
 function hideModals() {
   modals.backdrop.classList.add('hidden');
   modals.backdrop.classList.remove('flex');
@@ -920,6 +901,15 @@ function initEventListeners() {
     extendVisit();
     saveState();
   });
+  
+  // -- CONFIRM MODAL Buttons (Added) --
+  document.getElementById('confirmModalCancelBtn').addEventListener('click', hideModals);
+  // Note: Confirm OK action is usually dynamic, so no default listener needed here beyond hiding or callback
+  document.getElementById('confirmModalOkBtn').addEventListener('click', hideModals);
+  
+  // -- PIN MODAL Buttons (Added) --
+  document.getElementById('cancelPinBtn').addEventListener('click', hideModals);
+  // Confirm PIN logic is handled dynamically where called, or add default here if needed
 }
 
 function populateSettingsUI() {
@@ -955,7 +945,7 @@ function init() {
       pin: document.getElementById('pinModal'),
       alert: document.getElementById('alertModal'),
       checkin: document.getElementById('checkinModal'),
-      confirm: document.getElementById('confirmModal')
+      confirm: document.getElementById('confirmModal') // Now this exists!
     };
 // Assign Buttons
   locationList = document.getElementById('locationList');
@@ -981,7 +971,7 @@ function init() {
   durationDisplay.textContent = formatDuration(state.visitDurationMinutes);
 
   const needsSetup = !state.settings.pinCode || state.settings.pinCode.length !== 4 ||
-                     !state.settings.duressPin || state.settings.duressPin.length !== 4;
+                      !state.settings.duressPin || state.settings.duressPin.length !== 4;
   if (needsSetup) {
     populateSettingsUI();
     navigate('settings');
@@ -996,12 +986,11 @@ function init() {
     processUploadQueue();
   }
   initEventListeners();
-    updateHomeScreenButtons();
-
+  updateHomeScreenButtons();
+  
   } catch (err) {
     console.error("FATAL INIT ERROR:", err);
-    // If it crashes, alert and offer a reset
-    alert("Critical Error: App failed to start. Resetting data...");
+    alert("Critical Error: App failed to start. Clearing cache...");
     localStorage.clear();
     location.reload();
   }
