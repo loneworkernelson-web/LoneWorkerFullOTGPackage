@@ -491,28 +491,27 @@
 
   // ────────────────────── SCRIPT GENERATION & DEPLOY ──────────────────────
   async function generateScriptAndProceed() {
-    config = {
-      orgName: document.getElementById('orgName').value || "My Company",
-      secretKey: document.getElementById('secretKey').value || "changeme123",
-      firstAlert: document.getElementById('firstAlert').value,
-      escalation: document.getElementById('escalation').value,
-      orsKey: document.getElementById('orsKey').value,
-      geminiKey: document.getElementById('geminiKey').value,
-      advanced: document.querySelector('input[value="advanced"]').checked
-    };
+  config = {
+    orgName: document.getElementById('orgName').value || "My Company",
+    secretKey: document.getElementById('secretKey').value || "changeme123",
+    firstAlert: document.getElementById('firstAlert').value,
+    escalation: document.getElementById('escalation').value,
+    orsKey: document.getElementById('orsKey').value,
+    geminiKey: document.getElementById('geminiKey').value,
+    advanced: document.querySelector('input[value="advanced"]').checked
+  };
 
-    const template = await fetch(`${REPO}/apps_script_advanced.txt?t=${Date.now()}`).then(r => r.text());
-    finalScriptCode = template
-      .replace(/%%SECRET_KEY%%/g, config.secretKey)
-      .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
-      .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
-      .replace(/%%ORS_API_KEY%%/g, config.orsKey)
-      .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey);
-    window.finalScriptCode = finalScriptCode;
-    document.getElementById('scriptDisplay').textContent = finalScriptCode;
-    showStep(4);
-  }
+  const template = await fetch(`${REPO}/apps_script_advanced.txt?t=${Date.now()}`).then(r => r.text());
+  finalScriptCode = template
+    .replace(/%%SECRET_KEY%%/g, config.secretKey)
+    .replace(/%%FIRST_ALERT_MINUTES%%/g, config.firstAlert)
+    .replace(/%%ESCALATION_MINUTES%%/g, config.escalation)
+    .replace(/%%ORS_API_KEY%%/g, config.orsKey)
+    .replace(/%%GEMINI_API_KEY%%/g, config.geminiKey);
 
+  document.getElementById('scriptDisplay').textContent = finalScriptCode;
+  showStep(4);  // ← this line jumps to Step 4 with the full script ready
+}
   function copyScript() {
     navigator.clipboard.writeText(finalScriptCode || document.getElementById('scriptDisplay').textContent);
     alert('Full script copied! Paste it in script.new');
