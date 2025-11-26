@@ -41,7 +41,7 @@ function doGet(e) {
         if (rows[i][0] !== company) continue;
           // MODERN [CODE] SYSTEM – perfectly matches the wizard legend
           for (var j = 1; j < headers.length; j++) {
-            var q = data[i][j] || "";
+            var q = rows[i][j] || "";
             var textStr = String(q).trim();
             if (!textStr) continue;
 
@@ -100,7 +100,7 @@ function doGet(e) {
         }
       }
 
-      Logger.log("Found " + questions.length + " items for " + companyName);
+      Logger.log("Found " + questions.length + " items for " + company);
     } catch (err) {
       Logger.log("Error in getForms: " + err.toString());
     }
@@ -125,7 +125,7 @@ function doPost(e) {
     // Preserve leading zeros/plus in phone numbers (adds ' prefix)
     var phoneHeaders = ["Worker Phone Number","Emergency Contact Number","Escalation Contact Number"];
     phoneHeaders.forEach(f => {
-      if (data[f] && /^0|\+/.test(String(data[f]))) data[f] = "'" + data[f];
+      if (data[f] && /^(0|\+/.test(String(data[f]))) data[f] = "'" + data[f];
     });
 
     // === FIND EXISTING ROW SAFELY ===
@@ -195,26 +195,32 @@ function doPost(e) {
       var tsCol = headers.indexOf("GPS Timestamp") + 1;
       if (tsCol > 0) sheet.getRange(rowIndex, tsCol).setValue(alertTimestamp);
 
-      // Build clean data for email/SMS – strip leading ' from phone numbers
+  // Build clean data for email/SMS – strip leading ' from phone numbers
       var cleanData = {};
+
       if (rowIndex !== -1) {
+        // Pull fresh row from sheet (most reliable)
         var rowValues = sheet.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
         headers.forEach((h, j) => {
           var val = rowValues[j];
           if (phoneHeaders.includes(h) && typeof val === "string" && val.startsWith("'")) {
             cleanData[h] = val.substring(1);
           } else {
-            cleanData[h] = val;
+            cleanData[h] = val || "";  // ensure no undefined
           }
         });
       } else {
-        cleanData = { ...data };
+        // Fallback: use the data object passed in (e.g. from trigger)
+        cleanData = Object.assign({}, data);  // shallow clone
+        
         phoneHeaders.forEach(h => {
           if (cleanData[h] && typeof cleanData[h] === "string" && cleanData[h].startsWith("'")) {
             cleanData[h] = cleanData[h].substring(1);
           }
         });
       }
+
+      // Send the alert
       sendAlertEmail(cleanData, data["Alarm Status"], false);
     }
 
@@ -238,16 +244,6 @@ function saveBase64Image(base64, worker, location, num) {
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return file.getUrl();
   } catch(e) { Logger.log("Photo error: " + e); return ""; }
-}
-
-function sendAlertEmail(data, type, isEscalation) {
-  var to = isEscalation ? data["Escalation Contact Email"] : data["Emergency Contact Email"];
-  var phone = isEscalation ? data["Escalation Contact Number"] : data["Emergency Contact Number"];
-  if (!to) return;
-  var subject = "URGENT: " + type.replace(/_/g, " ") + " - " + (data["Worker Name"] || "Worker");
-  var body = "Alert: " + type + "\nWorker: " + (data["Worker Name"]||"") + "\nLocation: " + (data["Location Name"]||"");
-  MailApp.sendEmail(to, subject, body);
-  if (phone) sendSmsViaGateway(phone, subject);
 }
 
 // --- AUTOMATED TRIGGER FUNCTION ---
@@ -1318,8 +1314,8 @@ function createLongitudinalWorkbook() {
       const numericEntries = []; // --- NEW ---
       for (let j = 1; j < checklistHeaders.length; j++) {
         if (j === longitudinalIdColIdx || j === templateIdColIdx) continue;
-        if (checklistData[i][j]) {
-          const q = String(checklistData[i][j]);
+        if (checklistrows[i][j]) {
+          const q = String(checklistrows[i][j]);
           if (q.startsWith("$ ") || q.startsWith("$")) { // --- NEW ---
              numericEntries.push(q.substring(q.startsWith("$ ") ? 2 : 1).trim());
           } else if (!q.startsWith("#") && !q.startsWith("%")) {
