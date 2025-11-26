@@ -70,42 +70,72 @@ function doGet(e) {
       var data = checklistSheet.getDataRange().getValues();
       var headers = data.shift(); // Get headers (Company Name, Question 1, ...)
       
-      for (var i = 0; i < data.length; i++) {
-        if (data[i][0] === companyName) { // Find matching company in Col A
-          // Loop through question columns (from Col B onwards)
+// MODERN [CODE] SYSTEM – perfectly matches the wizard legend
           for (var j = 1; j < headers.length; j++) {
-            var questionText = data[i][j];
-            if (questionText) { 
-              var textStr = String(questionText);
-              // --- === MODIFIED: Added '$' type === ---
-              if (textStr.startsWith("# ")) {
-                questions.push({ "type": "header", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("#")) {
-                 questions.push({ "type": "header", "text": textStr.substring(1).trim() });
-              } else if (textStr.startsWith("% ")) {
-                 questions.push({ "type": "textarea", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("%")) {
-                 questions.push({ "type": "textarea", "text": textStr.substring(1).trim() });
-              } else if (textStr.startsWith("$ ")) { // NEW
-                 questions.push({ "type": "number", "text": textStr.substring(2).trim() });
-              } else if (textStr.startsWith("$")) { // NEW
-                 questions.push({ "type": "number", "text": textStr.substring(1).trim() });
-              } else {
-                questions.push({ "type": "checkbox", "text": textStr });
-              }
-              // --- === END MODIFIED === ---
-            } else {
-              break; 
+            var q = data[i][j] || "";
+            var textStr = String(q).trim();
+            if (!textStr) continue;
+
+            var type = "checkbox";        // default (keeps old sheets working)
+            var question = textStr;
+
+            if (textStr.includes('[HEADING]')) {
+              type = "header";
+              question = textStr.replace('[HEADING]', '').trim();
             }
+            else if (textStr.includes('[NOTE]')) {
+              type = "note";
+              question = textStr.replace('[NOTE]', '').trim();
+            }
+            else if (textStr.includes('[TEXT]')) {
+              type = "textarea";
+              question = textStr.replace('[TEXT]', '').trim();
+            }
+            else if (textStr.includes('[NUMBER]')) {
+              type = "number";
+              question = textStr.replace('[NUMBER]', '').trim();
+            }
+            else if (textStr.includes('[YESNO]')) {
+              type = "yesno";
+              question = textStr.replace('[YESNO]', '').trim();
+            }
+            else if (textStr.includes('[CHECK]') || textStr.includes('[CHECKBOX]')) {
+              type = "checkbox";
+              question = textStr.replace('[CHECK]', '').replace('[CHECKBOX]', '').trim();
+            }
+            else if (textStr.includes('[PHOTO]')) {
+              type = "photo";
+              question = textStr.replace('[PHOTO]', '').trim();
+            }
+            else if (textStr.includes('[PHOTO?]')) {
+              type = "photo_optional";
+              question = textStr.replace('[PHOTO?]', '').trim();
+            }
+            else if (textStr.includes('[GPS]')) {
+              type = "gps";
+              question = textStr.replace('[GPS]', '').trim();
+            }
+            else if (textStr.includes('[SIGN]')) {
+              type = "signature";
+              question = textStr.replace('[SIGN]', '').trim();
+            }
+            // Plain text with no brackets → checkbox (backward compatible)
+            else if (!textStr.includes('[')) {
+              question = textStr;
+            }
+
+            questions.push({ type: type, text: question || "Untitled" });
           }
-          break; 
+
+          break; // ← correctly breaks the outer "company row" loop
         }
       }
-      Logger.log("Found " + questions.length + " items (questions/headers) for " + companyName);
+
+      Logger.log("Found " + questions.length + " items for " + companyName);
     } catch (err) {
       Logger.log("Error in getForms: " + err.toString());
     }
-    
+
     return ContentService
       .createTextOutput(JSON.stringify(questions))
       .setMimeType(ContentService.MimeType.JSON);
