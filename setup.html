@@ -7,66 +7,27 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
     *,::before,::after{box-sizing:border-box;margin:0;padding:0}
-    body{
-      font-family:'Inter',sans-serif;
-      background:#0f172a;
-      color:#e2e8f0;
-      line-height:1.6;
-      min-height:100vh;
-    }
+    body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.6;min-height:100vh;}
     .container{max-width:1280px;margin:auto;padding:1.5rem}
     .bg-gray-900{background:#0f172a}.bg-gray-800{background:#1e293b}.bg-gray-700{background:#334155}
     .text-blue-400{color:#38bdf8}.text-green-400{color:#34d399}.text-yellow-300{color:#fde047}.text-purple-400{color:#c084fc}
     .text-gray-300{color:#cbd5e1}.text-gray-400{color:#94a3b8}
-
-    /* Buttons */
-    .btn-primary{
-      background:linear-gradient(to right,#16a34a,#10b981);
-      color:white;font-weight:700;padding:1rem 2rem;border-radius:1rem;
-      transition:all .2s;box-shadow:0 10px 25px -5px rgba(16,185,129,0.4);
-    }
-    .btn-primary:hover{
-      background:linear-gradient(to right,#15803d,#059669);
-      transform:translateY(-2px);box-shadow:0 15px 30px -5px rgba(16,185,129,0.5);
-    }
+    .btn-primary{background:linear-gradient(to right,#16a34a,#10b981);color:white;font-weight:700;padding:1rem 2rem;border-radius:1rem;transition:all .2s;box-shadow:0 10px 25px -5px rgba(16,185,129,0.4);}
+    .btn-primary:hover{background:linear-gradient(to right,#15803d,#059669);transform:translateY(-2px);box-shadow:0 15px 30px -5px rgba(16,185,129,0.5);}
     .btn-large{padding:1.5rem 3rem;font-size:1.75rem;border-radius:1.25rem;}
     .btn-xl{padding:2rem 4rem;font-size:2.5rem;border-radius:1.5rem;}
-
-    /* Navigation */
-    .nav-btn{
-      padding:0.75rem 1.5rem;border-radius:0.75rem;font-weight:700;
-      background:#1e293b;border:1px solid #334155;color:#e2e8f0;
-    }
-    .nav-btn.current{
-      background:#2563eb;color:white;border-color:#2563eb;font-weight:900;
-    }
-
-    /* Hidden fields */
+    .nav-btn{padding:0.75rem 1.5rem;border-radius:0.75rem;font-weight:700;background:#1e293b;border:1px solid #334155;color:#e2e8f0;}
+    .nav-btn.current{background:#2563eb;color:white;border-color:#2563eb;font-weight:900;}
     .hidden-field{height:0;opacity:0;overflow:hidden;transition:all .4s ease;}
     .hidden-field.open{height:auto;opacity:1;padding-top:1rem;margin-top:1rem;}
-
-    /* Steps */
-    .step { display:none !important; }
-    .step.active { display:block !important; }
-
-    /* HUGE COPY BUTTONS – FINAL SIZE */
-    .huge-copy-btn {
-      font-size: 2rem !important;padding: 1.75rem 5rem !important;
-      border-radius: 9999px !important;font-weight: 900 !important;
-      background: linear-gradient(to right, #10b981, #059669) !important;
-      border: 5px solid rgba(255,255,255,0.35) !important;
-      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6) !important;
-      color: white !important;display: block;margin: 2rem auto;
-    }
-    .huge-copy-btn:hover { transform: scale(1.08) !important; }
-    .huge-copy-btn.purple { background: linear-gradient(to right, #c084fc, #ec4899) !important; }
-    .huge-copy-btn.cyan  { background: linear-gradient(to right, #06b6d4, #3b82f6) !important; }
-
-    /* Force selected text to be readable */
-    .huge-copy-btn::selection, .huge-copy-btn *::selection,
-    button[class*="from-"]::selection, button[class*="from-"] *::selection {
-      background:#ffffff !important;color:#000000 !important;
-    }
+    .step{display:none !important;}.step.active{display:block !important;}
+    .huge-copy-btn{font-size:2rem !important;padding:1.75rem 5rem !important;border-radius:9999px !important;font-weight:900 !important;
+      background:linear-gradient(to right,#10b981,#059669) !important;border:5px solid rgba(255,255,255,0.35) !important;
+      box-shadow:0 20px 40px -10px rgba(0,0,0,0.6) !important;color:white !important;display:block;margin:2rem auto;}
+    .huge-copy-btn:hover{transform:scale(1.08) !important;}
+    .huge-copy-btn.purple{background:linear-gradient(to right,#c084fc,#ec4899) !important;}
+    .huge-copy-btn.cyan{background:linear-gradient(to right,#06b6d4,#3b82f6) !important;}
+    .huge-copy-btn::selection,.huge-copy-btn *::selection{background:#fff !important;color:#000 !important;}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>Shield</text></svg>">
@@ -78,7 +39,6 @@
       <p class="text-xl text-gray-400">Full Production Setup Wizard • November 2025</p>
     </div>
 
-    <!-- Navigation -->
     <div class="flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-2xl">
       <button type="button" class="nav-btn current" onclick="showStep(1)">1. Welcome</button>
       <button type="button" class="nav-btn" onclick="showStep(2)">2. Sheet Setup</button>
@@ -89,40 +49,26 @@
     </div>
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8">
-
       <!-- STEP 1 -->
       <div id="step1" class="step active space-y-10">
         <h2 class="text-4xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
         <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          <label class="block cursor-pointer"><input type="radio" name="appMode" value="simple" checked class="hidden" onchange="updateMode()">
-            <div class="bg-gray-900 border-4 border-gray-700 rounded-3xl p-12 text-center hover:border-blue-500 transition-all">
-              <div class="text-9xl mb-6">Shield</div>
-              <h3 class="text-4xl font-bold mb-4">Simple App</h3>
-              <p class="text-2xl text-green-400 font-bold">Most Popular</p>
-            </div>
+          <label class="block cursor-pointer"><input type="radio" name="appMode" value="simple" checked class="hidden" onchange="toggleAdvanced()">
+            <div class="bg-gray-900 border-4 border-gray-700 rounded-3xl p-12 text-center hover:border-blue-500 transition-all"><div class="text-9xl mb-6">Shield</div><h3 class="text-4xl font-bold mb-4">Simple App</h3><p class="text-2xl text-green-400 font-bold">Most Popular</p></div>
           </label>
-          <label class="block cursor-pointer"><input type="radio" name="appMode" value="advanced" class="hidden" onchange="updateMode()">
-            <div class="bg-gray-900 border-4 border-gray-700 rounded-3xl p-12 text-center hover:border-yellow-500 transition-all">
-              <div class="text-9xl mb-6">Tools</div>
-              <h3 class="text-4xl font-bold mb-4">Advanced App</h3>
-              <p class="text-2xl text-yellow-400 font-bold">Full Reporting + AI</p>
-            </div>
+          <label class="block cursor-pointer"><input type="radio" name="appMode" value="advanced" class="hidden" onchange="toggleAdvanced()">
+            <div class="bg-gray-900 border-4 border-gray-700 rounded-3xl p-12 text-center hover:border-yellow-500 transition-all"><div class="text-9xl mb-6">Tools</div><h3 class="text-4xl font-bold mb-4">Advanced App</h3><p class="text-2xl text-yellow-400 font-bold">Full Reporting + AI</p></div>
           </label>
         </div>
-        <div class="text-center mt-12">
-          <button onclick="nextStep()" class="btn-primary btn-xl">Continue → Start Setup</button>
-        </div>
+        <div class="text-center mt-12"><button onclick="nextStep()" class="btn-primary btn-xl">Continue → Start Setup</button></div>
       </div>
 
-      <!-- STEP 2 – FINAL PERFECT VERSION -->
+      <!-- STEP 2 -->
       <div id="step2" class="step space-y-16 max-w-5xl mx-auto">
         <h2 class="text-4xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
         <p class="text-center text-xl text-gray-400">Just follow the 3–4 giant buttons below — takes 60 seconds</p>
-
         <div class="text-center">
-          <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold text-3xl px-20 py-8 rounded-2xl shadow-2xl">
-            1. Open New Google Sheet
-          </a>
+          <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold text-3xl px-20 py-8 rounded-2xl shadow-2xl">1. Open New Google Sheet</a>
         </div>
 
         <div class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-8">
@@ -131,26 +77,18 @@
           <button type="button" onclick="copyHeaders()" class="huge-copy-btn">Copy Visits Headers → Paste in A1</button>
         </div>
 
-                      <!-- 3. Checklists tab – Advanced only (with full starter pack) -->
         <div id="checklistsSection" class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-10 hidden">
           <h3 class="text-3xl font-bold text-purple-400">3. Set up the “Checklists” tab</h3>
           <p class="text-xl text-gray-300">Add tab → name <strong>Checklists</strong> → click A1 → click button → Ctrl+V</p>
           <button type="button" onclick="copyChecklistsHeaders()" class="huge-copy-btn purple">Copy Checklists Headers → Paste in A1</button>
 
-          <!-- STARTER TEMPLATES – ONE-CLICK SETUP -->
           <div class="mt-12 p-12 bg-gradient-to-r from-emerald-900/70 to-cyan-900/70 rounded-3xl border-3 border-emerald-500">
             <h4 class="text-3xl font-bold text-emerald-300 mb-6">One-Click Starter Templates</h4>
-            <p class="text-xl text-gray-200 mb-8">
-              Click the button below → paste starting at <strong>cell A2</strong><br>
-              This instantly gives you a working default form + the required Travel Details + two demo templates
-            </p>
-
+            <p class="text-xl text-gray-200 mb-8">Click below → paste starting at <strong>cell A2</strong><br>Includes (Standard) + required Travel Details + two demo templates</p>
             <button type="button" onclick="copyStarterTemplates()" class="huge-copy-btn bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white font-bold text-2xl px-32 py-9">
               Copy Starter Templates → Paste at A2
             </button>
-
-            <div class="mt-10 bg-gray-800/80 rounded-2xl p-8 text-left text-sm font-mono text-gray-300 max-w-5xl mx-auto border border-gray-600">
-(Standard)	Arrival notes	[TEXT]
+            <pre class="mt-10 bg-gray-800/80 rounded-2xl p-8 text-left text-sm font-mono text-gray-300 max-w-5xl mx-auto border border-gray-600">(Standard)	Arrival notes	[TEXT]
 (Standard)	Site photo	[PHOTO]
 (Standard)	Sign in	[SIGN]
 
@@ -164,23 +102,18 @@ Travel Details	Travel notes	[TEXT]
 (Vehicle Inspection)	Oil level OK?	[YESNO]
 (Vehicle Inspection)	Tyres pressure	[NUMBER]
 (Vehicle Inspection)	Damage photo (if any)	[PHOTO?]
-(Vehicle Inspection)	Driver signature	[SIGN]
-            </div>
-
+(Vehicle Inspection)	Driver signature	[SIGN]</pre>
             <div class="mt-8 p-6 bg-emerald-900/50 rounded-2xl border border-emerald-400">
               <p class="text-emerald-200 text-lg font-bold">What you get instantly:</p>
               <ul class="text-left mt-4 space-y-2 text-gray-200">
-                <li>• <strong>(Standard)</strong> – default form shown on every visit (starts at A2)</li>
-                <li>• <strong>Travel Details</strong> – required for mileage logging (auto-opens when worker taps “Travelling”)</li>
-                <li>• Two ready-to-use demo checklists to show your team the power of the system</li>
+                <li>• <strong>(Standard)</strong> – default form on every visit</li>
+                <li>• <strong>Travel Details</strong> – auto-opens when worker taps “Travelling” (required for mileage)</li>
+                <li>• Two demo checklists to impress your team</li>
               </ul>
-              <p class="mt-4 text-emerald-300 font-semibold">You can edit or delete any of these later — they’re just a perfect starting point!</p>
             </div>
           </div>
 
-          <button type="button" onclick="copyPermanentReference()" class="huge-copy-btn cyan mt-12">
-            Optional: Copy Full Code Legend → Paste at A20
-          </button>
+          <button type="button" onclick="copyPermanentReference()" class="huge-copy-btn cyan mt-12">Optional: Copy Full Code Legend → Paste at A20</button>
         </div>
 
         <div class="text-center pt-12">
@@ -361,17 +294,50 @@ Travel Details	Travel notes	[TEXT]
     const nextNum = Array.from(document.querySelectorAll('.nav-btn')).indexOf(current) + 2; // +2 because index starts at 0 and we want next step
     if (nextNum <= 6) showStep(nextNum);
   }
-  // ────────────────────── COPY HEADERS ──────────────────────
+// ────────────────────── REAL TAB-SEPARATED COPY FUNCTIONS ──────────────────────
   function copyHeaders() {
-    const text = document.getElementById('headers').textContent.replace(/,/g, '\t');
-    navigator.clipboard.writeText(text);
-    alert('Visits headers copied (with tabs)!');
+    const headers = "Date\tWorker Name\tWorker Phone Number\tEmergency Contact Name\tEmergency Contact Number\tEmergency Contact Email\tEscalation Contact Name\tEscalation Contact Number\tEscalation Contact Email\tLocation Name\tLocation Address\tArrival Time\tAnticipated Departure Time\tActual Departure Time\tAlarm Status\tNotes\tLast Known GPS\tGPS Timestamp\tBattery Level";
+    navigator.clipboard.writeText(headers);
+    alert("Visits headers copied (tabs included)!");
   }
-
   function copyChecklistsHeaders() {
-    const text = document.getElementById('checklistsHeaders').textContent.replace(/,/g, '\t');
-    navigator.clipboard.writeText(text);
-    alert('Checklists headers copied (with tabs)!');
+    const h = "Template Name\tQuestion 1\tQuestion 2\tQuestion 3\tQuestion 4\tQuestion 5\tQuestion 6\tQuestion 7\tQuestion 8\tQuestion 9\tQuestion 10\tQuestion 11\tQuestion 12\tQuestion 13\tQuestion 14\tQuestion 15\tQuestion 16\tQuestion 17\tQuestion 18\tQuestion 19\tQuestion 20\tQuestion 21\tQuestion 22\tQuestion 23\tQuestion 24\tQuestion 25\tQuestion 26\tQuestion 27\tQuestion 28\tQuestion 29\tQuestion 30\tQuestion 31\tQuestion 32\tQuestion 33\tQuestion 34\tQuestion 35\tQuestion 36\tQuestion 37\tQuestion 38\tQuestion 39\tQuestion 40";
+    navigator.clipboard.writeText(h);
+    alert("Checklists headers copied!");
+  }
+  function copyStarterTemplates() {
+    const t = `(Standard)\tArrival notes\t[TEXT]
+(Standard)\tSite photo\t[PHOTO]
+(Standard)\tSign in\t[SIGN]
+
+Travel Details\tDistance travelled (km)\t[NUMBER]
+Travel Details\tTravel notes\t[TEXT]
+
+(Daily Safety Check)\tAre you wearing PPE?\t[YESNO]
+(Daily Safety Check)\tFire exits clear?\t[CHECK]
+(Daily Safety Check)\tSafety photo\t[PHOTO]
+
+(Vehicle Inspection)\tOil level OK?\t[YESNO]
+(Vehicle Inspection)\tTyres pressure\t[NUMBER]
+(Vehicle Inspection)\tDamage photo (if any)\t[PHOTO?]
+(Vehicle Inspection)\tDriver signature\t[SIGN]`;
+    navigator.clipboard.writeText(t);
+    alert("Starter templates copied!\n\nPaste starting at A2 in Checklists tab — perfect layout guaranteed");
+  }
+  function copyPermanentReference() {
+    const ref = `Checklist Template Codes – Permanent Reference,,,
+[HEADING]\tLarge bold section title\t,
+[NOTE]\tSmall italic instruction\t,
+[TEXT]\tMulti-line text box\t,
+[NUMBER]\tNumber only\t,
+[YESNO]\tYes / No buttons\t,
+[CHECK]\tCheckbox\t,
+[PHOTO]\tRequired photo\t,
+[PHOTO?]\tOptional photo\t,
+[GPS]\tCurrent location\t,
+[SIGN]\tSignature pad\t,`;
+    navigator.clipboard.writeText(ref);
+    alert("Code legend copied → paste at A20");
   }
 
   // ────────────────────── LOGO UPLOAD ──────────────────────
@@ -470,28 +436,6 @@ function copyPermanentReference() {
 Tip: You can mix codes in one cell!,Example → Take photo [PHOTO] and sign [SIGN]`;
   navigator.clipboard.writeText(ref);
   alert("Permanent reference copied! → Paste it starting at cell A20 in your Checklists tab");
-}
-
-  // ────────────────────── Copy Starter Templates ──────────────────────  
-function copyStarterTemplates() {
-  const templates = `(Standard)	Arrival notes	[TEXT]
-(Standard)	Site photo	[PHOTO]
-(Standard)	Sign in	[SIGN]
-
-Travel Details	Distance travelled (km)	[NUMBER]
-Travel Details	Travel notes	[TEXT]
-
-(Daily Safety Check)	Are you wearing PPE?	[YESNO]
-(Daily Safety Check)	Fire exits clear?	[CHECK]
-(Daily Safety Check)	Safety photo	[PHOTO]
-
-(Vehicle Inspection)	Oil level OK?	[YESNO]
-(Vehicle Inspection)	Tyres pressure	[NUMBER]
-(Vehicle Inspection)	Damage photo (if any)	[PHOTO?]
-(Vehicle Inspection)	Driver signature	[SIGN]`;
-  
-  navigator.clipboard.writeText(templates);
-  alert("Starter templates copied!\n\nPaste starting exactly at cell A2 in the Checklists tab.\nYou now have a complete working setup + demos!");
 }
   
   // ────────────────────── FINAL PACKAGE ──────────────────────
