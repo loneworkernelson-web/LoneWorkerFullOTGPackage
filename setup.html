@@ -412,23 +412,24 @@ pre{
   });
   document.addEventListener('DOMContentLoaded', updateSelection);
 
-  // ────────────────────── NAVIGATION (fixed) ──────────────────────
+  // ────────────────────── NAVIGATION – FIXED & BULLETPROOF ──────────────────────
   function showStep(n) {
+    // Hide all steps, show only the requested one
     document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-    document.getElementById('step' + n).classList.add('active');
-    document.querySelectorAll('.flex.flex-wrap button').forEach((b, i) => {
-      b.classList.toggle('current', i + 1 === n);
+    document.getElementById('step' + n)?.classList.add('active');
+
+    // Update navigation bar highlighting – now uses .nav-btn
+    document.querySelectorAll('.nav-btn').forEach((btn, i) => {
+      btn.classList.toggle('current', i + 1 === n);
     });
   }
 
   function nextStep() {
-    const currentBtn = document.querySelector('.flex.flex-wrap button.current');
-    if (currentBtn) {
-      const next = parseInt(currentBtn.textContent.match(/\d+/)[0]) + 1;
-      if (next <= 6) showStep(next);
-    }
+    const current = document.querySelector('.nav-btn.current');
+    if (!current) return;
+    const nextNum = Array.from(document.querySelectorAll('.nav-btn')).indexOf(current) + 2; // +2 because index starts at 0 and we want next step
+    if (nextNum <= 6) showStep(nextNum);
   }
-
   // ────────────────────── COPY HEADERS ──────────────────────
   function copyHeaders() {
     const text = document.getElementById('headers').textContent.replace(/,/g, '\t');
