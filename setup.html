@@ -220,15 +220,15 @@ pre{
       <p class="text-xl text-gray-400">Full Production Setup Wizard • November 2025</p>
     </div>
 
-    <!-- Navigation -->
-    <div class="flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-2xl">
-      <button type="button" class="px-6 py-3 rounded-lg font-bold current" onclick="showStep(1)">1. Welcome</button>
-      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(2)">2. Sheet Setup</button>
-      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(3)">3. Configuration</button>
-      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(4)">4. Deploy Script</button>
-      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(5)">5. Logo & Finalize</button>
-      <button type="button" class="px-6 py-3 rounded-lg font-bold" onclick="showStep(6)">6. Done!</button>
-    </div>
+   <!-- Navigation -->
+<div class="flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-2xl">
+  <button type="button" class="nav-btn current" onclick="showStep(1)">1. Welcome</button>
+  <button type="button" class="nav-btn" onclick="showStep(2)">2. Sheet Setup</button>
+  <button type="button" class="nav-btn" onclick="showStep(3)">3. Settings</button>
+  <button type="button" class="nav-btn" onclick="showStep(4)">4. Deploy Script</button>
+  <button type="button" class="nav-btn" onclick="showStep(5)">5. Branding</button>
+  <button type="button" class="nav-btn" onclick="showStep(6)">6. Done!</button>
+</div>
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8">
 
@@ -262,11 +262,11 @@ pre{
     </label>
   </div>
 
-  <div class="text-center mt-12">
-    <button onclick="nextStep()"btn-primary btn-xl">
-      Continue → Start Setup
-    </button>
-  </div>
+<div class="text-center mt-12">
+  <button onclick="nextStep()" class="btn-primary btn-xl">
+    Continue → Start Setup
+  </button>
+</div>
 </div>
 
 <!-- STEP 2 – FINAL with Permanent Reference Table (Option 1) -->
@@ -354,50 +354,10 @@ pre{
 
     <!-- Final Next Button -->
     <div class="text-center pt-8">
-      <button onclick="nextStep()" class="btn-primary btn-xl">
-        I’ve Done This — Next Step
-      </button>
-    </div>
-  </div>
+  <button onclick="nextStep()" class="btn-primary btn-xl">
+    I’ve Done This — Next Step
+  </button>
 </div>
-
-
-      <!-- Integrated Legend – collapses nicely -->
-      <details class="mt-10 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-600 overflow-hidden">
-        <summary class="cursor-pointer px-8 py-5 text-2xl font-bold text-yellow-300 flex items-center justify-between hover:bg-gray-700/50 transition">
-          <span>Checklist Template Codes Legend (click to expand)</span>
-          <span class="text-3xl ml-4">Down Arrow</span>
-        </summary>
-        <div class="px-8 pb-8 pt-4 text-gray-300 space-y-6">
-          <p class="text-lg">Use these codes in your questions — the app replaces them automatically:</p>
-          <div class="grid md:grid-cols-3 gap-4 text-sm">
-            <div class="bg-gray-800/70 rounded-xl p-4 border border-gray-600"><code class="text-green-400 font-bold">[PHOTO]</code> → Required photo</div>
-            <div class="bg-gray-800/70 rounded-xl p-4 border border-gray-600"><code class="text-green-400 font-bold">[PHOTO?]</code> → Optional photo</div>
-            <div class="bg-gray-800/70 rounded-xl p-4 border border-gray-600"><code class="text-cyan-400 font-bold">[GPS]</code> → Capture location</div>
-            <div class="bg-gray-800/70 rounded-xl p-4 border border-gray-600"><code class="text-purple-400 font-bold">[SIGN]</code> → Signature</div>
-            <div class="bg-gray-800/70 rounded-xl p-4 border border-gray-600"><code class="text-orange-400 font-bold">[TEXT]</code> → Large text box</div>
-            <div class="bg-gray-800/70 rounded-xl p-4 border border-gray-600"><code class="text-pink-400 font-bold">[NUMBER]</code> → Number input</div>
-          </div>
-          <div class="mt-6 bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-xl p-6 border border-blue-500">
-            <p class="font-semibold text-blue-300">Example:</p>
-            <code class="block mt-3 font-mono bg-gray-900 p-4 rounded-lg">Photo of completed work [PHOTO] + signature [SIGN]</code>
-          </div>
-        </div>
-      </details>
-
-      <div class="bg-indigo-900/50 border-2 border-indigo-500 rounded-2xl p-8 mt-10">
-        <h4 class="text-2xl font-bold text-indigo-300 mb-6">Add Your Default Form</h4>
-        <p class="text-lg text-gray-200">In the Checklists tab, type exactly this in cell <strong>A2</strong>:</p>
-        <div class="bg-gray-800 rounded-xl p-6 text-center font-mono text-3xl text-green-400 my-6">(Standard)</div>
-      </div>
-    </div>
-
-    <!-- Final button -->
-    <div class="text-center pt-8">
-      <button onclick="nextStep()"btn-primary btn-xl">
-        I’ve Done This — Next Step
-      </button>
-    </div>
   </div>
 </div>
 
@@ -413,11 +373,11 @@ pre{
           <div id="geminiField" class="hidden-field"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key</label><input type="text" id="geminiKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
         </div>
         <div class="text-center">
-          <button onclick="generateScriptAndProceed()" class="btn-primary btn-large">
-          Generate Apps Script Code → Continue to Step 4
-          </button>
-          <p class="btn-primary btn-xl">Click after filling in your settings above</p>
-         </div>
+  <button onclick="generateScriptAndProceed()" class="btn-primary btn-large">
+    Generate Apps Script Code → Continue to Step 4
+  </button>
+  <p class="mt-4 text-gray-400">Click after filling in your settings above</p>
+</div>
          </div>
       </div>
 
@@ -468,15 +428,15 @@ pre{
         <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-8">
           <h3 class="text-2xl font-bold text-green-400">4. Live Test (5 Seconds)</h3>
           <input type="url" id="testUrl" placeholder="Paste your /exec URL here" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg">
-          <button onclick="runLiveTest()" class="btn-primary btn-large">
-            Test Connection Now
-          </button>
+          <button onclick="runLiveTest()" class="btn-primary btn-large mt-6">
+  Test Connection Now
+</button>
           <div id="testResult" class="mt-8 text-3xl font-bold"></div>
         </div>
         <div class="text-center pt-12">
-          <button id="proceedBtn" onclick="nextStep()" disabled class="btn-primary btn-xl">
-            All Connected! → Next Step
-          </button>
+          <button id="proceedBtn" onclick="nextStep()" disabled class="btn-primary btn-xl opacity-50 cursor-not-allowed">
+  All Connected! → Next Step
+</button>
         </div>
       </div>
 
@@ -497,8 +457,8 @@ pre{
           </div>
         </div>
         <button onclick="generatePackage()" class="btn-primary btn-xl">
-          Generate Final App Suite
-        </button>
+  Generate Final App Suite
+</button>
       </div>
 
       <!-- STEP 6 -->
@@ -506,9 +466,9 @@ pre{
         <div class="text-9xl">Success!</div>
         <h2 class="text-5xl font-bold text-green-400">Your Complete App Package Is Ready!</h2>
         <p class="text-2xl text-gray-300 max-w-3xl mx-auto">Fully configured • Offline-ready • Includes backup script</p>
-        <button id="downloadBtn"btn-primary btn-xl">
-          Download AppSuite.zip
-        </button>
+       <button id="downloadBtn" class="btn-primary btn-xl">
+  Download AppSuite.zip
+</button>
         <div class="mt-12 text-lg text-gray-400 space-y-2 bg-gray-900 inline-block p-8 rounded-xl border border-gray-700">
           <p class="font-bold text-blue-300 mb-4">Included files:</p>
           <ul class="text-green-400 font-mono text-left list-disc list-inside">
