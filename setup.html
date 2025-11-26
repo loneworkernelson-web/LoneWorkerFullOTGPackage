@@ -4,385 +4,284 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>On-the-Go AppSuite - Setup Tool</title>
-
-  <!-- Clean self-contained Tailwind CSS – no CDN warning, no bloat -->
   <style>
- @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-*,::before,::after{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:'Inter',sans-serif;
-  background:#0f172a;
-  color:#e2e8f0;
-  line-height:1.6;
-  min-height:100vh;
-}
-.container{max-width:1280px;margin:auto;padding:1.5rem}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    *,::before,::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Inter',sans-serif;
+      background:#0f172a;
+      color:#e2e8f0;
+      line-height:1.6;
+      min-height:100vh;
+    }
+    .container{max-width:1280px;margin:auto;padding:1.5rem}
+    .bg-gray-900{background:#0f172a}.bg-gray-800{background:#1e293b}.bg-gray-700{background:#334155}
+    .text-blue-400{color:#38bdf8}.text-green-400{color:#34d399}.text-yellow-300{color:#fde047}.text-purple-400{color:#c084fc}
+    .text-gray-300{color:#cbd5e1}.text-gray-400{color:#94a3b8}
 
-/* Backgrounds */
-.bg-gray-900{background:#0f172a}
-.bg-gray-800{background:#1e293b}
-.bg-gray-700{background:#334155}
-.bg-gray-600{background:#475569}
+    /* Buttons */
+    .btn-primary{
+      background:linear-gradient(to right,#16a34a,#10b981);
+      color:white;font-weight:700;padding:1rem 2rem;border-radius:1rem;
+      transition:all .2s;box-shadow:0 10px 25px -5px rgba(16,185,129,0.4);
+    }
+    .btn-primary:hover{
+      background:linear-gradient(to right,#15803d,#059669);
+      transform:translateY(-2px);box-shadow:0 15px 30px -5px rgba(16,185,129,0.5);
+    }
+    .btn-large{padding:1.5rem 3rem;font-size:1.75rem;border-radius:1.25rem;}
+    .btn-xl{padding:2rem 4rem;font-size:2.5rem;border-radius:1.5rem;}
 
-/* Text colors – high contrast */
-.text-white{color:#ffffff}
-.text-blue-400{color:#38bdf8}
-.text-green-400{color:#34d399}
-.text-yellow-300{color:#fde047}
-.text-yellow-400{color:#fbbf24}
-.text-gray-300{color:#cbd5e1}
-.text-gray-400{color:#94a3b8}
+    /* Navigation */
+    .nav-btn{
+      padding:0.75rem 1.5rem;border-radius:0.75rem;font-weight:700;
+      background:#1e293b;border:1px solid #334155;color:#e2e8f0;
+    }
+    .nav-btn.current{
+      background:#2563eb;color:white;border-color:#2563eb;font-weight:900;
+    }
 
-/* Buttons – consistent hierarchy */
-.btn-primary{
-  background:linear-gradient(to right,#16a34a,#10b981);
-  color:white;
-  font-weight:700;
-  padding:1rem 2rem;
-  border-radius:1rem;
-  transition:all .2s;
-  box-shadow:0 10px 25px -5px rgba(16,185,129,0.4);
-}
-.btn-primary:hover{
-  background:linear-gradient(to right,#15803d,#059669);
-  transform:translateY(-2px);
-  box-shadow:0 15px 30px -5px rgba(16,185,129,0.5);
-}
+    /* Hidden fields */
+    .hidden-field{height:0;opacity:0;overflow:hidden;transition:all .4s ease;}
+    .hidden-field.open{height:auto;opacity:1;padding-top:1rem;margin-top:1rem;}
 
-.btn-large{
-  padding:1.5rem 3rem;
-  font-size:1.75rem;
-  border-radius:1.25rem;
-}
-.btn-xl{
-  padding:2rem 4rem;
-  font-size:2.5rem;
-  border-radius:1.5rem;
-}
+    /* Steps */
+    .step { display:none !important; }
+    .step.active { display:block !important; }
 
-/* Cards & panels */
-.card{
-  background:#1e293b;
-  border:1px solid #334155;
-  border-radius:1.25rem;
-  padding:2rem;
-  box-shadow:0 10px 25px -5px rgba(0,0,0,0.3);
-}
-.card-header{
-  background:#2563eb;
-  color:white;
-  padding:1rem 1.5rem;
-  border-radius:1rem 1rem 0 0;
-  margin:-2rem -2rem 1.5rem -2rem;
-  font-weight:800;
-  font-size:1.25rem;
-}
+    /* HUGE COPY BUTTONS – FINAL SIZE */
+    .huge-copy-btn {
+      font-size: 2rem !important;padding: 1.75rem 5rem !important;
+      border-radius: 9999px !important;font-weight: 900 !important;
+      background: linear-gradient(to right, #10b981, #059669) !important;
+      border: 5px solid rgba(255,255,255,0.35) !important;
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6) !important;
+      color: white !important;display: block;margin: 2rem auto;
+    }
+    .huge-copy-btn:hover { transform: scale(1.08) !important; }
+    .huge-copy-btn.purple { background: linear-gradient(to right, #c084fc, #ec4899) !important; }
+    .huge-copy-btn.cyan  { background: linear-gradient(to right, #06b6d4, #3b82f6) !important; }
 
-/* Form inputs */
-input, textarea{
-  background:#334155;
-  border:1px solid #475569;
-  color:#e2e8f0;
-  padding:0.875rem 1rem;
-  border-radius:0.75rem;
-  font-size:1.1rem;
-  width:100%;
-}
-input:focus, textarea:focus{
-  outline:none;
-  border-color:#38bdf8;
-  box-shadow:0 0 0 3px rgba(56,189,248,0.3);
-}
-
-/* Important alerts */
-.alert-important{
-  background:#451a03;
-  border:2px solid #f97316;
-  color:#fed7aa;
-  padding:1.5rem;
-  border-radius:1rem;
-  text-align:center;
-  font-weight:600;
-}
-
-/* Copy buttons – always visible */
-.copy-btn{
-  position:absolute;
-  top:0.75rem;
-  right:0.75rem;
-  background:#475569;
-  color:white;
-  padding:0.5rem 1rem;
-  border-radius:0.5rem;
-  font-size:0.875rem;
-  font-weight:600;
-  z-index:10;
-}
-.copy-btn:hover{background:#64748b}
-
-/* Upload area */
-.upload-area{
-  border:3px dashed #475569;
-  padding:3rem;
-  border-radius:1rem;
-  text-align:center;
-  background:#1e293b;
-  transition:all .2s;
-  cursor:pointer;
-}
-.upload-area:hover,.upload-area.dragover{
-  border-color:#38bdf8;
-  background:#334155;
-}
-
-/* Step navigation */
-.nav-btn{
-  padding:0.75rem 1.5rem;
-  border-radius:0.75rem;
-  font-weight:600;
-  background:#1e293b;
-  border:1px solid #334155;
-}
-.nav-btn.current{
-  background:#2563eb;
-  color:white;
-  border-color:#2563eb;
-}
-
-/* Hidden fields animation */
-.hidden-field{
-  height:0; opacity:0; overflow:hidden;
-  transition:all .4s ease;
-  margin:0; padding:0;
-}
-.hidden-field.open{
-  height:auto; opacity:1;
-  padding-top:1rem; margin-top:1rem;
-}
-
-/* Selection cards */
-.select-card .card-inner{
-  border:4px solid #334155;
-  border-radius:1.5rem;
-  padding:2.5rem;
-  transition:all .3s;
-  position:relative;
-  background:#1e293b;
-}
-.select-card.selected .card-inner{
-  border-color:#38bdf8;
-  box-shadow:0 0 40px rgba(56,189,248,0.4);
-}
-.select-card[data-mode="advanced"].selected .card-inner{
-  border-color:#fbbf24;
-  box-shadow:0 0 40px rgba(251,191,36,0.4);
-}
-.selected-badge{
-  position:absolute;
-  top:-1rem;
-  left:50%;
-  transform:translateX(-50%);
-  background:#2563eb;
-  color:white;
-  padding:0.5rem 1.5rem;
-  border-radius:2rem;
-  font-size:0.875rem;
-  font-weight:800;
-}
-.select-card[data-mode="advanced"].selected .selected-badge{
-  background:#f59e0b;
-  color:black;
-}
-
-/* Code blocks */
-pre{
-  background:#0f172a;
-  padding:2rem;
-  border-radius:1rem;
-  border:1px solid #334155;
-  overflow-x:auto;
-  font-size:0.95rem;
-  position:relative;
-}
-/* Force only one step visible at a time */
-.step { display:none !important; }
-.step.active { display:block !important; }
-
-/* FINAL SIZE – big but not ridiculous */
-.huge-copy-btn {
-  font-size: 2rem !important;
-  padding: 1.75rem 5rem !important;
-  border-radius: 9999px !important;
-  font-weight: 900 !important;
-  background: linear-gradient(to right, #10b981, #059669) !important;
-  border: 5px solid rgba(255,255,255,0.35) !important;
-  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6) !important;
-  color: white !important;
-}
-.huge-copy-btn:hover { transform: scale(1.08) !important; }
-.huge-copy-btn.purple { background: linear-gradient(to right, #c084fc, #ec4899) !important; }
-.huge-copy-btn.cyan  { background: linear-gradient(to right, #06b6d4, #3b82f6) !important; }
+    /* Force selected text to be readable */
+    .huge-copy-btn::selection, .huge-copy-btn *::selection,
+    button[class*="from-"]::selection, button[class*="from-"] *::selection {
+      background:#ffffff !important;color:#000000 !important;
+    }
   </style>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>Shield</text></svg>">
 </head>
-
 <body class="bg-gray-900 text-white min-h-screen">
   <div class="container">
     <div class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-blue-400 mb-2">On-the-Go AppSuite</h1>
+      <h1 class="text-5xl font-bold text-blue-400 mb-2">On-the-Go AppSuite</h1>
       <p class="text-xl text-gray-400">Full Production Setup Wizard • November 2025</p>
     </div>
 
-   <!-- Navigation -->
-<div class="flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-2xl">
-  <button type="button" class="nav-btn current" onclick="showStep(1)">1. Welcome</button>
-  <button type="button" class="nav-btn" onclick="showStep(2)">2. Sheet Setup</button>
-  <button type="button" class="nav-btn" onclick="showStep(3)">3. Settings</button>
-  <button type="button" class="nav-btn" onclick="showStep(4)">4. Deploy Script</button>
-  <button type="button" class="nav-btn" onclick="showStep(5)">5. Branding</button>
-  <button type="button" class="nav-btn" onclick="showStep(6)">6. Done!</button>
-</div>
+    <!-- Navigation -->
+    <div class="flex flex-wrap justify-center gap-3 mb-10 bg-gray-800 p-4 rounded-xl shadow-2xl">
+      <button type="button" class="nav-btn current" onclick="showStep(1)">1. Welcome</button>
+      <button type="button" class="nav-btn" onclick="showStep(2)">2. Sheet Setup</button>
+      <button type="button" class="nav-btn" onclick="showStep(3)">3. Settings</button>
+      <button type="button" class="nav-btn" onclick="showStep(4)">4. Deploy Script</button>
+      <button type="button" class="nav-btn" onclick="showStep(5)">5. Branding</button>
+      <button type="button" class="nav-btn" onclick="showStep(6)">6. Done!</button>
+    </div>
 
     <div class="bg-gray-800 rounded-2xl shadow-2xl p-8">
 
-      <!-- STEP 1 – 100% WORKING: Simple & Advanced selection with perfect visual feedback -->
-<div id="step1" class="step active space-y-10">
-  <h2 class="text-3xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
-
-  <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-    <!-- SIMPLE APP -->
-    <label class="block cursor-pointer select-card" data-mode="simple">
-      <input type="radio" name="appMode" value="simple" checked class="hidden">
-      <div class="card-inner relative bg-gray-900 border-4 border-gray-700 rounded-2xl p-10 text-center transition-all duration-300">
-        <div class="selected-badge">SELECTED</div>
-        <div class="text-8xl mb-6">Shield</div>
-        <h3 class="text-3xl font-bold mb-3">Simple App</h3>
-        <p class="text-gray-300 text-lg">Safety-only • Timer • SOS • Duress PIN</p>
-        <p class="text-green-400 font-bold text-2xl mt-6">Most Popular</p>
-      </div>
-    </label>
-
-    <!-- ADVANCED APP -->
-    <label class="block cursor-pointer select-card" data-mode="advanced">
-      <input type="radio" name="appMode" value="advanced" class="hidden">
-      <div class="card-inner relative bg-gray-900 border-4 border-gray-700 rounded-2xl p-10 text-center transition-all duration-300">
-        <div class="selected-badge">SELECTED</div>
-        <div class="text-8xl mb-6">Tools</div>
-        <h3 class="text-3xl font-bold mb-3">Advanced App</h3>
-        <p class="text-gray-300 text-lg">Full reporting • Photos • Gemini AI • Checklists</p>
-        <p class="text-yellow-400 font-bold text-2xl mt-6">Reporting + AI Features</p>
-      </div>
-    </label>
-  </div>
-
-<div class="text-center mt-12">
-  <button onclick="nextStep()" class="btn-primary btn-xl">
-    Continue → Start Setup
-  </button>
-</div>
-</div>
-
-<!-- STEP 2 – FINAL, BEAUTIFUL, PERFECTLY BALANCED -->
-<div id="step2" class="step space-y-16 max-w-5xl mx-auto">
-
-  <h2 class="text-4xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
-  <p class="text-center text-xl text-gray-400">Just follow the 3–4 giant buttons below — takes 60 seconds</p>
-
-  <!-- 1. Open new sheet -->
-  <div class="text-center">
-    <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold text-3xl px-20 py-8 rounded-2xl shadow-2xl">
-      1. Open New Google Sheet
-    </a>
-  </div>
-
-  <!-- 2. Visits tab – always visible -->
-  <div class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-8">
-    <h3 class="text-3xl font-bold text-blue-400">2. Set up the “Visits” tab</h3>
-    <p class="text-xl text-gray-300">Rename the first tab → <strong>Visits</strong> → click cell A1 → click the giant green button → Ctrl+V</p>
-    
-    <button type="button" onclick="copyHeaders()" class="huge-copy-btn block mx-auto">
-      Copy Visits Headers → Paste in A1
-    </button>
-  </div>
-
-  <!-- 3. Checklists tab – Advanced only -->
-  <div id="checklistsSection" class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-10 hidden">
-    <h3 class="text-3xl font-bold text-purple-400">3. Set up the “Checklists” tab (Advanced only)</h3>
-    <p class="text-xl text-gray-300">Add a new tab → name it <strong>Checklists</strong> → click A1 → click the giant purple button → Ctrl+V</p>
-    
-    <button type="button" onclick="copyChecklistsHeaders()" class="huge-copy-btn purple block mx-auto">
-      Copy Checklists Headers → Paste in A1
-    </button>
-
-    <!-- How to create your first checklist -->
-    <div class="mt-10 p-10 bg-gradient-to-r from-indigo-900/60 to-purple-900/60 rounded-2xl border-2 border-indigo-500">
-      <h4 class="text-2xl font-bold text-yellow-300 mb-6">Create your first checklist in 15 seconds</h4>
-      <ol class="text-left text-lg space-y-4 max-w-3xl mx-auto text-gray-200">
-        <li>1. In cell <strong>A2</strong> type: <code class="bg-gray-800 px-4 py-2 rounded">(Standard)</code></li>
-        <li>2. Press Enter → go to <strong>B2</strong> and type your first question, e.g.<br>
-            <code class="bg-gray-800 px-4 py-2 rounded inline-block">Arrival photo [PHOTO]</code></li>
-        <li>3. Add more rows: <code class="bg-gray-800 px-4 py-2 rounded">[SIGN]</code>, <code class="bg-gray-800 px-4 py-2 rounded">[YESNO]</code>, <code class="bg-gray-800 px-4 py-2 rounded">[TEXT]</code>, etc.</li>
-      </ol>
-      <p class="mt-6 text-yellow-200 text-xl font-bold text-center">Your checklist appears in the app instantly!</p>
-    </div>
-
-    <button type="button" onclick="copyPermanentReference()" class="huge-copy-btn cyan block mx-auto mt-12">
-      Optional: Copy Full Code Legend → Paste at A20
-    </button>
-  </div>
-
-  <!-- Final next button -->
-  <div class="text-center pt-12">
-    <button onclick="nextStep()" class="btn-primary btn-xl">
-      I’ve Set Up My Sheet — Next Step →
-    </button>
-  </div>
-
-</div>
-      <!-- STEP 5 -->
-      <div id="step5" class="step space-y-8 text-center">
-        <h2 class="text-3xl font-bold text-blue-300">Step 5: Finalize & Branding</h2>
-        <div class="max-w-3xl mx-auto bg-gray-900 p-8 rounded-xl border border-gray-700 mb-8">
-          <p class="text-xl text-gray-300 mb-4">Your Web App URL is ready:</p>
-          <input type="url" id="webAppUrl" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg text-center" readonly>
+      <!-- STEP 1 -->
+      <div id="step1" class="step active space-y-10">
+        <h2 class="text-4xl font-bold text-center text-blue-300">Welcome! Choose Your App Type</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <label class="block cursor-pointer"><input type="radio" name="appMode" value="simple" checked class="hidden" onchange="updateMode()">
+            <div class="bg-gray-900 border-4 border-gray-700 rounded-3xl p-12 text-center hover:border-blue-500 transition-all">
+              <div class="text-9xl mb-6">Shield</div>
+              <h3 class="text-4xl font-bold mb-4">Simple App</h3>
+              <p class="text-2xl text-green-400 font-bold">Most Popular</p>
+            </div>
+          </label>
+          <label class="block cursor-pointer"><input type="radio" name="appMode" value="advanced" class="hidden" onchange="updateMode()">
+            <div class="bg-gray-900 border-4 border-gray-700 rounded-3xl p-12 text-center hover:border-yellow-500 transition-all">
+              <div class="text-9xl mb-6">Tools</div>
+              <h3 class="text-4xl font-bold mb-4">Advanced App</h3>
+              <p class="text-2xl text-yellow-400 font-bold">Full Reporting + AI</p>
+            </div>
+          </label>
         </div>
-        <div class="max-w-2xl mx-auto mb-8">
-          <label class="block text-xl font-bold mb-4 text-yellow-300">Upload Company Logo (Optional)</label>
-          <div id="dropZone" class="upload-area">
-            <p class="text-gray-400 text-lg">Drag & Drop or Click to Upload Image</p>
-            <p class="text-xs text-gray-500 mt-2">(Used for App Icon and Favicon)</p>
-            <input type="file" id="logoInput" accept="image/*" class="hidden">
-            <img id="logoPreview" class="logo-preview hidden">
+        <div class="text-center mt-12">
+          <button onclick="nextStep()" class="btn-primary btn-xl">Continue → Start Setup</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 – FINAL PERFECT VERSION -->
+      <div id="step2" class="step space-y-16 max-w-5xl mx-auto">
+        <h2 class="text-4xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
+        <p class="text-center text-xl text-gray-400">Just follow the 3–4 giant buttons below — takes 60 seconds</p>
+
+        <div class="text-center">
+          <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold text-3xl px-20 py-8 rounded-2xl shadow-2xl">
+            1. Open New Google Sheet
+          </a>
+        </div>
+
+        <div class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-8">
+          <h3 class="text-3xl font-bold text-blue-400">2. Set up the “Visits” tab</h3>
+          <p class="text-xl text-gray-300">Rename tab → <strong>Visits</strong> → click A1 → click button → Ctrl+V</p>
+          <button type="button" onclick="copyHeaders()" class="huge-copy-btn">Copy Visits Headers → Paste in A1</button>
+        </div>
+
+        <div id="checklistsSection" class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-10 hidden">
+          <h3 class="text-3xl font-bold text-purple-400">3. Set up the “Checklists” tab</h3>
+          <p class="text-xl text-gray-300">Add tab → name <strong>Checklists</strong> → click A1 → click button → Ctrl+V</p>
+          <button type="button" onclick="copyChecklistsHeaders()" class="huge-copy-btn purple">Copy Checklists Headers → Paste in A1</button>
+
+          <div class="mt-10 p-10 bg-gradient-to-r from-indigo-900/60 to-purple-900/60 rounded-2xl border-2 border-indigo-500">
+            <h4 class="text-2xl font-bold text-yellow-300 mb-6">Create your first checklist in 15 seconds</h4>
+            <ol class="text-left text-lg space-y-4 max-w-3xl mx-auto text-gray-200">
+              <li>1. In cell <strong>A2</strong> type: <code class="bg-gray-800 px-4 py-2 rounded">(Standard)</code></li>
+              <li>2. Go to <strong>B2</strong> and type: <code class="bg-gray-800 px-4 py-2 rounded">Arrival photo [PHOTO]</code></li>
+              <li>3. Add more rows with [SIGN], [YESNO], [TEXT], etc.</li>
+            </ol>
+            <p class="mt-6 text-yellow-200 text-xl font-bold text-center">Your checklist appears in the app instantly!</p>
+          </div>
+
+          <button type="button" onclick="copyPermanentReference()" class="huge-copy-btn cyan mt-12">
+            Optional: Copy Full Code Legend → Paste at A20
+          </button>
+        </div>
+
+        <div class="text-center pt-12">
+          <button onclick="nextStep()" class="btn-primary btn-xl">I’ve Set Up My Sheet — Next Step →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div id="step3" class="step space-y-10">
+        <h2 class="text-4xl font-bold text-center text-blue-300">Step 3: Your Settings</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input type="text" id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Secret Key</label><input type="password" id="secretKey" value="changeme123" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">First Alert (minutes)</label><input type="number" id="firstAlert" value="15" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div><label class="block text-lg font-medium mb-2">Escalation (minutes)</label><input type="number" id="escalation" value="5" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="orsField" class="hidden-field"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService Key (optional)</label><input type="text" id="orsKey" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+          <div id="geminiField" class="hidden-field"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key (optional)</label><input type="text" id="geminiKey" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
+        </div>
+        <div class="text-center">
+          <button onclick="generateScriptAndProceed()" class="btn-primary btn-large">Generate Code → Go to Step 4</button>
+        </div>
+      </div>
+
+      <!-- STEP 4 – Deploy Script -->
+      <div id="step4" class="step space-y-12">
+        <h2 class="text-4xl font-bold text-center text-blue-300">Step 4: Connect Your Google Sheet</h2>
+        <div class="bg-yellow-900/40 border-2 border-yellow-600 rounded-2xl p-10 text-center">
+          <p class="text-2xl font-bold text-yellow-300">Last technical step — we’ll do it together!</p>
+        </div>
+
+        <!-- 1. Paste code -->
+        <div class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 space-y-8">
+          <h3 class="text-3xl font-bold text-blue-400">1. Paste the Apps Script code</h3>
+          <div class="text-center my-10">
+            <a href="https://script.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold text-3xl px-20 py-8 rounded-2xl shadow-2xl">
+              Open script.new Now
+            </a>
+          </div>
+          <pre id="scriptDisplay" class="bg-gray-800/80 rounded-2xl p-8 text-left text-sm overflow-x-auto h-96 border border-gray-600"></pre>
+          <div class="text-center mt-8">
+            <button type="button" onclick="copyScript()" class="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-3xl px-24 py-8 rounded-full shadow-2xl transform hover:scale-105 transition-all border-4 border-white/30">
+              Copy Full Script Code to Clipboard
+            </button>
           </div>
         </div>
-        <button onclick="generatePackage()" class="btn-primary btn-xl">
-  Generate Final App Suite
-</button>
-      </div>
 
-      <!-- STEP 6 -->
-      <div id="step6" class="step text-center py-20 space-y-12">
-        <div class="text-9xl">Success!</div>
-        <h2 class="text-5xl font-bold text-green-400">Your Complete App Package Is Ready!</h2>
-        <p class="text-2xl text-gray-300 max-w-3xl mx-auto">Fully configured • Offline-ready • Includes backup script</p>
-       <button id="downloadBtn" class="btn-primary btn-xl">
-  Download AppSuite.zip
-</button>
-        <div class="mt-12 text-lg text-gray-400 space-y-2 bg-gray-900 inline-block p-8 rounded-xl border border-gray-700">
-          <p class="font-bold text-blue-300 mb-4">Included files:</p>
-          <ul class="text-green-400 font-mono text-left list-disc list-inside">
-            <li>index.html – Your main worker app</li>
-            <li>manifest.json – Configured with your logo & name</li>
-            <li>sw.js – Enables offline mode & instant loading</li>
-            <li>OTG_Backend_Script.gs – Full backup of your Google Script</li>
-            <li>OTG_AppSuite_Documentation.pdf</li>
-          </ul>
+        <!-- 2. Deploy + 3. Triggers -->
+        <div class="grid md:grid-cols-2 gap-10">
+          <div class="bg-gray-900 rounded-3xl p-10 border-2 border-gray-700">
+            <h3 class="text-2xl font-bold text-blue-400 mb-6">2. Deploy as Web App</h3>
+            <ol class="text-lg text-gray-300 space-y-4 list-decimal list-inside">
+              <li>Click <strong>Deploy → New deployment</strong></li>
+              <li>Select type → <strong>Web app</strong></li>
+              <li>Who has access → <strong>Anyone</strong></li>
+              <li>Click <strong>Deploy</strong> → Allow permissions</li>
+              <li>Copy the URL ending in <strong>/exec</strong></li>
+            </ol>
+          </div>
+          <div class="bg-gray-900 rounded-3xl p-10 border-2 border-gray-700">
+            <h3 class="text-2xl font-bold text-blue-400 mb-6">3. Enable 1-minute checks</h3>
+            <ol class="text-lg text-gray-300 space-y-4 list-decimal list-inside">
+              <li>Left sidebar → clock icon (<strong>Triggers</strong>)</li>
+              <li><strong>+ Add Trigger</strong></li>
+              <li>Function: <strong>checkOverdueWorkers</strong></li>
+              <li>Event: <strong>Time-driven → Minutes timer → Every 1 minute</strong></li>
+              <li>Save</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Live test -->
+        <div class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-8">
+          <h3 class="text-3xl font-bold text-green-400">4. Live Connection Test</h3>
+          <input type="url" id="testUrl" placeholder="Paste your /exec URL here" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg text-center">
+          <button onclick="runLiveTest()" class="btn-primary btn-large mt-6">Test Connection Now</button>
+          <div id="testResult" class="mt-8 text-3xl font-bold"></div>
+        </div>
+
+        <div class="text-center pt-12">
+          <button id="proceedBtn" onclick="nextStep()" disabled class="btn-primary btn-xl opacity-60 cursor-not-allowed">
+            All Connected! → Next Step
+          </button>
         </div>
       </div>
 
-    </div>
+      <!-- STEP 5 – Branding & Logo -->
+      <div id="step5" class="step space-y-12 text-center">
+        <h2 class="text-4xl font-bold text-blue-300">Step 5: Branding & Finalize</h2>
+        <div class="max-w-3xl mx-auto bg-gray-900 p-10 rounded-3xl border-2 border-gray-700">
+          <p class="text-xl text-gray-300 mb-4">Your Web App URL is ready:</p>
+          <input type="url" id="webAppUrl" class="w-full px-6 py-5 bg-gray-700 rounded-xl text-lg text-center font-mono" readonly>
+        </div>
+
+        <div class="max-w-2xl mx-auto">
+          <label class="block text-2xl font-bold mb-6 text-yellow-300">Upload Company Logo (optional)</label>
+          <div id="dropZone" class="upload-area border-4 border-dashed border-gray-600 rounded-3xl p-16 cursor-pointer hover:border-blue-500 transition-all">
+            <p class="text-2xl text-gray-400">Drag & drop or click to upload</p>
+            <p class="text-gray-500 mt-2">(Used for app icon & favicon)</p>
+            <input type="file" id="logoInput" accept="image/*" class="hidden">
+            <img id="logoPreview" class="mt-6 max-h-48 mx-auto hidden rounded-xl">
+          </div>
+        </div>
+
+        <button onclick="generatePackage()" class="btn-primary btn-xl mt-12">
+          Generate Final App Package
+        </button>
+      </div>
+
+      <!-- STEP 6 – Done! -->
+      <div id="step6" class="step text-center py-20 space-y-12">
+        <div class="text-9xl">Success!</div>
+        <h2 class="text-6xl font-bold text-green-400">Your AppSuite is Ready!</h2>
+        <p class="text-2xl text-gray-300 max-w-4xl mx-auto">Offline-ready • Fully configured • Includes backup script & monitor dashboard</p>
+        
+        <button id="downloadBtn" class="btn-primary btn-xl">
+          Download AppSuite.zip
+        </button>
+
+        <div class="mt-16 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto text-left">
+          <div class="bg-gray-900 rounded-2xl p-8 border border-gray-700">
+            <h4 class="text-xl font-bold text-blue-400 mb-4">Worker App</h4>
+            <ul class="text-green-400 space-y-2">✓ index.html<br>✓ manifest.json<br>✓ sw.js (offline)</ul>
+          </div>
+          <div class="bg-gray-900 rounded-2xl p-8 border border-gray-700">
+            <h4 class="text-xl font-bold text-purple-400 mb-4">Monitor Dashboard</h4>
+            <ul class="text-green-400 space-y-2">✓ monitor.html<br>✓ Real-time alerts</ul>
+          </div>
+          <div class="bg-gray-900 rounded-2xl p-8 border border-gray-700">
+            <h4 class="text-xl font-bold text-yellow-400 mb-4">Backup & Docs</h4>
+            <ul class="text-green-400 space-y-2">✓ OTG_Backend_Script.gs<br>✓ Documentation.pdf</ul>
+          </div>
+        </div>
+      </div>
   </div>
 
 <script>
