@@ -208,19 +208,19 @@ pre{
 .step { display:none !important; }
 .step.active { display:block !important; }
 
-/* FORCE HUGE COPY BUTTONS – overrides everything */
+/* FINAL SIZE – big but not ridiculous */
 .huge-copy-btn {
-  font-size: 2.5rem !important;
-  padding: 2rem 4rem !important;
+  font-size: 2rem !important;
+  padding: 1.75rem 5rem !important;
   border-radius: 9999px !important;
   font-weight: 900 !important;
   background: linear-gradient(to right, #10b981, #059669) !important;
-  border: 5px solid rgba(255,255,255,0.4) !important;
+  border: 5px solid rgba(255,255,255,0.35) !important;
   box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6) !important;
-  transform: translateY(0) !important;
+  color: white !important;
 }
-.huge-copy-btn:hover { transform: scale(1.12) !important; }
-.huge-copy-btn.purple { background: linear-gradient(to right, #a855f7, #ec4899) !important; }
+.huge-copy-btn:hover { transform: scale(1.08) !important; }
+.huge-copy-btn.purple { background: linear-gradient(to right, #c084fc, #ec4899) !important; }
 .huge-copy-btn.cyan  { background: linear-gradient(to right, #06b6d4, #3b82f6) !important; }
   </style>
 
@@ -284,130 +284,63 @@ pre{
 </div>
 </div>
 
-<!-- STEP 2 – CLEAN FINAL VERSION -->
-<div id="step2" class="step space-y-12 max-w-5xl mx-auto">
-  <h2 class="text-4xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
-  
-  <div class="bg-yellow-900/30 border-2 border-yellow-600 rounded-2xl p-8 text-center">
-    <p class="text-2xl font-bold text-yellow-300">Just 4 simple actions — follow the big buttons below</p>
-  </div>
+<!-- STEP 2 – FINAL, BEAUTIFUL, PERFECTLY BALANCED -->
+<div id="step2" class="step space-y-16 max-w-5xl mx-auto">
 
-  <!-- 1. Create Sheet -->
+  <h2 class="text-4xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
+  <p class="text-center text-xl text-gray-400">Just follow the 3–4 giant buttons below — takes 60 seconds</p>
+
+  <!-- 1. Open new sheet -->
   <div class="text-center">
-    <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-16 py-8 rounded-2xl font-bold text-3xl shadow-xl">
-      1. Open Your New Google Sheet Now
+    <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold text-3xl px-20 py-8 rounded-2xl shadow-2xl">
+      1. Open New Google Sheet
     </a>
   </div>
 
-  <!-- 2. Visits Tab -->
-  <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-6">
-    <h3 class="text-2xl font-bold text-blue-400">2. Set up the "Visits" tab</h3>
-    <p class="text-lg text-gray-300">Rename Sheet1 → <strong>Visits</strong>, then click A1 and press Ctrl+V after clicking the button:</p>
-
-<!-- Visits headers – always visible -->
-<button type="button" onclick="copyHeaders()" class="huge-copy-btn block mx-auto my-8">
-  Copy Visits Headers → Paste in A1
-</button>
-
-<!-- Checklists headers – Advanced only -->
-<button type="button" onclick="copyChecklistsHeaders()" class="huge-copy-btn purple block mx-auto my-8">
-  Copy Checklists Headers → Paste in A1
-</button>
-
-<!-- Permanent legend – Advanced only -->
-<button type="button" onclick="copyPermanentReference()" class="huge-copy-btn cyan block mx-auto my-12">
-  Optional: Copy Full Code Legend → Paste at A20
-</button> 
-
+  <!-- 2. Visits tab – always visible -->
+  <div class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-8">
+    <h3 class="text-3xl font-bold text-blue-400">2. Set up the “Visits” tab</h3>
+    <p class="text-xl text-gray-300">Rename the first tab → <strong>Visits</strong> → click cell A1 → click the giant green button → Ctrl+V</p>
+    
+    <button type="button" onclick="copyHeaders()" class="huge-copy-btn block mx-auto">
+      Copy Visits Headers → Paste in A1
+    </button>
   </div>
 
-  <!-- Final button -->
+  <!-- 3. Checklists tab – Advanced only -->
+  <div id="checklistsSection" class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-10 hidden">
+    <h3 class="text-3xl font-bold text-purple-400">3. Set up the “Checklists” tab (Advanced only)</h3>
+    <p class="text-xl text-gray-300">Add a new tab → name it <strong>Checklists</strong> → click A1 → click the giant purple button → Ctrl+V</p>
+    
+    <button type="button" onclick="copyChecklistsHeaders()" class="huge-copy-btn purple block mx-auto">
+      Copy Checklists Headers → Paste in A1
+    </button>
+
+    <!-- How to create your first checklist -->
+    <div class="mt-10 p-10 bg-gradient-to-r from-indigo-900/60 to-purple-900/60 rounded-2xl border-2 border-indigo-500">
+      <h4 class="text-2xl font-bold text-yellow-300 mb-6">Create your first checklist in 15 seconds</h4>
+      <ol class="text-left text-lg space-y-4 max-w-3xl mx-auto text-gray-200">
+        <li>1. In cell <strong>A2</strong> type: <code class="bg-gray-800 px-4 py-2 rounded">(Standard)</code></li>
+        <li>2. Press Enter → go to <strong>B2</strong> and type your first question, e.g.<br>
+            <code class="bg-gray-800 px-4 py-2 rounded inline-block">Arrival photo [PHOTO]</code></li>
+        <li>3. Add more rows: <code class="bg-gray-800 px-4 py-2 rounded">[SIGN]</code>, <code class="bg-gray-800 px-4 py-2 rounded">[YESNO]</code>, <code class="bg-gray-800 px-4 py-2 rounded">[TEXT]</code>, etc.</li>
+      </ol>
+      <p class="mt-6 text-yellow-200 text-xl font-bold text-center">Your checklist appears in the app instantly!</p>
+    </div>
+
+    <button type="button" onclick="copyPermanentReference()" class="huge-copy-btn cyan block mx-auto mt-12">
+      Optional: Copy Full Code Legend → Paste at A20
+    </button>
+  </div>
+
+  <!-- Final next button -->
   <div class="text-center pt-12">
     <button onclick="nextStep()" class="btn-primary btn-xl">
-      I’ve Set Up My Sheet — Next Step
+      I’ve Set Up My Sheet — Next Step →
     </button>
   </div>
-</div>
 
-      <!-- STEP 3 -->
-      <div id="step3" class="step space-y-10">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Step 3: Your Settings</h2>
-        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <div><label class="block text-lg font-medium mb-2">Organisation Name</label><input type="text" id="orgName" value="My Company" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">Secret Key (Monitor Dashboard)</label><input type="password" id="secretKey" placeholder="Strong password" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">First Alert After (minutes)</label><input type="number" id="firstAlert" value="15" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div><label class="block text-lg font-medium mb-2">Escalation After (minutes)</label><input type="number" id="escalation" value="5" min="1" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div id="orsField" class="hidden-field"><label class="block text-lg font-medium mb-2 text-yellow-300">OpenRouteService API Key</label><input type="text" id="orsKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-          <div id="geminiField" class="hidden-field"><label class="block text-lg font-medium mb-2 text-yellow-300">Gemini API Key</label><input type="text" id="geminiKey" placeholder="Optional" class="w-full px-5 py-4 bg-gray-700 rounded-lg text-lg"></div>
-        </div>
-        <div class="text-center">
-  <button onclick="generateScriptAndProceed()" class="btn-primary btn-large">
-    Generate Apps Script Code → Continue to Step 4
-  </button>
-  <p class="mt-4 text-gray-400">Click after filling in your settings above</p>
 </div>
-         </div>
-      </div>
-
-      <!-- STEP 4 -->
-      <div id="step4" class="step space-y-12">
-        <h2 class="text-3xl font-bold text-center text-blue-300">Step 4: Connect Your Google Sheet</h2>
-        <div class="bg-yellow-900/40 border-2 border-yellow-600 rounded-2xl p-10 text-center">
-          <p class="text-2xl font-bold text-yellow-300">This is the last technical step — we’ll do it together!</p>
-        </div>
-        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
-          <h3 class="text-2xl font-bold text-blue-400">1. Paste the Code</h3>
-          <div class="text-center my-8">
-            <a href="https://script.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-16 py-8 rounded-2xl font-bold text-3xl">
-              Open script.new Now
-            </a>
-          </div>
-          <div class="relative bg-gray-800 p-10 rounded-xl border border-gray-600 mt-8 font-mono text-sm">
-  <pre id="scriptDisplay" class="text-left text-gray-300 overflow-x-auto h-96 pr-4"></pre>
-  
-  <div class="mt-8 text-center">
-    <button type="button" onclick="copyScript()" 
-      class="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 
-             text-white font-bold text-2xl px-16 py-6 rounded-full shadow-2xl 
-             transform hover:scale-105 transition-all border-4 border-white/20">
-      Copy Full Apps Script Code to Clipboard
-    </button>
-    <p class="mt-4 text-gray-400 text-lg">Click → Paste into script.new</p>
-  </div>
-</div>
-        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 space-y-8">
-          <h3 class="text-2xl font-bold text-blue-400">2. Deploy → Get Your URL</h3>
-          <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-4xl mx-auto">
-            <li>Top-right → <strong>Deploy</strong> → <strong>New deployment</strong></li>
-            <li><strong>Select type</strong> → <strong>Web app</strong></li>
-            <li><strong>Who has access:</strong> <strong>Anyone</strong></li>
-            <li>Click <strong>Deploy</strong> → Allow permissions</li>
-            <li>Copy the URL that ends in <strong>/exec</strong></li>
-          </ol>
-        </div>
-        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700">
-          <h3 class="text-2xl font-bold text-blue-400">3. Turn On 1-Minute Checks</h3>
-          <ol class="text-lg text-gray-300 space-y-4 list-decimal list-inside max-w-3xl mx-auto">
-            <li>Left sidebar → clock icon (<strong>Triggers</strong>)</li>
-            <li><strong>+ Add Trigger</strong> → Function: <strong>checkOverdueWorkers</strong> → Every 1 minute</li>
-            <li><strong>Save</strong></li>
-          </ol>
-        </div>
-        <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-8">
-          <h3 class="text-2xl font-bold text-green-400">4. Live Test (5 Seconds)</h3>
-          <input type="url" id="testUrl" placeholder="Paste your /exec URL here" class="w-full max-w-3xl px-6 py-5 bg-gray-700 rounded-xl text-lg">
-          <button onclick="runLiveTest()" class="btn-primary btn-large mt-6">
-  Test Connection Now
-</button>
-          <div id="testResult" class="mt-8 text-3xl font-bold"></div>
-        </div>
-        <div class="text-center pt-12">
-          <button id="proceedBtn" onclick="nextStep()" disabled class="btn-primary btn-xl opacity-50 cursor-not-allowed">
-  All Connected! → Next Step
-</button>
-        </div>
-      </div>
-
       <!-- STEP 5 -->
       <div id="step5" class="step space-y-8 text-center">
         <h2 class="text-3xl font-bold text-blue-300">Step 5: Finalize & Branding</h2>
