@@ -131,19 +131,46 @@
           <button type="button" onclick="copyHeaders()" class="huge-copy-btn">Copy Visits Headers → Paste in A1</button>
         </div>
 
+               <!-- 3. Checklists tab – Advanced only (with correct Travel Details template) -->
         <div id="checklistsSection" class="bg-gray-900 rounded-3xl p-12 border-2 border-gray-700 text-center space-y-10 hidden">
           <h3 class="text-3xl font-bold text-purple-400">3. Set up the “Checklists” tab</h3>
           <p class="text-xl text-gray-300">Add tab → name <strong>Checklists</strong> → click A1 → click button → Ctrl+V</p>
           <button type="button" onclick="copyChecklistsHeaders()" class="huge-copy-btn purple">Copy Checklists Headers → Paste in A1</button>
 
-          <div class="mt-10 p-10 bg-gradient-to-r from-indigo-900/60 to-purple-900/60 rounded-2xl border-2 border-indigo-500">
-            <h4 class="text-2xl font-bold text-yellow-300 mb-6">Create your first checklist in 15 seconds</h4>
-            <ol class="text-left text-lg space-y-4 max-w-3xl mx-auto text-gray-200">
-              <li>1. In cell <strong>A2</strong> type: <code class="bg-gray-800 px-4 py-2 rounded">(Standard)</code></li>
-              <li>2. Go to <strong>B2</strong> and type: <code class="bg-gray-800 px-4 py-2 rounded">Arrival photo [PHOTO]</code></li>
-              <li>3. Add more rows with [SIGN], [YESNO], [TEXT], etc.</li>
-            </ol>
-            <p class="mt-6 text-yellow-200 text-xl font-bold text-center">Your checklist appears in the app instantly!</p>
+          <!-- DEFAULT TRAVEL DETAILS TEMPLATE (this one is REQUIRED) -->
+          <div class="mt-12 p-10 bg-gradient-to-r from-cyan-900/70 to-blue-900/70 rounded-3xl border-3 border-cyan-500">
+            <h4 class="text-3xl font-bold text-cyan-300 mb-6">Required: “Travel Details” template</h4>
+            <p class="text-xl text-gray-200 mb-6">
+              This form automatically opens when a worker taps <strong>“Travelling”</strong> in the app.<br>
+              Paste the block below starting exactly at <strong>cell A2</strong>:
+            </p>
+
+            <button type="button" onclick="copyTravelDetailsTemplate()" class="huge-copy-btn bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-2xl px-28 py-8">
+              Copy “Travel Details” Template → Paste at A2
+            </button>
+
+            <pre class="mt-8 bg-gray-800/80 rounded-2xl p-8 text-left text-sm font-mono text-gray-300 max-w-4xl mx-auto border border-gray-600">Travel Details	Distance travelled (km)	[NUMBER]
+Travel Details	Travel notes	[TEXT]</pre>
+
+            <div class="mt-8 space-y-4 text-lg">
+              <p class="text-yellow-300 font-bold">Important:</p>
+              <p class="text-gray-200">
+                • The template name <strong>must be exactly “Travel Details”</strong> (case-sensitive)<br>
+                • The <strong>km field must be a [NUMBER]</strong> type → this is used for automatic mileage reports<br>
+                • You can add extra rows below (e.g. tolls, fuel, photos) — they’ll all appear in the form<br>
+                • You can fully customise the wording — just keep the first column as “Travel Details”
+              </p>
+            </div>
+          </div>
+
+          <!-- Optional extra checklists -->
+          <div class="mt-12 p-10 bg-gradient-to-r from-indigo-900/60 to-purple-900/60 rounded-2xl border-2 border-indigo-500">
+            <h4 class="text-2xl font-bold text-yellow-300 mb-6">Add your own checklists (optional)</h4>
+            <p class="text-lg text-gray-200">Add more starting at row 5+, e.g.</p>
+            <ul class="text-left text-lg space-y-2 max-w-2xl mx-auto text-gray-300">
+              <li>• A5 → <code class="bg-gray-800 px-4 py-2 rounded">(Site Safety Check)</code></li>
+              <li>• A6 → <code class="bg-gray-800 px-4 py-2 rounded">(Vehicle Inspection)</code></li>
+            </ul>
           </div>
 
           <button type="button" onclick="copyPermanentReference()" class="huge-copy-btn cyan mt-12">
@@ -438,6 +465,14 @@ function copyPermanentReference() {
 Tip: You can mix codes in one cell!,Example → Take photo [PHOTO] and sign [SIGN]`;
   navigator.clipboard.writeText(ref);
   alert("Permanent reference copied! → Paste it starting at cell A20 in your Checklists tab");
+}
+
+  // ────────────────────── Copy Travel Template ──────────────────────  
+  function copyTravelDetailsTemplate() {
+  const template = `Travel Details	Distance travelled (km)	[NUMBER]
+Travel Details	Travel notes	[TEXT]`;
+  navigator.clipboard.writeText(template);
+  alert("Travel Details template copied!\n\nPaste it starting at cell A2 in the Checklists tab (exactly as shown)");
 }
   
   // ────────────────────── FINAL PACKAGE ──────────────────────
