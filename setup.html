@@ -324,21 +324,6 @@ Travel Details\tTravel notes\t[TEXT]
     navigator.clipboard.writeText(t);
     alert("Starter templates copied!\n\nPaste starting at A2 in Checklists tab — perfect layout guaranteed");
   }
-  function copyPermanentReference() {
-    const ref = `Checklist Template Codes – Permanent Reference,,,
-[HEADING]\tLarge bold section title\t,
-[NOTE]\tSmall italic instruction\t,
-[TEXT]\tMulti-line text box\t,
-[NUMBER]\tNumber only\t,
-[YESNO]\tYes / No buttons\t,
-[CHECK]\tCheckbox\t,
-[PHOTO]\tRequired photo\t,
-[PHOTO?]\tOptional photo\t,
-[GPS]\tCurrent location\t,
-[SIGN]\tSignature pad\t,`;
-    navigator.clipboard.writeText(ref);
-    alert("Code legend copied → paste at A20");
-  }
 
   // ────────────────────── LOGO UPLOAD ──────────────────────
   const dropZone = document.getElementById('dropZone');
