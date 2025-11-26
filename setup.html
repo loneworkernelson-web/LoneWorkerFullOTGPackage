@@ -269,98 +269,65 @@ pre{
 </div>
 </div>
 
-<!-- STEP 2 – FINAL with Permanent Reference Table (Option 1) -->
-<div id="step2" class="step space-y-10">
-  <h2 class="text-3xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
-  <div class="bg-yellow-900/30 border border-yellow-600 rounded-xl p-8 max-w-4xl mx-auto text-center">
-    <p class="text-xl text-yellow-300 font-semibold">We’ll do this together — just follow the big buttons</p>
+<!-- STEP 2 – CLEAN FINAL VERSION -->
+<div id="step2" class="step space-y-12 max-w-5xl mx-auto">
+  <h2 class="text-4xl font-bold text-center text-blue-300">Step 2: Set Up Your Google Sheet</h2>
+  
+  <div class="bg-yellow-900/30 border-2 border-yellow-600 rounded-2xl p-8 text-center">
+    <p class="text-2xl font-bold text-yellow-300">Just 4 simple actions — follow the big buttons below</p>
   </div>
 
-  <div class="space-y-12 max-w-5xl mx-auto">
+  <!-- 1. Create Sheet -->
+  <div class="text-center">
+    <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-16 py-8 rounded-2xl font-bold text-3xl shadow-xl">
+      1. Open Your New Google Sheet Now
+    </a>
+  </div>
 
-    <!-- 1. Create Sheet -->
-    <div class="bg-gray-900 rounded-xl p-8 border border-gray-700">
-      <h3 class="text-2xl font-bold text-blue-400 mb-6">1. Create Your Google Sheet</h3>
-      <div class="text-center">
-        <a href="https://sheets.new" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 px-12 py-6 rounded-xl font-bold text-2xl">Click Here to Open Your New Sheet</a>
-      </div>
-    </div>
+  <!-- 2. Visits Tab -->
+  <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-6">
+    <h3 class="text-2xl font-bold text-blue-400">2. Set up the "Visits" tab</h3>
+    <p class="text-lg text-gray-300">Rename Sheet1 → <strong>Visits</strong>, then click A1 and press Ctrl+V after clicking the button:</p>
+    
+    <button type="button" onclick="copyHeaders()" class="mx-auto block bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-2xl px-20 py-7 rounded-full shadow-2xl transform hover:scale-110 transition-all border-4 border-white/30 selection:bg-white selection:text-black">
+      Copy Visits Headers → Paste in A1
+    </button>
+    
+    <pre class="mt-6 bg-gray-800/70 rounded-xl p-8 text-left text-sm overflow-x-auto">Date	Worker Name	Worker Phone Number	Emergency Contact Name	Emergency Contact Number	Emergency Contact Email	Escalation Contact Name	Escalation Contact Number	Escalation Contact Email	Location Name	Location Address	Arrival Time	Anticipated Departure Time	Actual Departure Time	Alarm Status	Notes	Last Known GPS	GPS Timestamp	Battery Level</pre>
+  </div>
 
-    <!-- 2. Visits Tab -->
-    <div class="bg-gray-900 rounded-xl p-8 border border-gray-700">
-      <h3 class="text-2xl font-bold text-blue-400 mb-6">2. Set Up the "Visits" Tab</h3>
-      <ol class="text-lg text-gray-300 space-y-5 list-decimal list-inside max-w-3xl mx-auto">
-        <li>Rename the bottom tab from “Sheet1” to <strong class="text-yellow-300">Visits</strong></li>
-        <li>Click cell <strong>A1</strong></li>
-        <li>Click the green button → paste with Ctrl+V</li>
+  <!-- 3. Checklists Tab (Advanced only – hidden in Simple mode via JS) -->
+  <div class="bg-gray-900 rounded-2xl p-10 border border-gray-700 text-center space-y-6 hidden" id="checklistsSection">
+    <h3 class="text-2xl font-bold text-purple-400">3. Set up the "Checklists" tab</h3>
+    <p class="text-lg text-gray-300">Add a new tab named <strong>Checklists</strong>, click A1, then paste these headers:</p>
+    
+    <button type="button" onclick="copyChecklistsHeaders()" class="mx-auto block bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-2xl px-20 py-7 rounded-full shadow-2xl transform hover:scale-110 transition-all border-4 border-white/30 selection:bg-white selection:text-black">
+      Copy Checklists Headers → Paste in A1
+    </button>
+    
+    <pre class="mt-6 bg-gray-800/70 rounded-xl p-8 text-left text-sm overflow-x-auto">Template Name	Question 1	Question 2	Question 3	Question 4	Question 5	Question 6	Question 7	Question 8	Question 9	Question 10	Question 11	Question 12	Question 13	Question 14	Question 15	Question 16	Question 17	Question 18	Question 19	Question 20	Question 21	Question 22	Question 23	Question 24	Question 25	Question 26	Question 27	Question 28	Question 29	Question 30	Question 31	Question 32	Question 33	Question 34	Question 35	Question 36	Question 37	Question 38	Question 39	Question 40</pre>
+
+    <div class="mt-10 p-8 bg-gradient-to-r from-indigo-900/50 to-purple-900/50 rounded-2xl border-2 border-indigo-500">
+      <h4 class="text-2xl font-bold text-yellow-300 mb-4">Create your first checklist in 10 seconds</h4>
+      <ol class="text-left text-lg space-y-3 max-w-2xl mx-auto">
+        <li>1. In the Checklists tab, type this in cell <strong>A2</strong>: <code class="bg-gray-800 px-3 py-1 rounded">(Standard)</code></li>
+        <li>2. Press Enter → go to <strong>B2</strong></li>
+        <li>3. Type your first question, e.g. <code class="bg-gray-800 px-3 py-1 rounded">Arrival photo [PHOTO]</code></li>
+        <li>4. Press Enter → keep adding questions (use [PHOTO], [SIGN], [YESNO], etc.)</li>
       </ol>
-      <div class="relative mt-10 bg-gray-800 rounded-xl p-8 border border-gray-600 font-mono text-sm text-gray-300">
-<!-- 1. Copy Visits Headers -->
-<button type="button" onclick="copyHeaders()" class="absolute -top-8 left-1/2 -translate-x-1/2 
-     bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 
-     text-white font-bold text-2xl px-14 py-5 rounded-full shadow-2xl 
-     transform hover:scale-110 transition-all z-30 border-4 border-white/30
-     selection:bg-white selection:text-black">
-  Copy Visits Headers
-</button>
-
-<!-- 2. Copy Checklists Headers (Advanced) -->
-<button type="button" onclick="copyChecklistsHeaders()" class="absolute -top-8 left-1/2 -translate-x-1/2 
-     bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 
-     text-white font-bold text-2xl px-14 py-5 rounded-full shadow-2xl 
-     transform hover:scale-110 transition-all z-30 border-4 border-white/30
-     selection:bg-white selection:text-black">
-  Copy Checklists Headers
-</button>
-
-<!-- 3. Permanent Reference button -->
-<button type="button" onclick="copyPermanentReference()" class="mx-auto block 
-     bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 
-     text-white font-bold text-2xl px-16 py-6 rounded-full shadow-2xl 
-     transform hover:scale-110 transition-all border-4 border-white/30
-     selection:bg-white selection:text-black">
-  Copy Permanent Reference Table → Paste at A20
-</button>
-        <p class="mt-4 text-gray-400 text-lg">This adds a beautiful, always-visible code legend below your templates</p>
-      </div>
-
-      <!-- Collapsible Legend (for reference while setting up) -->
-      <details class="mt-10 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-600 overflow-hidden">
-        <summary class="cursor-pointer px-8 py-5 text-2xl font-bold text-yellow-300 flex items-center justify-between hover:bg-gray-700/50 transition">
-          <span>Checklist Template Codes – Full List (click to expand)</span>
-          <span class="text-3xl ml-4">Down Arrow</span>
-        </summary>
-        <div class="px-8 pb-8 pt-4 text-gray-300 space-y-6">
-          <p class="text-lg">Use these short codes anywhere in your questions:</p>
-          <div class="grid md:grid-cols-3 gap-5 text-sm">
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-blue-400 font-bold">[HEADING]</code><br>Large section title</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-gray-500 font-bold">[NOTE]</code><br>Small italic note</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-cyan-400 font-bold">[TEXT]</code><br>Large text box (default)</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-orange-400 font-bold">[NUMBER]</code><br>Number only</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-green-400 font-bold">[YESNO]</code><br>Yes / No buttons</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-emerald-400 font-bold">[CHECK]</code><br>Checkbox</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-red-400 font-bold">[PHOTO]</code><br>Required photo</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-red-300 font-bold">[PHOTO?]</code><br>Optional photo</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-purple-400 font-bold">[GPS]</code><br>Capture location</div>
-            <div class="bg-gray-800/70 rounded-xl p-5 border border-gray-600"><code class="text-pink-400 font-bold">[SIGN]</code><br>Signature pad</div>
-          </div>
-        </div>
-      </details>
-
-      <!-- Default Form Reminder -->
-      <div class="bg-indigo-900/50 border-2 border-indigo-500 rounded-2xl p-8 mt-10">
-        <h4 class="text-2xl font-bold text-indigo-300 mb-6">Add Your Default Form</h4>
-        <p class="text-lg text-gray-200">In the Checklists tab, type exactly this in cell <strong>A2</strong>:</p>
-        <div class="bg-gray-800 rounded-xl p-6 text-center font-mono text-3xl text-green-400 my-6">(Standard)</div>
-      </div>
+      <p class="mt-6 text-yellow-200 font-bold">That’s it — your checklist will instantly appear in the app!</p>
     </div>
 
-    <!-- Final Next Button -->
-    <div class="text-center pt-8">
-  <button onclick="nextStep()" class="btn-primary btn-xl">
-    I’ve Done This — Next Step
-  </button>
-</div>
+    <button type="button" onclick="copyPermanentReference()" class="mt-8 mx-auto block bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-2xl px-20 py- py-7 rounded-full shadow-2xl transform hover:scale-110 transition-all border-4 border-white/30 selection:bg-white selection:text-black">
+      Optional: Copy Full Code Legend → Paste at A20
+    </button>
+  </div>
+
+  <!-- Final button -->
+  <div class="text-center pt-12">
+    <button onclick="nextStep()" class="btn-primary btn-xl">
+      I’ve Set Up My Sheet — Next Step
+    </button>
   </div>
 </div>
 
