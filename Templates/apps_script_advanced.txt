@@ -39,26 +39,76 @@ function doGet(e) {
       var headers = rows.shift();
       for (var i = 0; i < rows.length; i++) {
         if (rows[i][0] !== company) continue;
-        for (var j = 1; j < headers.length; j++) {
-          if (!rows[i][j]) break;
-          var q = String(rows[i][j]).trim();
-          if (q.startsWith("# ")) questions.push({type:"header", text:q.substring(2)});
-          else if (q.startsWith("#")) questions.push({type:"header", text:q.substring(1)});
-          else if (q.startsWith("% ")) questions.push({type:"textarea", text:q.substring(2)});
-          else if (q.startsWith("%")) questions.push({type:"textarea", text:q.substring(1)});
-          else if (q.startsWith("$ ")) questions.push({type:"number", text:q.substring(2)});
-          else if (q.startsWith("$")) questions.push({type:"number", text:q.substring(1)});
-          else questions.push({type:"checkbox", text:q});
+          // MODERN [CODE] SYSTEM – perfectly matches the wizard legend
+          for (var j = 1; j < headers.length; j++) {
+            var q = data[i][j] || "";
+            var textStr = String(q).trim();
+            if (!textStr) continue;
+
+            var type = "checkbox";        // default (keeps old sheets working)
+            var question = textStr;
+
+            if (textStr.includes('[HEADING]')) {
+              type = "header";
+              question = textStr.replace('[HEADING]', '').trim();
+            }
+            else if (textStr.includes('[NOTE]')) {
+              type = "note";
+              question = textStr.replace('[NOTE]', '').trim();
+            }
+            else if (textStr.includes('[TEXT]')) {
+              type = "textarea";
+              question = textStr.replace('[TEXT]', '').trim();
+            }
+            else if (textStr.includes('[NUMBER]')) {
+              type = "number";
+              question = textStr.replace('[NUMBER]', '').trim();
+            }
+            else if (textStr.includes('[YESNO]')) {
+              type = "yesno";
+              question = textStr.replace('[YESNO]', '').trim();
+            }
+            else if (textStr.includes('[CHECK]') || textStr.includes('[CHECKBOX]')) {
+              type = "checkbox";
+              question = textStr.replace('[CHECK]', '').replace('[CHECKBOX]', '').trim();
+            }
+            else if (textStr.includes('[PHOTO]')) {
+              type = "photo";
+              question = textStr.replace('[PHOTO]', '').trim();
+            }
+            else if (textStr.includes('[PHOTO?]')) {
+              type = "photo_optional";
+              question = textStr.replace('[PHOTO?]', '').trim();
+            }
+            else if (textStr.includes('[GPS]')) {
+              type = "gps";
+              question = textStr.replace('[GPS]', '').trim();
+            }
+            else if (textStr.includes('[SIGN]')) {
+              type = "signature";
+              question = textStr.replace('[SIGN]', '').trim();
+            }
+            // Plain text with no brackets → checkbox (backward compatible)
+            else if (!textStr.includes('[')) {
+              question = textStr;
+            }
+
+            questions.push({ type: type, text: question || "Untitled" });
+          }
+
+          break; // ← correctly breaks the outer "company row" loop
         }
-        break;
       }
-    } catch(err) {}
-    return ContentService.createTextOutput(JSON.stringify(questions))
+
+      Logger.log("Found " + questions.length + " items for " + companyName);
+    } catch (err) {
+      Logger.log("Error in getForms: " + err.toString());
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify(questions))
       .setMimeType(ContentService.MimeType.JSON);
   }
-  return ContentService.createTextOutput(JSON.stringify({status:"error", message:"Invalid request"}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
 
 function doPost(e) {
   Logger.log("doPost triggered – Data: " + JSON.stringify(e.parameter));
