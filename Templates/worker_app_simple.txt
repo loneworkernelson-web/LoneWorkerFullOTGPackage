@@ -1233,75 +1233,11 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             } 
         });
     }
-// ─────────────────────── SUBMIT TO GOOGLE SHEET (2025 FIXED) ───────────────────────
-function submitVisit(isDepart = false) {
-  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-  // Setup.html injects the real URL here – do NOT change this line
-  const WEB_APP_URL = "%%WEB_APP_URL%%";
-  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-
-  if (!WEB_APP_URL || WEB_APP_URL.includes("%%")) {
-    console.error("Web App URL not configured – contact administrator");
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const isTravelling = localStorage.getItem("isTravelling") === "true";
-  const status = isDepart ? "DEPARTED" : (isTravelling ? "TRAVELLING" : "ON SITE");
-  const arrivalTime = localStorage.getItem("arrivalTime") || now;
-  const anticipatedMinutes = parseInt(localStorage.getItem("timerMinutes") || "60");
-  const anticipatedTime = new Date(Date.now() + anticipatedMinutes * 60000).toISOString();
-
-  const payload = {
-    "Worker Name": localStorage.getItem("workerName") || "Unknown Worker",
-    "Worker Phone Number": localStorage.getItem("workerPhone") || "",
-    "Company Name": localStorage.getItem("selectedCompany") || "",
-    "Location Name": localStorage.getItem("selectedLocation") || localStorage.getItem("quickFormTitle") || "",
-    "Location Address": localStorage.getItem("locationAddress") || "",
-    "Arrival Time": arrivalTime,
-    "Anticipated Departure Time": anticipatedTime,
-    "Alarm Status": status,
-    "Last Known GPS": localStorage.getItem("lastGPS") || "",
-    "Battery Level": localStorage.getItem("batteryLevel") || "",
-    "Notes": `Battery: ${localStorage.getItem("batteryLevel") || "?"}% – ${isDepart ? "Depart" : "Start"} from Simple App`,
-    "Visit Report Data": localStorage.getItem("currentAnswersJSON") || "{}"
-  };
-
-  // Add photos (up to 10)
-  for (let i = 1; i <= 10; i++) {
-    const photo = localStorage.getItem("photo" + i);
-    if (photo && photo.startsWith("data:")) {
-      payload["Photo " + i] = photo;
-    }
-  }
-
-  fetch(WEB_APP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(payload)
-  })
-  .then(() => {
-    console.log("Submitted to Google Sheet:", status);
-    if (isDepart) {
-      localStorage.setItem("visitActive", "false");
-      localStorage.removeItem("arrivalTime");
-      localStorage.removeItem("timerMinutes");
-      localStorage.removeItem("isTravelling");
-      localStorage.removeItem("currentAnswersJSON");
-      for (let i = 1; i <= 10; i++) localStorage.removeItem("photo" + i);
-      showToast("Check-out complete – safe travels!");
-    }
-  })
-  .catch(err => {
-    console.error("Submit failed:", err);
-    showToast("Error – check internet connection");
-  });
-}
     window.addEventListener('load', init);
     </script>
 </body>
 </html>
+
 
 
 
