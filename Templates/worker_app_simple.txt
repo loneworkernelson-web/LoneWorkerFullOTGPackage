@@ -1233,8 +1233,46 @@ header button svg, .edit-location-btn svg { pointer-events: none; }
             } 
         });
     }
+// ──────── FINAL WORKING SUBMIT FUNCTION (2025 FIXED) ────────
+function submitToGoogleSheet() {
+  if (!window.WEB_APP_URL) {
+    alert("Web app URL not configured – contact your administrator");
+    return;
+  }
+
+  const payload = {
+    "Worker Name": localStorage.getItem("workerName") || "Unknown Worker",
+    "Worker Phone Number": localStorage.getItem("workerPhone") || "",
+    "Company Name": localStorage.getItem("selectedCompany") || "",
+    "Location Name": localStorage.getItem("selectedLocation") || "",
+    "Location Address": localStorage.getItem("locationAddress") || "",
+    "Arrival Time": new Date().toISOString(),
+    "Anticipated Departure Time": new Date(Date.now() + (parseInt(localStorage.getItem("expectedMinutes") || "60") * 60000)).toISOString(),
+    "Alarm Status": localStorage.getItem("isTravelling") === "true" ? "TRAVELLING" : "ON SITE",
+    "Last Known GPS": localStorage.getItem("lastGPS") || "",
+    "Battery Level": localStorage.getItem("batteryLevel") || "",
+    "Notes": "Battery: " + (localStorage.getItem("batteryLevel") || "??") + "%\nSubmitted from OTG Worker App 2025",
+    "Visit Report Data": localStorage.getItem("visitReportJSON") || "{}"
+  };
+
+  // Add up to 10 photos if they exist
+  for (let i = 1; i <= 10; i++) {
+    const photo = localStorage.getItem("photo" + i);
+    if (photo) payload["Photo " + i] = photo;
+  }
+
+  fetch(window.WEB_APP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(payload)
+  })
+  .then(() => console.log("Submitted to Google Sheet"))
+  .catch(err => console.error("Submit failed", err));
+}
     window.addEventListener('load', init);
     </script>
 </body>
 </html>
+
 
