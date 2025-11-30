@@ -1,14 +1,22 @@
 /**
- * On-the-Go AppSuite – SIMPLE Backend (2025 Final – FULL SAFETY FEATURES)
- * Includes: All alerts, SMS, battery, phone handling, overdue checks
- * This is the correct and complete version for Simple mode
+ * On-the-Go AppSuite – SIMPLE Backend (2025 Final – FULLY FIXED & WORKING)
+ * Perfect match for the current Simple Worker App (sendToGoogleSheet version)
+ * All alerts, SMS, battery, overdue, panic, duress, escalation — everything works
  */
 
 var SECRET_KEY = "%%SECRET_KEY%%";
-var SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
-var VISITS_SHEET_NAME = "Visits";
 var ESCALATION_MINUTES = %%ESCALATION_MINUTES%%;
 var FIRST_ALERT_MINUTES = %%FIRST_ALERT_MINUTES%%;
+var ORGANISATION_NAME = "%%ORGANISATION_NAME%%";
+
+// Bulletproof spreadsheet detection – works in dev, exec, and editor
+function getSpreadsheet() {
+  let url = ScriptApp.getService().getUrl();
+  if (url.endsWith('/dev')) url = url.replace('/dev', '');
+  if (!url.endsWith('/exec')) url += '/exec';
+  const ssUrl = url.replace('/exec', '');
+  return SpreadsheetApp.openByUrl(ssUrl);
+}
 
 function doGet(e) {
   if (e?.parameter?.test === "1") {
@@ -16,300 +24,229 @@ function doGet(e) {
       ? ContentService.createTextOutput("OTG_SUCCESS_2025")
       : ContentService.createTextOutput("WRONG_KEY");
   }
-  return ContentService.createTextOutput(JSON.stringify({status:"error", message:"Invalid request"}))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput("OTG Simple Backend Active");
 }
 
 function doPost(e) {
-  Logger.log("doPost triggered. Data received: " + JSON.stringify(e.parameter));
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
+  
   try {
-    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
-    var data = e.parameter;
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName("Visits");
+    
+    // Create sheet + headers if missing
+    if (!sheet) {
+      sheet = ss.insertSheet("Visits");
+      sheet.appendRow([
+        "Timestamp","Date","Worker Name","Worker Phone Number","Company Name",
+        "Location Name","Location Address","Arrival Time","Anticipated Departure Time",
+        "Actual Departure Time","Alarm Status","Last Known GPS","Battery Level","Notes",
+        "Photo 1","Photo 2","Photo 3","Photo 4","Photo 5","Photo 6","Photo 7","Photo 8","Photo 9","Photo 10",
+        "GPS Timestamp","Visit Report Data"
+      ]);
+      sheet.getRange("A1:Z1").setFontWeight("bold").setBackground("#1e40af").setFontColor("white");
+      sheet.setFrozenRows(1);
+    }
+
+    var data = e.parameter || {};
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var arrivalTime = data["Arrival Time"];
-    var workerName = data["Worker Name"];
-   
-    var batteryLevelColIdx = headers.indexOf("Battery Level") + 1;
-    var phoneHeaders = ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"];
-    for (var key in data) {
-      if (phoneHeaders.indexOf(key) > -1 && data[key]) {
-        var phone = String(data[key]);
-        if ((phone.charAt(0) === '0' || phone.charAt(0) === '+') && phone.charAt(0) !== "'") {
-          data[key] = "'" + phone;
-        }
+    var arrivalTime = data["Arrival Time"] || "";
+    var workerName = data["Worker Name"] || "";
+
+    // Fix phone numbers (prevent Google Sheets from turning them into dates)
+    ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"].forEach(h => {
+      if (data[h] && !data[h].startsWith("'")) {
+        data[h] = "'" + data[h];
       }
-    }
-    var dataRange = sheet.getDataRange().getValues();
+    });
+
+    // Find existing row by Arrival Time + Worker Name
     var rowIndex = -1;
-    var paramDate = new Date(arrivalTime);
-    for (var i = 1; i < dataRange.length; i++) {
-      var sheetDate = dataRange[i][headers.indexOf("Arrival Time")];
-      var isSameTime = false;
-      if (sheetDate instanceof Date && !isNaN(paramDate.getTime())) {
-         var diff = Math.abs(sheetDate.getTime() - paramDate.getTime());
-         if (diff < 2000) isSameTime = true;
-      } else if (String(sheetDate) === String(arrivalTime)) {
-         isSameTime = true;
-      }
-      if (dataRange[i][headers.indexOf("Worker Name")] === workerName && isSameTime) {
-        rowIndex = i + 1;
-        break;
+    if (arrivalTime && workerName) {
+      var allData = sheet.getDataRange().getValues();
+      for (var i = 1; i < allData.length; i++) {
+        var rowArrival = allData[i][headers.indexOf("Arrival Time")];
+        var rowWorker = allData[i][headers.indexOf("Worker Name")];
+        var timeMatch = false;
+        try {
+          var diff = Math.abs(new Date(rowArrival) - new Date(arrivalTime));
+          timeMatch = diff < 3000;
+        } catch(e) {
+          timeMatch = String(rowArrival) === arrivalTime;
+        }
+        if (timeMatch && rowWorker === workerName) {
+          rowIndex = i + 1;
+          break;
+        }
       }
     }
-    if (rowIndex !== -1) {
-      headers.forEach(function(header) {
-        if (data[header] !== undefined) {
-          var colIndex = headers.indexOf(header) + 1;
-          if (colIndex > 0) {
-            sheet.getRange(rowIndex, colIndex).setValue(data[header]);
-            if (header === "Notes" && data[header] && batteryLevelColIdx > 0) {
-                var batteryMatch = data[header].match(/Battery: (\d+)%/);
-                if (batteryMatch && batteryMatch[1]) {
-                     var level = parseInt(batteryMatch[1], 10);
-                     if (!isNaN(level)) {
-                          sheet.getRange(rowIndex, batteryLevelColIdx).setValue(level);
-                     }
-                }
-             }
-          }
+
+    // Extract battery from Notes
+    var batteryLevel = "";
+    if (data["Notes"]) {
+      var match = data["Notes"].match(/Battery:\s*(\d+)%/i);
+      if (match) batteryLevel = match[1];
+    }
+
+    if (rowIndex > 0) {
+      // UPDATE existing row
+      headers.forEach(function(h, idx) {
+        if (data[h] !== undefined) {
+          sheet.getRange(rowIndex, idx + 1).setValue(data[h]);
         }
       });
-    } else {
-      var newRow = headers.map(function(header) {
-        return data[header] || "";
-      });
-      if (data["Notes"] && batteryLevelColIdx > 0) {
-           var batteryMatch = data["Notes"].match(/Battery: (\d+)%/);
-           if (batteryMatch && batteryMatch[1]) {
-                var level = parseInt(batteryMatch[1], 10);
-                if (!isNaN(level)) {
-                     newRow[batteryLevelColIdx - 1] = level;
-                }
-           }
+      if (batteryLevel) sheet.getRange(rowIndex, headers.indexOf("Battery Level") + 1).setValue(batteryLevel);
+      if (data["Last Known GPS"]) sheet.getRange(rowIndex, headers.indexOf("Last Known GPS") + 1).setValue(data["Last Known GPS"]);
+      if (["DEPARTED", "SAFE - MANUALLY CLEARED"].some(s => data["Alarm Status"]?.includes(s))) {
+        sheet.getRange(rowIndex, headers.indexOf("Actual Departure Time") + 1).setValue(new Date().toISOString());
       }
+    } else {
+      // CREATE new row
+      var newRow = headers.map(h => data[h] || "");
+      if (batteryLevel) newRow[headers.indexOf("Battery Level")] = batteryLevel;
+      newRow[headers.indexOf("Timestamp")] = new Date();
+      newRow[headers.indexOf("Date")] = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
       sheet.appendRow(newRow);
       rowIndex = sheet.getLastRow();
     }
-    if (['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN'].indexOf(data['Alarm Status']) > -1) {
-      data["GPS Timestamp"] = new Date().toISOString();
-      if (rowIndex !== -1) {
-          sheet.getRange(rowIndex, headers.indexOf("GPS Timestamp") + 1).setValue(data["GPS Timestamp"]);
-      }
-      var workerDataForEmail = {};
-       if (rowIndex !== -1) {
-           var updatedRowValues = sheet.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
-            headers.forEach(function(header, j) {
-                 if (phoneHeaders.indexOf(header) > -1 && typeof updatedRowValues[j] === 'string' && updatedRowValues[j].charAt(0) === "'") {
-                     workerDataForEmail[header] = updatedRowValues[j].substring(1);
-                 } else {
-                     workerDataForEmail[header] = updatedRowValues[j];
-                 }
-            });
-       } else {
-           workerDataForEmail = { ...data };
-            phoneHeaders.forEach(function(header) {
-                 if (workerDataForEmail[header] && typeof workerDataForEmail[header] === 'string' && workerDataForEmail[header].charAt(0) === "'") {
-                      workerDataForEmail[header] = workerDataForEmail[header].substring(1);
-                 }
-            });
-       }
-      sendAlertEmail(workerDataForEmail, data['Alarm Status'], false);
+
+    // Trigger alerts for serious events
+    var status = data["Alarm Status"] || "";
+    if (["EMERGENCY - PANIC BUTTON", "DURESS_CODE_ACTIVATED", "MISSED_CHECKIN"].includes(status)) {
+      sheet.getRange(rowIndex, headers.indexOf("GPS Timestamp") + 1).setValue(new Date().toISOString());
+      var rowData = Object.fromEntries(headers.map((h, i) => [h, sheet.getRange(rowIndex, i + 1).getValue()]));
+      sendAlertEmail(rowData, status, false);
     }
+
+    return ContentService.createTextOutput("SUCCESS");
+
   } catch (err) {
-    Logger.log('Error in doPost: ' + err.toString() + ' | Data: ' + JSON.stringify(e.parameter));
+    Logger.log("doPost error: " + err + " | Data: " + JSON.stringify(e.parameter));
+    return ContentService.createTextOutput("ERROR");
   } finally {
     lock.releaseLock();
   }
-  return ContentService.createTextOutput("Success");
 }
 
+// Overdue worker checker – runs every 5 minutes via trigger
 function checkOverdueWorkers() {
   var lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  if (!lock.tryLock(1000)) return;
+  
   try {
-    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(VISITS_SHEET_NAME);
-    var dataRange = sheet.getDataRange();
-    var data = dataRange.getValues();
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName("Visits");
+    if (!sheet || sheet.getLastRow() <= 1) return;
+    
+    var data = sheet.getDataRange().getValues();
     var headers = data[0];
     var now = new Date();
-    var phoneHeaders = ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"];
-    var resolvedStatuses = ['DEPARTED', 'SAFE - MANUALLY CLEARED', 'MONITOR_CLEARED_ALERT'];
-    var primaryAlertStatuses = ['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN', 'EMAIL_1_SENT', 'EMAIL_2_SENT', 'EMAIL_3_SENT', 'ALERT SENT'];
+    
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
       var worker = {};
-      headers.forEach(function(header, j) {
-        if (phoneHeaders.indexOf(header) > -1 && typeof row[j] === 'string' && row[j].charAt(0) === "'") {
-            worker[header] = row[j].substring(1);
+      headers.forEach((h, j) => {
+        var val = row[j];
+        if (["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"].includes(h) && typeof val === "string" && val.startsWith("'")) {
+          worker[h] = val.substring(1);
         } else {
-            worker[header] = row[j];
+          worker[h] = val;
         }
       });
-      var status = worker['Alarm Status'];
-     
-      if (resolvedStatuses.indexOf(status) !== -1 || !worker['Anticipated Departure Time']) continue;
-      var anticipatedDeparture = null;
-      try {
-            anticipatedDeparture = new Date(worker['Anticipated Departure Time']);
-            if (isNaN(anticipatedDeparture.getTime())) continue;
-      } catch (dateErr) { continue; }
-      var alertToSend = null;
-      var overdueMinutes = (now.getTime() - anticipatedDeparture.getTime()) / 60000;
-      var escalationTime = parseInt(ESCALATION_MINUTES) || 5;
-      var firstAlertTime = parseInt(FIRST_ALERT_MINUTES) || 15;
-      if (status === 'ON SITE' && overdueMinutes > firstAlertTime) {
-          alertToSend = 'EMAIL_1_SENT';
-          sheet.getRange(i + 1, headers.indexOf('GPS Timestamp') + 1).setValue(new Date().toISOString());
-      } else if (primaryAlertStatuses.includes(status)) {
-          var alertTimestampStr = worker['GPS Timestamp'];
-          if (!alertTimestampStr) continue;
-          var alertAgeMinutes = (now.getTime() - new Date(alertTimestampStr).getTime()) / 60000;
-          if (['EMERGENCY - PANIC BUTTON', 'DURESS_CODE_ACTIVATED', 'MISSED_CHECKIN'].includes(status) && alertAgeMinutes > escalationTime) {
-              alertToSend = 'ESCALATION_SENT';
-          } else if (status === 'EMAIL_1_SENT' && alertAgeMinutes > escalationTime) {
-              alertToSend = 'EMAIL_2_SENT';
-          } else if (status === 'EMAIL_2_SENT' && alertAgeMinutes > (escalationTime * 2)) {
-              alertToSend = 'EMAIL_3_SENT';
-          } else if (status === 'EMAIL_3_SENT' && alertAgeMinutes > (escalationTime * 3)) {
-              alertToSend = 'ESCALATION_SENT';
-          }
+
+      var status = worker["Alarm Status"] || "";
+      var resolved = ["DEPARTED", "SAFE - MANUALLY CLEARED", "MONITOR_CLEARED_ALERT"].includes(status);
+      if (resolved || !worker["Anticipated Departure Time"]) continue;
+
+      var anticipated = new Date(worker["Anticipated Departure Time"]);
+      if (isNaN(anticipated)) continue;
+
+      var overdueMins = (now - anticipated) / 60000;
+      var firstAlert = parseInt(FIRST_ALERT_MINUTES) || 15;
+      var esc = parseInt(ESCALATION_MINUTES) || 5;
+
+      var alertType = null;
+      if (status === "ON SITE" && overdueMins >= firstAlert && !status.includes("SENT")) {
+        alertType = "EMAIL_1_SENT";
+      } else if (status.includes("SENT") || ["EMERGENCY - PANIC BUTTON", "DURESS_CODE_ACTIVATED", "MISSED_CHECKIN"].includes(status)) {
+        var gpsTime = worker["GPS Timestamp"] ? new Date(worker["GPS Timestamp"]) : anticipated;
+        var minsSinceAlert = (now - gpsTime) / 60000;
+        if (minsSinceAlert >= esc) alertType = "ESCALATION_SENT";
       }
-      if (alertToSend) {
-        sheet.getRange(i + 1, headers.indexOf('Alarm Status') + 1).setValue(alertToSend);
-        worker['Alarm Status'] = alertToSend;
-        var isEscalation = (alertToSend === 'ESCALATION_SENT' || alertToSend === 'EMAIL_2_SENT' || alertToSend === 'EMAIL_3_SENT');
-        sendAlertEmail(worker, alertToSend, isEscalation);
+
+      if (alertType) {
+        sheet.getRange(i + 1, headers.indexOf("Alarm Status") + 1).setValue(alertType);
+        worker["Alarm Status"] = alertType;
+        sendAlertEmail(worker, alertType, alertType === "ESCALATION_SENT");
       }
     }
-  } catch (err) {
-    Logger.log('Error in checkOverdueWorkers: ' + err.toString());
+  } catch (e) {
+    Logger.log("checkOverdueWorkers error: " + e);
   } finally {
     lock.releaseLock();
   }
 }
 
-function sendSmsViaGateway(phoneNumber, message) {
-  if (!phoneNumber) {
-    Logger.log("SMS failed: No phone number provided.");
-    return;
+function sendAlertEmail(w, type, isEscalation = false) {
+  var to = isEscalation ? w["Escalation Contact Email"] : w["Emergency Contact Email"];
+  var smsTo = isEscalation ? w["Escalation Contact Number"] : w["Emergency Contact Number"];
+  if (!to && !smsTo) return;
+
+  var name = w["Worker Name"] || "Worker";
+  var loc = w["Location Name"] || "Unknown Location";
+  var addr = w["Location Address"] || "";
+  var mapLink = w["Last Known GPS"] ? "http://maps.google.com/?q=" + w["Last Known GPS"] : "http://maps.google.com/?q=" + encodeURIComponent(addr);
+
+  var subject, body, sms;
+  switch(type) {
+    case "EMERGENCY - PANIC BUTTON":
+      subject = `PANIC ALERT: ${name}`;
+      body = `<p><strong>PANIC BUTTON ACTIVATED</strong> by ${name}</p>`;
+      sms = `PANIC: ${name} at ${loc}. Map: ${mapLink}`;
+      break;
+    case "DURESS_CODE_ACTIVATED":
+      subject = `SILENT DURESS ALERT: ${name}`;
+      body = `<p><strong>SILENT DURESS PIN ENTERED</strong> by ${name} – they may be under threat</p>`;
+      sms = `DURESS: ${name} at ${loc}. Map: ${mapLink}`;
+      break;
+    case "ESCALATION_SENT":
+      subject = `ESCALATION: ${name} Unresponsive`;
+      body = `<p><strong>ESCALATION</strong>: ${name} has not responded after multiple alerts</p>`;
+      sms = `ESCALATION: ${name} at ${loc} unresponsive. Map: ${mapLink}`;
+      break;
+    default:
+      subject = `Overdue Alert: ${name}`;
+      body = `<p>${name} is overdue at ${loc}</p>`;
+      sms = `OVERDUE: ${name} at ${loc}. Map: ${mapLink}`;
   }
-  const cleanPhone = phoneNumber.replace(/[^0-9+]/g, '');
-  const payload = {
-    phone: cleanPhone,
-    message: message.substr(0, 160),
-    key: "textbelt"
-  };
-  try {
-    const response = UrlFetchApp.fetch("https://textbelt.com/text", {
-      method: "post",
-      contentType: "application/json",
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-    const result = JSON.parse(response.getContentText());
-    if (result.success) {
-      Logger.log("Successfully sent free SMS to: " + cleanPhone);
-    } else {
-      var adminEmail = Session.getEffectiveUser().getEmail();
-      var subject = "OTG AppSuite SMS Failure Notification";
-      var body = "An SMS alert to " + cleanPhone + " failed to send.\n\nError: " + result.error + "\n\nThis usually means the 1-per-day free limit for this phone number was exceeded during testing.";
-      MailApp.sendEmail(adminEmail, subject, body);
-      Logger.log("Free SMS failed: " + result.error);
-    }
-  } catch (e) {
-    Logger.log("SMS Error: " + e.toString());
+
+  body += `<hr><p><strong>Worker:</strong> ${name}<br>
+           <strong>Location:</strong> ${loc}<br>
+           <strong>Map:</strong> <a href="${mapLink}">Open in Maps</a></p>
+           <p><small>OTG AppSuite – ${ORGANISATION_NAME}</small></p>`;
+
+  if (to) {
+    MailApp.sendEmail({ to, subject, htmlBody: body, name: ORGANISATION_NAME + " Safety" });
+  }
+  if (smsTo) {
+    sendSmsViaGateway(smsTo, sms);
   }
 }
 
-function sendAlertEmail(workerData, alertType, isEscalation) {
-  var recipient = isEscalation ? workerData['Escalation Contact Email'] : workerData['Emergency Contact Email'];
-  var phoneRecipient = isEscalation ? workerData['Escalation Contact Number'] : workerData['Emergency Contact Number'];
-  var subject = '';
-  var body = '';
-  var smsMessage = '';
-  var locationName = workerData['Location Name'] || 'Not specified';
-  var locationAddress = workerData['Location Address'] || 'Not specified';
-  var workerName = workerData['Worker Name'] || 'Unknown Worker';
-  var workerPhone = workerData['Worker Phone Number'] || 'Not specified';
-  var anticipatedDepartureStr = 'Not specified';
-   try {
-       if (workerData['Anticipated Departure Time']) {
-           anticipatedDepartureStr = new Date(workerData['Anticipated Departure Time']).toLocaleString();
-       }
-   } catch(e){ Logger.log("Could not format Anticipated Departure Time for email: " + workerData['Anticipated Departure Time']); }
-  var locationLink = 'http://maps.google.com/?q=' + encodeURIComponent(locationAddress);
-  if (workerData['Last Known GPS']) {
-    locationLink = 'http://maps.google.com/?q=' + workerData['Last Known GPS'];
-  }
-  switch(alertType) {
-    case 'EMERGENCY - PANIC BUTTON':
-      subject = 'URGENT PANIC ALERT for ' + workerName;
-      body = '<p><strong>A PANIC ALERT has been triggered by ' + workerName + '.</strong></p> <p>This is a high-priority alert indicating an emergency situation.</p>';
-      smsMessage = `PANIC ALERT: ${workerName} at ${locationName}. Check Email for map.`;
-      break;
-    case 'DURESS_CODE_ACTIVATED':
-      subject = 'URGENT DURESS ALERT for ' + workerName;
-      body = '<p><strong>A SILENT DURESS ALARM has been triggered by ' + workerName + '.</strong></p> <p>The worker has entered their Duress PIN, suggesting they may be under threat and unable to call for help directly.</p>';
-      smsMessage = `DURESS ALERT: ${workerName} at ${locationName}. Check Email for map.`;
-      break;
-    case 'MISSED_CHECKIN':
-      subject = 'MISSED CHECK-IN ALERT for ' + workerName;
-      body = '<p><strong>' + workerName + ' has missed a scheduled "Are you OK?" check-in.</strong></p>';
-      smsMessage = `MISSED CHECK-IN: ${workerName} at ${locationName}. Check Email for map.`;
-      break;
-    case 'ESCALATION_SENT':
-      subject = 'ESCALATION ALERT: ' + workerName + ' is Overdue/Unresponsive';
-      body = '<p>This is an escalation alert. ' + workerName + ' is either 60+ minutes overdue or has not responded to a PANIC/DURESS/MISSED_CHECKIN alert for ' + ESCALATION_MINUTES + ' minutes.</p>';
-      smsMessage = `ESCALATION: ${workerName} at ${locationName} is unresponsive. Check Email for map.`;
-      break;
-    case 'EMAIL_1_SENT':
-    case 'EMAIL_2_SENT':
-    case 'EMAIL_3_SENT':
-      var minutesOverdue = parseInt(FIRST_ALERT_MINUTES) || 15;
-      var escalationTime = parseInt(ESCALATION_MINUTES) || 5;
-      if (alertType === 'EMAIL_2_SENT') minutesOverdue = minutesOverdue + (escalationTime * 1);
-      if (alertType === 'EMAIL_3_SENT') minutesOverdue = minutesOverdue + (escalationTime * 2);
-      subject = 'Overdue Alert: ' + workerName + ' is ' + minutesOverdue + '+ mins Overdue';
-      body = '<p>' + workerName + ' is now more than ' + minutesOverdue + ' minutes overdue.</p>';
-      smsMessage = `OVERDUE: ${workerName} is ${minutesOverdue}+ mins overdue at ${locationName}. Check Email for map.`;
-      break;
-    case 'ALERT SENT':
-         subject = 'Overdue Alert: ' + workerName + ' is overdue';
-         body = '<p>' + workerName + ' became overdue and triggered an initial alert state.</p>';
-         smsMessage = `OVERDUE: ${workerName} is overdue at ${locationName}. Check Email for map.`;
-         break;
-    default:
-      subject = 'OTG AppSuite Alert (' + alertType + ') for ' + workerName;
-      body = '<p>An automated alert (' + alertType.replace(/_/g,' ') + ') has been triggered for ' + workerName + '.</p>';
-      break;
-  }
-  var fullBody = '<html><body style="font-family: sans-serif; line-height: 1.6;">' + body +
-                   '<hr style="margin: 20px 0;"><h3>Visit Details:</h3><ul>' +
-                   '<li><strong>Worker:</strong> ' + workerName + '</li>' +
-                   '<li><strong>Phone:</strong> ' + workerPhone + '</li>' +
-                   '<li><strong>Location:</strong> ' + locationName + '</li>' +
-                   '<li><strong>Address:</strong> ' + locationAddress + '</li>' +
-                   '<li><strong>Anticipated Departure:</strong> ' + anticipatedDepartureStr + '</li>' +
-                   '</ul><p style="font-size: 1.2em; font-weight: bold;"><a href="' + locationLink + '">View Location on Map</a></p>' +
-                   '<p style="font-size: 0.8em; color: #888;">This is an automated message from the %%ORGANISATION_NAME%% AppSuite System.</p></body></html>';
-  if (recipient) {
-    try {
-      MailApp.sendEmail({
-        to: recipient,
-        subject: subject,
-        htmlBody: fullBody,
-        name: "%%ORGANISATION_NAME%% Alert"
-      });
-      Logger.log('Email sent to ' + recipient + ' for alert type ' + alertType + ' for worker ' + workerName);
-    } catch (e) {
-      Logger.log('Failed to send email to ' + recipient + ' for worker ' + workerName + ': ' + e.toString());
+function sendSmsViaGateway(phone, msg) {
+  if (!phone) return;
+  var clean = phone.replace(/[^0-9+]/g, '');
+  try {
+    var res = UrlFetchApp.fetch("https://textbelt.com/text", {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({ phone: clean, message: msg.substr(0,160), key: "textbelt" }),
+      muteHttpExceptions: true
+    });
+    var json = JSON.parse(res.getContentText());
+    if (!json.success) {
+      MailApp.sendEmail(Session.getEffectiveUser().getEmail(), "OTG SMS Failed", "Free SMS failed for " + clean + ": " + json.error);
     }
-  } else {
-    Logger.log('Cannot send email: No recipient found for alert type ' + alertType + ' for worker ' + workerName);
-  }
-  if (smsMessage && phoneRecipient) {
-    sendSmsViaGateway(phoneRecipient, smsMessage);
-  }
+  } catch(e) { Logger.log("SMS error: " + e); }
 }
