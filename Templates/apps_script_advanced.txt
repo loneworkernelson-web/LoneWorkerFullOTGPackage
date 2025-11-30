@@ -1,19 +1,23 @@
 /**
  * On-the-Go AppSuite – ADVANCED Backend (2025 FINAL – BULLETPROOF)
- * Single handleRequest pattern – zero duplicate functions, zero missing braces
- * Fully tested and production-ready as of November 2025
+ * Fixed URL detection for all deployment modes
  */
-
 function doGet(e)  { return handleRequest(e); }
 function doPost(e) { return handleRequest(e); }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONFIG + GLOBAL CONSTANTS
-// ─────────────────────────────────────────────────────────────────────────────
 const CONFIG = (function() {
-  const url = ScriptApp.getService().getUrl(); // https://script.google.com/macros/s/.../exec
+  let url = ScriptApp.getService().getUrl();
+  
+  // Bulletproof URL cleaning for all modes (dev, exec, base)
+  if (url.endsWith('/dev')) {
+    url = url.replace('/dev', '');  // Remove /dev for editor runs
+  } else if (!url.endsWith('/exec')) {
+    url += '/exec';  // Add /exec if missing (rare base case)
+  }
+  
   const ssUrl = url.replace('/exec', '');
-  const ss = SpreadsheetApp.openByUrl(ssUrl); // Auto-detect bound spreadsheet
+  const ss = SpreadsheetApp.openByUrl(ssUrl);
+  
   return {
     secretKey: "%%SECRET_KEY%%",
     ss: ss,
