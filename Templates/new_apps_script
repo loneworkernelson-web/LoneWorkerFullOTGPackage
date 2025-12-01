@@ -1,0 +1,238 @@
+/**
+ * OTG APPSUITE - UNIFIED BACKEND V2025
+ * Handles: Worker Apps (Simple & Advanced) + Monitor Dashboard + Automations
+ */
+
+// --- CONFIGURATION ---
+const CONFIG = {
+  SECRET_KEY: "%%SECRET_KEY%%", 
+  ORG_NAME: "%%ORGANISATION_NAME%%",
+  FIRST_ALERT_MINUTES: %%FIRST_ALERT_MINUTES%%,
+  ESCALATION_MINUTES: %%ESCALATION_MINUTES%%,
+  PHOTOS_FOLDER_ID: "root", 
+  EMAIL_SENDER_NAME: "%%ORGANISATION_NAME%% Safety System",
+  ORS_API_KEY: "%%ORS_API_KEY%%", 
+  GEMINI_API_KEY: "%%GEMINI_API_KEY%%"
+};
+
+// --- CORE HANDLERS ---
+
+function doGet(e) {
+  // 1. JSONP Handler for Monitor Dashboard
+  if (e.parameter.callback) {
+    if (e.parameter.key !== CONFIG.SECRET_KEY && e.parameter.token !== CONFIG.SECRET_KEY) {
+       return ContentService.createTextOutput(
+         e.parameter.callback + "({status: 'error', message: 'Access Denied'})"
+       ).setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Visits");
+    if (!sheet) return ContentService.createTextOutput(e.parameter.callback + "([])").setMimeType(ContentService.MimeType.JAVASCRIPT);
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data.shift(); // Remove header row
+    
+    // Map rows to objects
+    const visits = data.map(row => {
+      let obj = {};
+      headers.forEach((h, i) => obj[h] = row[i]);
+      return obj;
+    });
+
+    // Return JSONP response
+    const json = JSON.stringify(visits);
+    return ContentService.createTextOutput(`${e.parameter.callback}(${json})`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  // 2. Simple Connection Test
+  if (e.parameter.test === "1") {
+    return ContentService.createTextOutput(
+      e.parameter.key === CONFIG.SECRET_KEY ? "OTG_SUCCESS_2025" : "WRONG_KEY"
+    );
+  }
+
+  // 3. Get Checklists (Advanced Feature)
+  if (e.parameter.action === "getChecklists") {
+    return getChecklistsJSON();
+  }
+
+  return ContentService.createTextOutput("OTG Backend Online");
+}
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) return ContentService.createTextOutput("BUSY");
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("Visits");
+    if (!sheet) sheet = setupSheet(ss);
+
+    const data = e.parameter;
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // Normalize Phone Numbers
+    ["Worker Phone Number", "Emergency Contact Number", "Escalation Contact Number"].forEach(field => {
+      if (data[field] && !data[field].startsWith("'")) data[field] = "'" + data[field];
+    });
+
+    // Determine Row: New or Update?
+    let rowIndex = findRowIndex(sheet, headers, data);
+    
+    if (rowIndex === -1 || (data["Alarm Status"] === "ON SITE" && !data["Actual Departure Time"])) {
+      // Append New
+      const newRow = headers.map(h => data[h] || "");
+      newRow[headers.indexOf("Timestamp")] = new Date();
+      newRow[headers.indexOf("Date")] = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+      sheet.appendRow(newRow);
+      rowIndex = sheet.getLastRow();
+    } else {
+      // Update Existing
+      headers.forEach((h, i) => {
+        if (data[h] !== undefined && data[h] !== "") {
+          sheet.getRange(rowIndex, i + 1).setValue(data[h]);
+        }
+      });
+      if (data["Alarm Status"]) {
+         sheet.getRange(rowIndex, headers.indexOf("Timestamp") + 1).setValue(new Date());
+      }
+    }
+
+    // Handle Photos
+    handlePhotos(data, sheet, rowIndex, headers);
+
+    // Immediate Alerts
+    const status = data["Alarm Status"];
+    if (["EMERGENCY - PANIC BUTTON", "DURESS_CODE_ACTIVATED", "MISSED_CHECKIN"].includes(status)) {
+       sendAlertEmail(getRowData(sheet, rowIndex, headers), status, false);
+    }
+
+    return ContentService.createTextOutput("SUCCESS");
+
+  } catch (err) {
+    Logger.log("Error: " + err);
+    return ContentService.createTextOutput("ERROR");
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// --- AUTOMATION TRIGGERS ---
+function checkOverdueWorkers() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Visits");
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const now = new Date();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = getRowData(sheet, i + 1, headers);
+    if (["DEPARTED", "SAFE - MANUALLY CLEARED", "MONITOR_CLEARED_ALERT"].includes(row["Alarm Status"])) continue;
+    
+    if (!row["Anticipated Departure Time"]) continue;
+    const expected = new Date(row["Anticipated Departure Time"]);
+    const minsOverdue = (now - expected) / 60000;
+    
+    let newStatus = null;
+    if (minsOverdue > CONFIG.FIRST_ALERT_MINUTES && row["Alarm Status"] === "ON SITE") {
+      newStatus = "EMAIL_1_SENT";
+    }
+    else if (["EMAIL_1_SENT", "EMERGENCY - PANIC BUTTON", "MISSED_CHECKIN"].includes(row["Alarm Status"])) {
+       const lastUpdate = new Date(row["Timestamp"]);
+       if ((now - lastUpdate) / 60000 > CONFIG.ESCALATION_MINUTES) {
+         newStatus = "ESCALATION_SENT";
+       }
+    }
+
+    if (newStatus) {
+      sheet.getRange(i + 1, headers.indexOf("Alarm Status") + 1).setValue(newStatus);
+      sheet.getRange(i + 1, headers.indexOf("Timestamp") + 1).setValue(new Date());
+      sendAlertEmail(row, newStatus, newStatus === "ESCALATION_SENT");
+    }
+  }
+}
+
+// --- UTILITIES ---
+
+function setupSheet(ss) {
+  const sheet = ss.insertSheet("Visits");
+  const headers = [
+    "Timestamp","Date","Worker Name","Worker Phone Number","Company Name",
+    "Location Name","Location Address","Arrival Time","Anticipated Departure Time",
+    "Actual Departure Time","Alarm Status","Last Known GPS","Battery Level","Notes",
+    "Emergency Contact Name","Emergency Contact Number","Emergency Contact Email",
+    "Escalation Contact Name","Escalation Contact Number","Escalation Contact Email",
+    "Photo 1","Photo 2","Photo 3","Visit Report Data"
+  ];
+  sheet.appendRow(headers);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e2e8f0");
+  sheet.setFrozenRows(1);
+  return sheet;
+}
+
+function findRowIndex(sheet, headers, data) {
+  const name = data["Worker Name"];
+  const arrival = data["Arrival Time"];
+  if (!name || !arrival) return -1;
+  const allData = sheet.getDataRange().getValues();
+  for (let i = allData.length - 1; i >= 1; i--) {
+    const rowName = allData[i][headers.indexOf("Worker Name")];
+    const rowArr = allData[i][headers.indexOf("Arrival Time")];
+    let matchTime = false;
+    try { matchTime = new Date(rowArr).getTime() === new Date(arrival).getTime(); } catch(e) {}
+    if (rowName === name && matchTime) return i + 1;
+  }
+  return -1;
+}
+
+function getRowData(sheet, rowIndex, headers) {
+  const row = sheet.getRange(rowIndex, 1, 1, headers.length).getValues()[0];
+  let obj = {};
+  headers.forEach((h, i) => obj[h] = row[i]);
+  return obj;
+}
+
+function handlePhotos(data, sheet, rowIndex, headers) {
+  for (let i = 1; i <= 3; i++) { 
+    const key = "Photo " + i;
+    if (data[key] && data[key].startsWith("data:image")) {
+      try {
+        const folder = DriveApp.getFolderById(CONFIG.PHOTOS_FOLDER_ID === "root" ? DriveApp.getRootFolder().getId() : CONFIG.PHOTOS_FOLDER_ID);
+        const blob = Utilities.newBlob(Utilities.base64Decode(data[key].split(",")[1]), "image/jpeg", `${data["Worker Name"]}_${Date.now()}.jpg`);
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        sheet.getRange(rowIndex, headers.indexOf(key) + 1).setValue(file.getUrl());
+      } catch (e) { Logger.log("Photo Error: " + e); }
+    }
+  }
+}
+
+function sendAlertEmail(data, status, isEscalation) {
+  const recipient = isEscalation ? data["Escalation Contact Email"] : data["Emergency Contact Email"];
+  if (!recipient) return;
+  const subject = `OTG ALERT: ${status} - ${data["Worker Name"]}`;
+  const body = `
+    <h2>Safety Alert: ${status}</h2>
+    <p><strong>Worker:</strong> ${data["Worker Name"]}</p>
+    <p><strong>Location:</strong> ${data["Location Name"]}</p>
+    <p><strong>Status:</strong> ${status}</p>
+    <p><strong>Battery:</strong> ${data["Battery Level"]}%</p>
+    <p><a href="https://www.google.com/maps?q=${data["Last Known GPS"]}">View on Map</a></p>
+    <hr>
+    <p><em>Sent by ${CONFIG.ORG_NAME} Safety System</em></p>
+  `;
+  MailApp.sendEmail({ to: recipient, subject: subject, htmlBody: body, name: CONFIG.EMAIL_SENDER_NAME });
+}
+
+function getChecklistsJSON() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Checklists");
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify({})).setMimeType(ContentService.MimeType.JSON);
+  
+  // Basic parsing logic for checklists...
+  // (Simplified for stability in this template)
+  return ContentService.createTextOutput(JSON.stringify({})).setMimeType(ContentService.MimeType.JSON);
+}
+
